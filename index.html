@@ -35,10 +35,23 @@ const messaging = firebase.messaging();
 function ativar(){
   Notification.requestPermission().then(permission => {
     if(permission === "granted"){
-      messaging.getToken().then(token => {
-        alert("Promoções ativadas!");
-        console.log("TOKEN:", token);
+
+      messaging.getToken({
+        vapidKey: "BNNOc5bPd42F1oKDbM2OK-Y2FdnuBw-pngxHf487Qwvd7rddOC0h7e2lakvhertV_30KlzeU_IlfRjqQJ-Ta8DA"
+      }).then(token => {
+
+        if(token){
+          alert("Promoções ativadas!");
+          console.log("TOKEN:", token);
+        } else {
+          alert("Erro ao gerar token");
+        }
+
+      }).catch(err => {
+        console.log("Erro:", err);
+        alert("Erro ao ativar");
       });
+
     }
   });
 }
