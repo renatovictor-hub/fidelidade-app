@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Fidelidade Restaurante</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="text-align:center; font-family:sans-serif; padding:30px;">
+
+<h1>🍽️ Cartão Fidelidade</h1>
+
+<p>Ganhe promoções e pratos do dia!</p>
+
+<button onclick="ativar()" style="padding:15px; font-size:18px;">
+  🔔 Ativar Promoções
+</button>
+
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "SUA_KEY",
+  authDomain: "SEU_DOMINIO",
+  projectId: "SEU_ID",
+  messagingSenderId: "SEU_ID",
+  appId: "SEU_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+function ativar(){
+  Notification.requestPermission().then(permission => {
+    if(permission === "granted"){
+      messaging.getToken().then(token => {
+        alert("Promoções ativadas!");
+        console.log("TOKEN:", token);
+      });
+    }
+  });
+}
+</script>
+
+</body>
+</html>
