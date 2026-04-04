@@ -48,8 +48,8 @@ function ativar(){
         }
 
       }).catch(err => {
-        console.log("Erro:", err);
-        alert("Erro ao ativar");
+  console.log("Erro:", err);
+  alert("Erro: " + err.message);
       });
 
     }
