@@ -8,34 +8,14 @@
 
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
 
-<script>
-const isIOS = /iPad|iPhone|iPod/.test(navigator.platform) 
-  || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-
-<script>
-const isIOS = /iPad|iPhone|iPod/.test(navigator.platform) 
-  || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-
-// NOVA DETECÇÃO CORRETA
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-  || window.navigator.standalone === true;
-
-if (isIOS && !isStandalone) {
-  document.getElementById("ios-instalar").style.display = "block";
-  document.getElementById("btnAtivar").disabled = true;
-}
-
-</script>
-
 <h1>🍽️ Cartão Fidelidade</h1>
-
 <p>Ganhe promoções e pratos do dia!</p>
 
 <div id="ios-instalar" style="display:none; background:#fff3cd; padding:15px; margin-bottom:20px; border-radius:10px;">
   <b>📱 Usuário de iPhone:</b><br><br>
   Para receber promoções:<br><br>
-  1. Toque no botão <b>Compartilhar</b> (⬆️)<br>
-  2. Toque em <b>“Adicionar à Tela de Início”</b><br>
+  1. Toque em <b>Compartilhar</b> (⬆️)<br>
+  2. Toque em <b>Adicionar à Tela de Início</b><br>
   3. Abra o app criado<br><br>
   Depois disso, ative as notificações 👇
 </div>
@@ -44,13 +24,18 @@ if (isIOS && !isStandalone) {
   🔔 Ativar Promoções
 </button>
 
+<!-- DETECÇÃO IOS CORRETA -->
 <script>
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
 if (isIOS && !isStandalone) {
   document.getElementById("ios-instalar").style.display = "block";
   document.getElementById("btnAtivar").disabled = true;
 }
 </script>
 
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-analytics-compat.js"></script>
@@ -70,13 +55,13 @@ firebase.analytics();
 
 const messaging = firebase.messaging();
 
-// Registrar Service Worker
+// Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/firebase-messaging-sw.js')
     .then(() => console.log("Service Worker registrado"));
 }
 
-// Função ativar notificações
+// ATIVAR NOTIFICAÇÕES
 function ativar(){
   Notification.requestPermission().then(permission => {
 
@@ -88,7 +73,6 @@ function ativar(){
 
         if(token){
 
-          // Salvar token no Firebase
           fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/tokens/" + token + ".json", {
             method: "PUT",
             headers: {
