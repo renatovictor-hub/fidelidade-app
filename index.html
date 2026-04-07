@@ -9,8 +9,15 @@
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
 
 <script>
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isIOS = /iPad|iPhone|iPod/.test(navigator.platform) 
+  || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
 const isStandalone = window.navigator.standalone === true;
+
+if (isIOS && !isStandalone) {
+  document.getElementById("ios-instalar").style.display = "block";
+  document.getElementById("btnAtivar").disabled = true;
+}
 </script>
 
 <h1>🍽️ Cartão Fidelidade</h1>
