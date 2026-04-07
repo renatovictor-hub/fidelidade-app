@@ -12,7 +12,19 @@
 const isIOS = /iPad|iPhone|iPod/.test(navigator.platform) 
   || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 
-const isStandalone = window.navigator.standalone === true;
+<script>
+const isIOS = /iPad|iPhone|iPod/.test(navigator.platform) 
+  || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
+// NOVA DETECÇÃO CORRETA
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+  || window.navigator.standalone === true;
+
+if (isIOS && !isStandalone) {
+  document.getElementById("ios-instalar").style.display = "block";
+  document.getElementById("btnAtivar").disabled = true;
+}
+</script>
 
 if (isIOS && !isStandalone) {
   document.getElementById("ios-instalar").style.display = "block";
