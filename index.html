@@ -34,24 +34,36 @@ firebase.initializeApp(firebaseConfig);
 firebase.analytics();
 const messaging = firebase.messaging();
 
+  if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then(() => console.log("Service Worker registrado"));
+}
+
 function ativar(){
   Notification.requestPermission().then(permission => {
     if(permission === "granted"){
 
-      messaging.getToken({
-        vapidKey: "BNNOc5bPd42F1oKDbM2OK-Y2FdnuBw-pngxHf487Qwvd7rddOC0h7e2lakvhertV_30KlzeU_IlfRjqQJ-Ta8DA"
-      }).then(token => {
+messaging.getToken({
+  vapidKey: "BNNOc5bPd42F1oKDbM2OK-Y2FdnuBw-pngxHf487Qwvd7rddOC0h7e2lakvhertV_30KlzeU_IlfRjqQJ-Ta8DA"
+}).then(token => {
 
-        if(token){
-          alert("Promoções ativadas!");
-          console.log("TOKEN:", token);
-        } else {
-          alert("Erro ao gerar token");
-        }
+  if(token){
 
-      }).catch(err => {
-  console.log("Erro:", err);
-  alert("Erro: " + err.message);
+    // 🔥 SALVAR NO FIREBASE
+  fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/tokens/" + token + ".json", {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    token: token
+  })
+});
+
+    alert("Promoções ativadas!");
+    console.log("TOKEN:", token);
+
+  }
       });
 
     }
