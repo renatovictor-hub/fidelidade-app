@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Enviar Promoção</title>
+</head>
+
+<body style="text-align:center; font-family:sans-serif; padding:30px;">
+
+<h2>📢 Enviar Promoção</h2>
+
+<input id="titulo" placeholder="Título" style="padding:10px; width:80%"><br><br>
+<input id="mensagem" placeholder="Mensagem" style="padding:10px; width:80%"><br><br>
+
+<button onclick="enviar()" style="padding:15px; font-size:18px;">
+🚀 Enviar para todos
+</button>
+
+<script>
+async function enviar(){
+
+  const titulo = document.getElementById("titulo").value;
+  const mensagem = document.getElementById("mensagem").value;
+
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/tokens.json");
+  const data = await res.json();
+
+  const tokens = Object.values(data);
+
+  for(let t of tokens){
+
+    fetch("https://fcm.googleapis.com/fcm/send", {
+      method: "POST",
+      headers: {
+        "Authorization": "key=AAAA", // NÃO VAI FUNCIONAR AINDA
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        to: t.token,
+        notification: {
+          title: titulo,
+          body: mensagem
+        }
+      })
+    });
+
+  }
+
+  alert("Promoção enviada!");
+}
+</script>
+
+</body>
+</html>
