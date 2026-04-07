@@ -63,7 +63,17 @@ if ('serviceWorker' in navigator) {
 
 // ATIVAR NOTIFICAÇÕES
 function ativar(){
+
+  alert("Tentando ativar notificações...");
+
+  if (!('Notification' in window)) {
+    alert("Este dispositivo não suporta notificações");
+    return;
+  }
+
   Notification.requestPermission().then(permission => {
+
+    alert("Permissão: " + permission);
 
     if(permission === "granted"){
 
@@ -86,8 +96,13 @@ function ativar(){
           alert("Promoções ativadas!");
           console.log("TOKEN:", token);
 
+        } else {
+          alert("Token não gerado");
         }
 
+      }).catch(err => {
+        alert("Erro ao gerar token");
+        console.error(err);
       });
 
     } else {
@@ -95,6 +110,7 @@ function ativar(){
     }
 
   });
+
 }
 </script>
 
