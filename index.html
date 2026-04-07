@@ -8,13 +8,34 @@
 
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
 
+<script>
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone === true;
+</script>
+
 <h1>🍽️ Cartão Fidelidade</h1>
 
 <p>Ganhe promoções e pratos do dia!</p>
 
-<button onclick="ativar()" style="padding:15px; font-size:18px;">
+<div id="ios-instalar" style="display:none; background:#fff3cd; padding:15px; margin-bottom:20px; border-radius:10px;">
+  <b>📱 Usuário de iPhone:</b><br><br>
+  Para receber promoções:<br><br>
+  1. Toque no botão <b>Compartilhar</b> (⬆️)<br>
+  2. Toque em <b>“Adicionar à Tela de Início”</b><br>
+  3. Abra o app criado<br><br>
+  Depois disso, ative as notificações 👇
+</div>
+
+<button onclick="ativar()" id="btnAtivar" style="padding:15px; font-size:18px;">
   🔔 Ativar Promoções
 </button>
+
+<script>
+if (isIOS && !isStandalone) {
+  document.getElementById("ios-instalar").style.display = "block";
+  document.getElementById("btnAtivar").disabled = true;
+}
+</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js"></script>
@@ -32,41 +53,49 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 firebase.analytics();
+
 const messaging = firebase.messaging();
 
-  if ('serviceWorker' in navigator) {
+// Registrar Service Worker
+if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/firebase-messaging-sw.js')
     .then(() => console.log("Service Worker registrado"));
 }
 
+// Função ativar notificações
 function ativar(){
   Notification.requestPermission().then(permission => {
+
     if(permission === "granted"){
 
-messaging.getToken({
-  vapidKey: "BNNOc5bPd42F1oKDbM2OK-Y2FdnuBw-pngxHf487Qwvd7rddOC0h7e2lakvhertV_30KlzeU_IlfRjqQJ-Ta8DA"
-}).then(token => {
+      messaging.getToken({
+        vapidKey: "BNNOc5bPd42F1oKDbM2OK-Y2FdnuBw-pngxHf487Qwvd7rddOC0h7e2lakvhertV_30KlzeU_IlfRjqQJ-Ta8DA"
+      }).then(token => {
 
-  if(token){
+        if(token){
 
-    // 🔥 SALVAR NO FIREBASE
-  fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/tokens/" + token + ".json", {
-  method: "PUT",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    token: token
-  })
-});
+          // Salvar token no Firebase
+          fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/tokens/" + token + ".json", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              token: token
+            })
+          });
 
-    alert("Promoções ativadas!");
-    console.log("TOKEN:", token);
+          alert("Promoções ativadas!");
+          console.log("TOKEN:", token);
 
-  }
+        }
+
       });
 
+    } else {
+      alert("Permissão negada 😢");
     }
+
   });
 }
 </script>
