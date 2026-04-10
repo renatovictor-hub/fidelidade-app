@@ -5,6 +5,7 @@
   <title>Fidelidade Restaurante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Manifest (OBRIGATÓRIO PARA IPHONE) -->
   <link rel="manifest" href="/manifest.json">
 
   <!-- OneSignal -->
@@ -25,28 +26,28 @@
       console.log("OneSignal pronto");
     });
 
-    // 🔥 BOTÃO MANUAL
+    // 🔥 FUNÇÃO CORRIGIDA PARA IPHONE
     async function ativarNotificacoes() {
 
       const OneSignal = window.OneSignal;
 
       try {
-        const permission = await OneSignal.Notifications.permission;
 
-        if (permission === "granted") {
-          alert("Notificações já estão ativas ✅");
-          return;
-        }
-
+        // pede permissão
         await OneSignal.Notifications.requestPermission();
 
-        const newPermission = await OneSignal.Notifications.permission;
+        // espera confirmação (iPhone precisa disso)
+        setTimeout(async () => {
 
-        if (newPermission === "granted") {
-          alert("Promoções ativadas! 🔔");
-        } else {
-          alert("Permissão negada 😢");
-        }
+          const permission = await OneSignal.Notifications.permission;
+
+          if (permission === "granted") {
+            alert("Promoções ativadas! 🔔");
+          } else {
+            alert("Permissão não concedida 😢");
+          }
+
+        }, 1500);
 
       } catch (e) {
         alert("Erro ao ativar notificações");
