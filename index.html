@@ -5,6 +5,7 @@
   <title>Fidelidade Restaurante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
 
   <!-- OneSignal -->
@@ -21,7 +22,7 @@
       });
     });
 
-    // 🔍 DETECÇÕES
+    // 🔍 DETECÇÃO
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
@@ -29,20 +30,26 @@
     async function ativarNotificacoes() {
       const OneSignal = window.OneSignal;
 
-      await OneSignal.Notifications.requestPermission();
+      try {
+        await OneSignal.Notifications.requestPermission();
 
-      setTimeout(async () => {
-        const subId = await OneSignal.User.PushSubscription.id;
+        setTimeout(async () => {
+          const subId = await OneSignal.User.PushSubscription.id;
 
-        if (subId) {
-          alert("Promoções ativadas! 🔔");
-        } else {
-          alert("Erro ao ativar 😢");
-        }
-      }, 2000);
+          if (subId) {
+            alert("Promoções ativadas! 🔔");
+          } else {
+            alert("Erro ao ativar 😢");
+          }
+        }, 2000);
+
+      } catch (e) {
+        alert("Erro ao ativar notificações");
+        console.log(e);
+      }
     }
 
-    // 📲 INSTALAR (ANDROID)
+    // 📲 INSTALAÇÃO ANDROID
     let deferredPrompt;
 
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -52,40 +59,47 @@
     });
 
     function instalarApp() {
+      if (isIOS) {
+        alert("Para instalar:\nToque em Compartilhar ⬆️ → Adicionar à Tela de Início");
+        return;
+      }
+
       if (deferredPrompt) {
         deferredPrompt.prompt();
+      } else {
+        alert("Use o menu do navegador (⋮) → Instalar App");
       }
     }
 
-    // 🚀 CONTROLE DE UI
-window.onload = () => {
+    // 🎯 CONTROLE DE UI
+    window.onload = () => {
 
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
-  // 🍎 IPHONE
-  if (isIOS) {
-    if (!isStandalone) {
-      document.getElementById("iosBox").style.display = "block";
-    } else {
-      document.getElementById("btnAtivar").style.display = "block";
-    }
-  }
+      // 🍎 iPhone
+      if (isIOS) {
 
-  // 🤖 ANDROID
-  else {
+        if (!isStandalone) {
+          document.getElementById("iosBox").style.display = "block";
+          document.getElementById("btnInstalar").style.display = "block";
+        } else {
+          document.getElementById("btnAtivar").style.display = "block";
+        }
 
-    if (isStandalone) {
-      // já instalado → só ativa
-      document.getElementById("btnAtivar").style.display = "block";
-    } else {
-      // não instalado → mostra instalar
-      document.getElementById("btnInstalar").style.display = "block";
-    }
+      }
 
-  }
+      // 🤖 Android
+      else {
 
-};
+        if (isStandalone) {
+          document.getElementById("btnAtivar").style.display = "block";
+        } else {
+          document.getElementById("btnInstalar").style.display = "block";
+        }
+
+      }
+
+    };
   </script>
 
 </head>
@@ -95,19 +109,27 @@ window.onload = () => {
 <h1>🍽️ Cartão Fidelidade</h1>
 <p>Ganhe promoções e pratos do dia!</p>
 
-<!-- 🍎 INSTRUÇÃO IPHONE -->
-<div id="iosBox" style="display:none; background:#fff3cd; padding:15px; border-radius:10px;">
-  <b>📱 iPhone:</b><br><br>
-  1. Toque em <b>Compartilhar (⬆️)</b><br>
-  2. Toque em <b>Adicionar à Tela de Início</b><br>
-  3. Abra o app criado<br><br>
-</div>
+<!-- 📱 INSTRUÇÃO IPHONE -->
+<div id="iosBox" style="
+  display:none;
+  background:#fff3cd;
+  padding:20px;
+  border-radius:15px;
+  font-size:18px;
+  margin-bottom:20px;
+">
+📱 <b>Instale o App</b><br><br>
 
-<br>
+1️⃣ Toque no botão <b>Compartilhar</b> ⬆️<br>
+2️⃣ Toque em <b>Adicionar à Tela de Início</b><br>
+3️⃣ Abra o app criado<br><br>
+
+👉 Depois ative as promoções 🔔
+</div>
 
 <!-- 📲 BOTÃO INSTALAR -->
 <button id="btnInstalar" onclick="instalarApp()" 
-style="display:none; padding:15px; font-size:18px;">
+style="display:none; padding:15px; font-size:18px; margin-top:10px;">
 📲 Instalar App
 </button>
 
