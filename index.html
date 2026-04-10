@@ -58,23 +58,34 @@
     }
 
     // 🚀 CONTROLE DE UI
-    window.onload = () => {
+window.onload = () => {
 
-      // 🍎 iPhone
-      if (isIOS) {
-        if (!isStandalone) {
-          document.getElementById("iosBox").style.display = "block";
-        } else {
-          document.getElementById("btnAtivar").style.display = "block";
-        }
-      }
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
-      // 🤖 Android
-      else {
-        document.getElementById("btnAtivar").style.display = "block";
-      }
+  // 🍎 IPHONE
+  if (isIOS) {
+    if (!isStandalone) {
+      document.getElementById("iosBox").style.display = "block";
+    } else {
+      document.getElementById("btnAtivar").style.display = "block";
+    }
+  }
 
-    };
+  // 🤖 ANDROID
+  else {
+
+    if (isStandalone) {
+      // já instalado → só ativa
+      document.getElementById("btnAtivar").style.display = "block";
+    } else {
+      // não instalado → mostra instalar
+      document.getElementById("btnInstalar").style.display = "block";
+    }
+
+  }
+
+};
   </script>
 
 </head>
