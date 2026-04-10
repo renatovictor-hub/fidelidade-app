@@ -12,34 +12,47 @@
     window.OneSignalDeferred = window.OneSignalDeferred || [];
 
     OneSignalDeferred.push(async function(OneSignal) {
-
       await OneSignal.init({
         appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-        safari_web_id: "web.onesignal.auto", // 🔥 ESSENCIAL PARA IPHONE
+        safari_web_id: "web.onesignal.auto",
         notifyButton: {
-          enable: true
-        },
-        allowLocalhostAsSecureOrigin: true
+          enable: false
+        }
       });
 
-      console.log("OneSignal carregado");
-
-      // força tentativa no iPhone
-      setTimeout(async () => {
-        try {
-          const permission = await OneSignal.Notifications.permission;
-          console.log("Permissão atual:", permission);
-
-          if (permission !== "granted") {
-            await OneSignal.Notifications.requestPermission();
-          }
-        } catch (e) {
-          console.log("Erro ao pedir permissão:", e);
-        }
-      }, 3000);
-
+      console.log("OneSignal pronto");
     });
+
+    // 🔥 BOTÃO MANUAL
+    async function ativarNotificacoes() {
+
+      const OneSignal = window.OneSignal;
+
+      try {
+        const permission = await OneSignal.Notifications.permission;
+
+        if (permission === "granted") {
+          alert("Notificações já estão ativas ✅");
+          return;
+        }
+
+        await OneSignal.Notifications.requestPermission();
+
+        const newPermission = await OneSignal.Notifications.permission;
+
+        if (newPermission === "granted") {
+          alert("Promoções ativadas! 🔔");
+        } else {
+          alert("Permissão negada 😢");
+        }
+
+      } catch (e) {
+        alert("Erro ao ativar notificações");
+        console.log(e);
+      }
+    }
   </script>
+
 </head>
 
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
@@ -48,9 +61,10 @@
 
 <p>Ganhe promoções e pratos do dia!</p>
 
-<p style="margin-top:20px;">
-Ative as notificações para receber promoções exclusivas 🔔
-</p>
+<button onclick="ativarNotificacoes()" 
+style="padding:15px; font-size:18px; margin-top:20px;">
+🔔 Ativar Promoções
+</button>
 
 </body>
 </html>
