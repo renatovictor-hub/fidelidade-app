@@ -4,115 +4,32 @@
   <meta charset="UTF-8">
   <title>Fidelidade Restaurante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- OneSignal -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        notifyButton: {
+          enable: true
+        }
+      });
+    });
+  </script>
+
 </head>
 
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
 
 <h1>🍽️ Cartão Fidelidade</h1>
+
 <p>Ganhe promoções e pratos do dia!</p>
 
-<div id="ios-instalar" style="display:none; background:#fff3cd; padding:15px; margin-bottom:20px; border-radius:10px;">
-  <b>📱 Usuário de iPhone:</b><br><br>
-  Para receber promoções:<br><br>
-  1. Toque em <b>Compartilhar</b> (⬆️)<br>
-  2. Toque em <b>Adicionar à Tela de Início</b><br>
-  3. Abra o app criado<br><br>
-  Depois disso, ative as notificações 👇
-</div>
-
-<button onclick="ativar()" id="btnAtivar" style="padding:15px; font-size:18px;">
-  🔔 Ativar Promoções
-</button>
-
-<!-- DETECÇÃO IOS CORRETA -->
-<script>
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-
-if (isIOS && !isStandalone) {
-  document.getElementById("ios-instalar").style.display = "block";
-  document.getElementById("btnAtivar").disabled = true;
-}
-</script>
-
-<!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-analytics-compat.js"></script>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBIsxfTBBWpO8J5UvcWbxIXtL68SDKfGjQ",
-  authDomain: "fidelidade-app-9671c.firebaseapp.com",
-  projectId: "fidelidade-app-9671c",
-  storageBucket: "fidelidade-app-9671c.firebasestorage.app",
-  messagingSenderId: "373498571854",
-  appId: "1:373498571854:web:640b54cdae0cbd9790271f"
-};
-
-firebase.initializeApp(firebaseConfig);
-firebase.analytics();
-
-const messaging = firebase.messaging();
-
-// Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then(() => console.log("Service Worker registrado"));
-}
-
-// ATIVAR NOTIFICAÇÕES
-function ativar(){
-
-  alert("Tentando ativar notificações...");
-
-  if (!('Notification' in window)) {
-    alert("Este dispositivo não suporta notificações");
-    return;
-  }
-
-  Notification.requestPermission().then(permission => {
-
-    alert("Permissão: " + permission);
-
-    if(permission === "granted"){
-
-      messaging.getToken({
-        vapidKey: "BNNOc5bPd42F1oKDbM2OK-Y2FdnuBw-pngxHf487Qwvd7rddOC0h7e2lakvhertV_30KlzeU_IlfRjqQJ-Ta8DA"
-      }).then(token => {
-
-        if(token){
-
-          fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/tokens/" + token + ".json", {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              token: token
-            })
-          });
-
-          alert("Promoções ativadas!");
-          console.log("TOKEN:", token);
-
-        } else {
-          alert("Token não gerado");
-        }
-
-      }).catch(err => {
-        alert("Erro ao gerar token");
-        console.error(err);
-      });
-
-    } else {
-      alert("Permissão negada 😢");
-    }
-
-  });
-
-}
-</script>
+<p style="margin-top:20px;">
+Ative as notificações para receber promoções exclusivas 🔔
+</p>
 
 </body>
 </html>
