@@ -27,33 +27,32 @@
     });
 
     // 🔥 FUNÇÃO CORRIGIDA PARA IPHONE
-    async function ativarNotificacoes() {
+   async function ativarNotificacoes() {
 
-      const OneSignal = window.OneSignal;
+  const OneSignal = window.OneSignal;
 
-      try {
+  try {
 
-        // pede permissão
-        await OneSignal.Notifications.requestPermission();
+    await OneSignal.Notifications.requestPermission();
 
-        // espera confirmação (iPhone precisa disso)
-        setTimeout(async () => {
+    // espera o iPhone processar
+    setTimeout(async () => {
 
-          const permission = await OneSignal.Notifications.permission;
+      const isSubscribed = await OneSignal.User.PushSubscription.id;
 
-          if (permission === "granted") {
-            alert("Promoções ativadas! 🔔");
-          } else {
-            alert("Permissão não concedida 😢");
-          }
-
-        }, 1500);
-
-      } catch (e) {
-        alert("Erro ao ativar notificações");
-        console.log(e);
+      if (isSubscribed) {
+        alert("Promoções ativadas! 🔔");
+      } else {
+        alert("Permissão não concedida 😢");
       }
-    }
+
+    }, 2000);
+
+  } catch (e) {
+    alert("Erro ao ativar notificações");
+    console.log(e);
+  }
+}  
   </script>
 
 </head>
