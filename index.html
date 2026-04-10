@@ -5,7 +5,6 @@
   <title>Fidelidade Restaurante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Manifest -->
   <link rel="manifest" href="/manifest.json">
 
   <!-- OneSignal -->
@@ -18,55 +17,64 @@
       await OneSignal.init({
         appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
         safari_web_id: "web.onesignal.auto",
-        notifyButton: {
-          enable: false
-        }
+        notifyButton: { enable: false }
       });
-
-      console.log("OneSignal pronto");
     });
 
-    // 🔔 ATIVAR NOTIFICAÇÕES (CORRIGIDO)
+    // 🔍 DETECÇÕES
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+    // 🔔 ATIVAR NOTIFICAÇÕES
     async function ativarNotificacoes() {
       const OneSignal = window.OneSignal;
 
-      try {
-        await OneSignal.Notifications.requestPermission();
+      await OneSignal.Notifications.requestPermission();
 
-        setTimeout(async () => {
-          const subId = await OneSignal.User.PushSubscription.id;
+      setTimeout(async () => {
+        const subId = await OneSignal.User.PushSubscription.id;
 
-          if (subId) {
-            alert("Promoções ativadas! 🔔");
-          } else {
-            alert("Permissão não concedida 😢");
-          }
-        }, 2000);
-
-      } catch (e) {
-        alert("Erro ao ativar notificações");
-        console.log(e);
-      }
+        if (subId) {
+          alert("Promoções ativadas! 🔔");
+        } else {
+          alert("Erro ao ativar 😢");
+        }
+      }, 2000);
     }
 
-    // 📲 INSTALAR APP (ANDROID)
+    // 📲 INSTALAR (ANDROID)
     let deferredPrompt;
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-
-      // mostra botão instalar
       document.getElementById("btnInstalar").style.display = "block";
     });
 
     function instalarApp() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
-      } else {
-        alert("Para instalar: use o menu do navegador (⋮) → Adicionar à tela inicial");
       }
     }
+
+    // 🚀 CONTROLE DE UI
+    window.onload = () => {
+
+      // 🍎 iPhone
+      if (isIOS) {
+        if (!isStandalone) {
+          document.getElementById("iosBox").style.display = "block";
+        } else {
+          document.getElementById("btnAtivar").style.display = "block";
+        }
+      }
+
+      // 🤖 Android
+      else {
+        document.getElementById("btnAtivar").style.display = "block";
+      }
+
+    };
   </script>
 
 </head>
@@ -74,20 +82,29 @@
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
 
 <h1>🍽️ Cartão Fidelidade</h1>
-
 <p>Ganhe promoções e pratos do dia!</p>
 
-<!-- BOTÃO INSTALAR -->
+<!-- 🍎 INSTRUÇÃO IPHONE -->
+<div id="iosBox" style="display:none; background:#fff3cd; padding:15px; border-radius:10px;">
+  <b>📱 iPhone:</b><br><br>
+  1. Toque em <b>Compartilhar (⬆️)</b><br>
+  2. Toque em <b>Adicionar à Tela de Início</b><br>
+  3. Abra o app criado<br><br>
+</div>
+
+<br>
+
+<!-- 📲 BOTÃO INSTALAR -->
 <button id="btnInstalar" onclick="instalarApp()" 
-style="padding:15px; font-size:18px; margin-top:20px; display:none;">
+style="display:none; padding:15px; font-size:18px;">
 📲 Instalar App
 </button>
 
 <br><br>
 
-<!-- BOTÃO NOTIFICAÇÕES -->
-<button onclick="ativarNotificacoes()" 
-style="padding:15px; font-size:18px;">
+<!-- 🔔 BOTÃO ATIVAR -->
+<button id="btnAtivar" onclick="ativarNotificacoes()" 
+style="display:none; padding:15px; font-size:18px;">
 🔔 Ativar Promoções
 </button>
 
