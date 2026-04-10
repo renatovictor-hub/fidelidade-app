@@ -1,26 +1,95 @@
-async function ativarNotificacoes() {
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Fidelidade Restaurante</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  const OneSignal = window.OneSignal;
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
 
-  try {
+  <!-- OneSignal -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
-    await OneSignal.Notifications.requestPermission();
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-    // espera o iPhone processar
-    setTimeout(async () => {
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        safari_web_id: "web.onesignal.auto",
+        notifyButton: {
+          enable: false
+        }
+      });
 
-      const isSubscribed = await OneSignal.User.PushSubscription.id;
+      console.log("OneSignal pronto");
+    });
 
-      if (isSubscribed) {
-        alert("Promoções ativadas! 🔔");
-      } else {
-        alert("Permissão não concedida 😢");
+    // 🔔 ATIVAR NOTIFICAÇÕES (CORRIGIDO)
+    async function ativarNotificacoes() {
+      const OneSignal = window.OneSignal;
+
+      try {
+        await OneSignal.Notifications.requestPermission();
+
+        setTimeout(async () => {
+          const subId = await OneSignal.User.PushSubscription.id;
+
+          if (subId) {
+            alert("Promoções ativadas! 🔔");
+          } else {
+            alert("Permissão não concedida 😢");
+          }
+        }, 2000);
+
+      } catch (e) {
+        alert("Erro ao ativar notificações");
+        console.log(e);
       }
+    }
 
-    }, 2000);
+    // 📲 INSTALAR APP (ANDROID)
+    let deferredPrompt;
 
-  } catch (e) {
-    alert("Erro ao ativar notificações");
-    console.log(e);
-  }
-}
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // mostra botão instalar
+      document.getElementById("btnInstalar").style.display = "block";
+    });
+
+    function instalarApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+      } else {
+        alert("Para instalar: use o menu do navegador (⋮) → Adicionar à tela inicial");
+      }
+    }
+  </script>
+
+</head>
+
+<body style="text-align:center; font-family:sans-serif; padding:30px;">
+
+<h1>🍽️ Cartão Fidelidade</h1>
+
+<p>Ganhe promoções e pratos do dia!</p>
+
+<!-- BOTÃO INSTALAR -->
+<button id="btnInstalar" onclick="instalarApp()" 
+style="padding:15px; font-size:18px; margin-top:20px; display:none;">
+📲 Instalar App
+</button>
+
+<br><br>
+
+<!-- BOTÃO NOTIFICAÇÕES -->
+<button onclick="ativarNotificacoes()" 
+style="padding:15px; font-size:18px;">
+🔔 Ativar Promoções
+</button>
+
+</body>
+</html>
