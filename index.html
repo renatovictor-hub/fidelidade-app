@@ -64,15 +64,25 @@
       }
     }
 
-    window.onload = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches;
+  window.onload = () => {
 
-      if (standalone) {
-        document.getElementById("btnAtivar").style.display = "block";
-      } else {
-        document.getElementById("btnInstalar").style.display = "block";
-      }
-    };
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const jaAtivo = localStorage.getItem("push_ativo");
+
+  // se já ativou → não mostra botão
+  if (jaAtivo === "true") {
+    document.getElementById("btnAtivar").style.display = "none";
+    return;
+  }
+
+  // fluxo normal
+  if (isStandalone) {
+    document.getElementById("btnAtivar").style.display = "block";
+  } else {
+    document.getElementById("btnInstalar").style.display = "block";
+  }
+
+};
   </script>
 
   <style>
