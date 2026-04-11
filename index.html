@@ -23,21 +23,27 @@
 
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    async function ativarNotificacoes() {
-      const OneSignal = window.OneSignal;
+   async function ativarNotificacoes() {
+  const OneSignal = window.OneSignal;
 
-      await OneSignal.Notifications.requestPermission();
+  await OneSignal.Notifications.requestPermission();
 
-      setTimeout(async () => {
-        const subId = await OneSignal.User.PushSubscription.id;
+  setTimeout(async () => {
+    const subId = await OneSignal.User.PushSubscription.id;
 
-        if (subId) {
-          alert("¡Promociones activadas! 🔔");
-        } else {
-          alert("Error al activar 😢");
-        }
-      }, 2000);
+    if (subId) {
+      alert("¡Promociones activadas! 🔔");
+
+      // 🔥 SALVA QUE JÁ ATIVOU
+      localStorage.setItem("push_ativo", "true");
+
+      document.getElementById("btnAtivar").style.display = "none";
+
+    } else {
+      alert("Error al activar 😢");
     }
+  }, 2000);
+}
 
     let deferredPrompt;
 
