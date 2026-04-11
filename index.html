@@ -1,6 +1,60 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
+  <script>
+const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+if (isIOS && isInAppBrowser) {
+
+  document.addEventListener("DOMContentLoaded", function() {
+
+    document.body.innerHTML = `
+      <div style="
+        padding:30px;
+        text-align:center;
+        font-family:sans-serif;
+      ">
+        
+        <h2>📲 Abrir en Safari</h2>
+
+        <p>
+          Para activar promociones,<br>
+          necesitas abrir en Safari
+        </p>
+
+        <br>
+
+        <button onclick="abrirSafari()" style="
+          padding:15px;
+          font-size:18px;
+          background:#6a0dad;
+          color:white;
+          border:none;
+          border-radius:10px;
+        ">
+          👉 Abrir en Safari
+        </button>
+
+        <br><br>
+
+        <p style="font-size:14px; color:gray;">
+          Si no funciona:<br>
+          toca (…) y selecciona<br>
+          <b>"Abrir en Safari"</b>
+        </p>
+
+      </div>
+    `;
+  });
+
+  function abrirSafari() {
+    window.location.href = window.location.href;
+  }
+}
+</script>
+  
   <meta charset="UTF-8">
   <title>Fidelidad Restaurante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
