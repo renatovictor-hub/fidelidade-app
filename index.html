@@ -1,13 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta charset="UTF-8">
+<title>Fidelidad Restaurante</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
- <script>
-const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
+<link rel="manifest" href="/manifest.json">
+
+<!-- OneSignal -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
+
+<script>
+// ==============================
+// DETECÇÃO
+// ==============================
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
 
+// ==============================
+// OVERLAY iPhone (WhatsApp)
+// ==============================
 if (isIOS && isInAppBrowser) {
-
   document.addEventListener("DOMContentLoaded", function() {
 
     const overlay = document.createElement("div");
@@ -29,12 +42,11 @@ if (isIOS && isInAppBrowser) {
         text-align:center;
         font-family:sans-serif;
       ">
-        
         <h2>📲 Abrir en Safari</h2>
 
         <p>
           Para activar promociones,<br>
-          necesitas abrir en Safari
+          abre esta página en Safari
         </p>
 
         <br>
@@ -57,42 +69,33 @@ if (isIOS && isInAppBrowser) {
           toca (…) y selecciona<br>
           <b>"Abrir en Safari"</b>
         </p>
-
       </div>
     `;
 
     document.body.appendChild(overlay);
-
   });
 
   function abrirSafari() {
     window.location.href = window.location.href;
   }
 }
-</script>  
-  <meta charset="UTF-8">
-  <title>Fidelidad Restaurante</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="manifest" href="/manifest.json">
+// ==============================
+// ONESIGNAL
+// ==============================
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.init({
+    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+    safari_web_id: "web.onesignal.auto",
+    notifyButton: { enable: false }
+  });
+});
 
-  <!-- OneSignal -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
-
-  <script>
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-        safari_web_id: "web.onesignal.auto",
-        notifyButton: { enable: false }
-      });
-    });
-
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-   async function ativarNotificacoes() {
+// ==============================
+// ATIVAR NOTIFICAÇÃO
+// ==============================
+async function ativarNotificacoes() {
   const OneSignal = window.OneSignal;
 
   await OneSignal.Notifications.requestPermission();
@@ -103,9 +106,7 @@ if (isIOS && isInAppBrowser) {
     if (subId) {
       alert("¡Promociones activadas! 🔔");
 
-      // 🔥 SALVA QUE JÁ ATIVOU
       localStorage.setItem("push_ativo", "true");
-
       document.getElementById("btnAtivar").style.display = "none";
 
     } else {
@@ -114,130 +115,125 @@ if (isIOS && isInAppBrowser) {
   }, 2000);
 }
 
-    let deferredPrompt;
+// ==============================
+// INSTALAÇÃO ANDROID
+// ==============================
+let deferredPrompt;
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById("btnInstalar").style.display = "block";
-    });
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
 
-    function instalarApp() {
-      if (isIOS) {
-        alert("Toca compartir ⬆️ y luego 'Agregar a pantalla de inicio'");
-        return;
-      }
+  document.getElementById("btnInstalar").style.display = "block";
+});
 
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-      }
-    }
+function instalarApp() {
+  if (isIOS) {
+    alert("Toca compartir ⬆️ y luego 'Agregar a pantalla de inicio'");
+    return;
+  }
 
-  window.onload = () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+  }
+}
+
+// ==============================
+// CONTROLE DE BOTÕES
+// ==============================
+window.onload = () => {
 
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   const jaAtivo = localStorage.getItem("push_ativo");
 
-  // se já ativou → não mostra botão
+  // já ativou
   if (jaAtivo === "true") {
     document.getElementById("btnAtivar").style.display = "none";
+  }
+
+  // iPhone sempre mostra instalar
+  if (isIOS && !isStandalone) {
+    document.getElementById("btnInstalar").style.display = "block";
     return;
   }
 
-  // fluxo normal
-  if (isStandalone) {
-    document.getElementById("btnAtivar").style.display = "block";
-  } else {
+  // Android
+  if (!isStandalone) {
     document.getElementById("btnInstalar").style.display = "block";
+  } else {
+    if (jaAtivo !== "true") {
+      document.getElementById("btnAtivar").style.display = "block";
+    }
   }
-
 };
-  </script>
+</script>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #333;
-      text-align: center;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  text-align: center;
+}
 
-    .container {
-      padding: 20px;
-      max-width: 400px;
-      margin: auto;
-    }
+.container {
+  padding: 20px;
+  max-width: 400px;
+  margin: auto;
+}
 
-    .logo {
-      width: 120px;
-      margin: 20px auto;
-    }
+.logo {
+  width: 120px;
+  margin: 20px auto;
+}
 
-    h1 {
-      color: #6a0dad;
-      margin-bottom: 5px;
-    }
+h1 {
+  color: #6a0dad;
+}
 
-    p {
-      margin-top: 0;
-      color: #666;
-    }
+.contador {
+  background: #f3e8ff;
+  padding: 10px;
+  border-radius: 10px;
+  margin: 15px 0;
+  color: #6a0dad;
+  font-weight: bold;
+}
 
-    .contador {
-      background: #f3e8ff;
-      padding: 10px;
-      border-radius: 10px;
-      margin: 15px 0;
-      font-weight: bold;
-      color: #6a0dad;
-    }
+.banner {
+  width: 100%;
+  border-radius: 15px;
+}
 
-    .banner {
-      width: 100%;
-      border-radius: 15px;
-      margin: 15px 0;
-    }
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-    button {
-      width: 100%;
-      padding: 15px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.btn-primary {
+  background: #6a0dad;
+  color: white;
+}
 
-    .btn-primary {
-      background: #6a0dad;
-      color: white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
+.urgencia {
+  color: red;
+  margin-top: 10px;
+  font-weight: bold;
+}
 
-    .btn-secondary {
-      background: #eee;
-    }
-
-    .urgencia {
-      color: red;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
-    .links {
-      margin-top: 20px;
-    }
-
-    .links a {
-      display: block;
-      margin: 5px;
-      color: #6a0dad;
-      text-decoration: none;
-      font-weight: bold;
-    }
-  </style>
+.links a {
+  display: block;
+  margin: 5px;
+  color: #6a0dad;
+  text-decoration: none;
+}
+</style>
 
 </head>
 
@@ -245,39 +241,34 @@ if (isIOS && isInAppBrowser) {
 
 <div class="container">
 
-  <!-- LOGO -->
-  <img src="logo.png" class="logo">
+<img src="logo.png" class="logo">
 
-  <h1>Programa de Fidelidad</h1>
-  <p>Recibe promociones y platos del día</p>
+<h1>Programa de Fidelidad</h1>
+<p>Recibe promociones y platos del día</p>
 
-  <!-- CONTADOR -->
-  <div class="contador">
-    🔥 +300 clientes ya reciben promociones
-  </div>
+<div class="contador">
+🔥 +327 clientes ya reciben promociones
+</div>
 
-  <!-- BANNER -->
-  <img src="banner.jpg" class="banner">
+<img src="banner.jpg" class="banner">
 
-  <!-- BOTÕES -->
-  <button id="btnInstalar" class="btn-primary" onclick="instalarApp()" style="display:none;">
-    📲 Instalar App
-  </button>
+<button id="btnInstalar" class="btn-primary" onclick="instalarApp()" style="display:none;">
+📲 Instalar App
+</button>
 
-  <button id="btnAtivar" class="btn-primary" onclick="ativarNotificacoes()" style="display:none;">
-    🔔 Activar Promociones
-  </button>
+<button id="btnAtivar" class="btn-primary" onclick="ativarNotificacoes()" style="display:none;">
+🔔 Activar Promociones
+</button>
 
-  <div class="urgencia">
-    ⚡ Promociones limitadas todos los días
-  </div>
+<div class="urgencia">
+⚡ Promociones desaparecen en pocas horas
+</div>
 
-  <!-- LINKS -->
-  <div class="links">
-    <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Hola%20soy%20Capi%20Lover%20y%20estoy%20en%20su%20programa%20de%20fidelidad%2C%20me%20gustaria%20hacer%20un%20pedido">📲 WhatsApp</a>
-    <a href="https://www.instagram.com/fooduaiso">📸 Instagram</a>
-    <a href="https://uaisocancun.ola.click/products">📋 Ver menú</a>
-  </div>
+<div class="links">
+<a href="https://api.whatsapp.com/send?phone=5219986023759">📲 WhatsApp</a>
+<a href="https://www.instagram.com/fooduaiso">📸 Instagram</a>
+<a href="https://uaisocancun.ola.click/products">📋 Ver menú</a>
+</div>
 
 </div>
 
