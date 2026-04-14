@@ -108,26 +108,26 @@ async function aumentarContador() {
 }
 
 // ==============================
-// PROMOÇÕES MULTIPLAS COM TIMER
+// PROMOS COM TIMER REAL TIME
 // ==============================
 async function carregarPromocao() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const titulo = urlParams.get("promo");
   const descricao = urlParams.get("desc");
-  const tempo = urlParams.get("tempo"); // minutos
+  const tempo = urlParams.get("tempo");
 
   const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocoes.json";
 
-  // 🔥 SE VEIO DO PUSH → SALVA NOVA PROMO
+  // SALVAR NOVA PROMO VIA PUSH
   if (titulo && descricao) {
 
     const agora = Date.now();
-    const duracao = tempo ? parseInt(tempo) * 60000 : 3600000; // default 1h
+    const duracao = tempo ? parseInt(tempo) * 60000 : 3600000;
 
     const novaPromo = {
-      titulo: titulo,
-      descricao: descricao,
+      titulo,
+      descricao,
       criadoEm: agora,
       expiraEm: agora + duracao
     };
@@ -138,31 +138,62 @@ async function carregarPromocao() {
     });
   }
 
-  // 🔥 CARREGA TODAS PROMOS
+  // CARREGAR TODAS
   const res = await fetch(dbUrl);
   const promos = await res.json();
 
   const container = document.getElementById("promoBox");
   container.innerHTML = "";
 
-  const agora = Date.now();
-
   if (!promos) return;
+
+  const agora = Date.now();
 
   Object.keys(promos).forEach(id => {
 
     const p = promos[id];
 
-    // ignora expiradas
     if (p.expiraEm < agora) return;
 
-    const restante = p.expiraEm - agora;
-
-    const minutos = Math.floor(restante / 60000);
-    const horas = Math.floor(minutos / 60);
-    const mins = minutos % 60;
-
     const div = document.createElement("div");
+    div.className = "promo-card";
+
+    div.innerHTML = `
+      <h3>${p.titulo}</h3>
+      <p>${p.descricao}</p>
+      <div class="timer" id="timer-${id}"></div>
+    `;
+
+    container.appendChild(div);
+
+    // TIMER EM TEMPO REAL
+    const timerEl = div.querySelector(`#timer-${id}`);
+
+    function atualizarTimer() {
+      const agora = Date.now();
+      const restante = p.expiraEm - agora;
+
+      if (restante <= 0) {
+        div.remove();
+        return;
+      }
+
+      const totalSeg = Math.floor(restante / 1000);
+      const h = Math.floor(totalSeg / 3600);
+      const m = Math.floor((totalSeg % 3600) / 60);
+      const s = totalSeg % 60;
+
+      timerEl.innerText = `⏳ ${h}h ${m}m ${s}s`;
+    }
+
+    atualizarTimer();
+    setInterval(atualizarTimer, 1000);
+  });
+
+  if (container.innerHTML !== "") {
+    container.style.display = "block";
+  }
+}
 
     div.style = `
       background:#fff3cd;
@@ -352,6 +383,44 @@ button {
   color: #6a0dad;
   text-decoration: none;
 }
+  .promo-container {
+  margin-top: 15px;
+}
+
+.promo-card {
+  background: linear-gradient(135deg, #6a0dad, #9b30ff);
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 10px;
+  text-align: left;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  animation: fadeIn 0.4s ease;
+}
+
+.promo-card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.promo-card p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.timer {
+  background: rgba(255,255,255,0.2);
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 
 </head>
@@ -372,7 +441,8 @@ button {
 <img src="banner.jpg" class="banner">
 
 <!-- PROMOÇÃO -->
-<div id="promoBox" style="display:none;"></div>
+<div id="promoBox" class="promo-container" style="display:none;"></div>
+  
   <h3 id="promoTitulo"></h3>
   <p id="promoDescricao"></p>
 </div>
