@@ -93,6 +93,32 @@ OneSignalDeferred.push(async function(OneSignal) {
 });
 
 // ==============================
+// CONTADOR (FIREBASE)
+// ==============================
+async function carregarContador() {
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json");
+  const total = await res.json();
+
+  document.getElementById("contador").innerText = total || 300;
+}
+
+async function aumentarContador() {
+  const url = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json";
+
+  const res = await fetch(url);
+  let total = await res.json();
+
+  total = (total || 300) + 1;
+
+  await fetch(url, {
+    method: "PUT",
+    body: JSON.stringify(total)
+  });
+
+  document.getElementById("contador").innerText = total;
+}
+
+// ==============================
 // ATIVAR NOTIFICAÇÃO
 // ==============================
 async function ativarNotificacoes() {
@@ -104,6 +130,9 @@ async function ativarNotificacoes() {
     const subId = await OneSignal.User.PushSubscription.id;
 
     if (subId) {
+
+      await aumentarContador();
+
       alert("¡Promociones activadas! 🔔");
 
       localStorage.setItem("push_ativo", "true");
@@ -116,7 +145,7 @@ async function ativarNotificacoes() {
 }
 
 // ==============================
-// INSTALAÇÃO ANDROID
+// INSTALAÇÃO
 // ==============================
 let deferredPrompt;
 
@@ -143,21 +172,20 @@ function instalarApp() {
 // ==============================
 window.onload = () => {
 
+  carregarContador();
+
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   const jaAtivo = localStorage.getItem("push_ativo");
 
-  // já ativou
   if (jaAtivo === "true") {
     document.getElementById("btnAtivar").style.display = "none";
   }
 
-  // iPhone sempre mostra instalar
   if (isIOS && !isStandalone) {
     document.getElementById("btnInstalar").style.display = "block";
     return;
   }
 
-  // Android
   if (!isStandalone) {
     document.getElementById("btnInstalar").style.display = "block";
   } else {
@@ -172,7 +200,6 @@ window.onload = () => {
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #ffffff;
   text-align: center;
 }
 
@@ -247,7 +274,7 @@ button {
 <p>Recibe promociones y platos del día</p>
 
 <div class="contador">
-🔥 +327 clientes ya reciben promociones
+🔥 <span id="contador">...</span> clientes ya reciben promociones
 </div>
 
 <img src="banner.jpg" class="banner">
