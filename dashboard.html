@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Promociones</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial;
+  background: #f5f5f5;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #6a0dad;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.promo {
+  border-left: 5px solid #6a0dad;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.delete {
+  background: red;
+  color: white;
+}
+
+.refresh {
+  background: #6a0dad;
+  color: white;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.stats {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>📊 Dashboard</h1>
+
+<div class="stats">
+🔥 Clientes activos: <span id="contador">...</span>
+</div>
+
+<button class="refresh" onclick="cargarTodo()">🔄 Actualizar</button>
+
+<div id="promos"></div>
+
+<script>
+
+const dbBase = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
+
+// ==============================
+// CARGAR CONTADOR
+// ==============================
+async function cargarContador() {
+  const res = await fetch(dbBase + "/contador.json");
+  const data = await res.json();
+
+  document.getElementById("contador").innerText = data || 0;
+}
+
+// ==============================
+// CARGAR PROMOS
+// ==============================
+async function cargarPromos() {
+
+  const res = await fetch(dbBase + "/promocoes.json");
+  const promos = await res.json();
+
+  const container = document.getElementById("promos");
+  container.innerHTML = "";
+
+  if (!promos) {
+    container.innerHTML = "<p>No hay promociones</p>";
+    return;
+  }
+
+  const ahora = Date.now();
+
+  Object.keys(promos).forEach(id => {
+
+    const p = promos[id];
+
+    const restante = p.expiraEm - ahora;
+
+    if (restante <= 0) return;
+
+    const totalSeg = Math.floor(restante / 1000);
+    const h = Math.floor(totalSeg / 3600);
+    const m = Math.floor((totalSeg % 3600) / 60);
+    const s = totalSeg % 60;
+
+    const div = document.createElement("div");
+    div.className = "card promo";
+
+    div.innerHTML = `
+      <h3>${p.titulo}</h3>
+      <p>${p.descricao}</p>
+      <p>⏳ ${h}h ${m}m ${s}s</p>
+
+      <button class="delete" onclick="eliminarPromo('${id}')">
+        ❌ Eliminar
+      </button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+// ==============================
+// ELIMINAR PROMO
+// ==============================
+async function eliminarPromo(id) {
+
+  await fetch(dbBase + "/promocoes/" + id + ".json", {
+    method: "DELETE"
+  });
+
+  cargarPromos();
+}
+
+// ==============================
+// CARGAR TODO
+// ==============================
+function cargarTodo() {
+  cargarContador();
+  cargarPromos();
+}
+
+// AUTO LOAD
+cargarTodo();
+
+// AUTO REFRESH A CADA 5s
+setInterval(cargarPromos, 5000);
+
+</script>
+
+</body>
+</html>
