@@ -108,30 +108,86 @@ async function aumentarContador() {
 }
 
 // ==============================
-// PROMO AUTOMÁTICA VIA PUSH
+// PROMOÇÕES MULTIPLAS COM TIMER
 // ==============================
 async function carregarPromocao() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const titulo = urlParams.get("promo");
   const descricao = urlParams.get("desc");
+  const tempo = urlParams.get("tempo"); // minutos
 
-  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocao.json";
+  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocoes.json";
 
-  // SE VEIO DO PUSH → SALVA AUTOMÁTICO
+  // 🔥 SE VEIO DO PUSH → SALVA NOVA PROMO
   if (titulo && descricao) {
 
-    const promoData = {
+    const agora = Date.now();
+    const duracao = tempo ? parseInt(tempo) * 60000 : 3600000; // default 1h
+
+    const novaPromo = {
       titulo: titulo,
       descricao: descricao,
-      ativo: true
+      criadoEm: agora,
+      expiraEm: agora + duracao
     };
 
     await fetch(dbUrl, {
-      method: "PUT",
-      body: JSON.stringify(promoData)
+      method: "POST",
+      body: JSON.stringify(novaPromo)
     });
   }
+
+  // 🔥 CARREGA TODAS PROMOS
+  const res = await fetch(dbUrl);
+  const promos = await res.json();
+
+  const container = document.getElementById("promoBox");
+  container.innerHTML = "";
+
+  const agora = Date.now();
+
+  if (!promos) return;
+
+  Object.keys(promos).forEach(id => {
+
+    const p = promos[id];
+
+    // ignora expiradas
+    if (p.expiraEm < agora) return;
+
+    const restante = p.expiraEm - agora;
+
+    const minutos = Math.floor(restante / 60000);
+    const horas = Math.floor(minutos / 60);
+    const mins = minutos % 60;
+
+    const div = document.createElement("div");
+
+    div.style = `
+      background:#fff3cd;
+      padding:15px;
+      border-radius:12px;
+      margin-top:10px;
+    `;
+
+    div.innerHTML = `
+      <h3>${p.titulo}</h3>
+      <p>${p.descricao}</p>
+      <p style="color:red; font-weight:bold;">
+        ⏳ Termina en ${horas}h ${mins}m
+      </p>
+    `;
+
+    container.appendChild(div);
+
+  });
+
+  // mostra container se tiver promo
+  if (container.innerHTML !== "") {
+    container.style.display = "block";
+  }
+}
 
   // CARREGA DO BANCO
   const res = await fetch(dbUrl);
