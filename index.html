@@ -7,6 +7,9 @@
 
 <link rel="manifest" href="/manifest.json">
 
+<!-- ICONES -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
@@ -24,22 +27,27 @@ OneSignalDeferred.push(async function(OneSignal) {
 });
 
 // ==============================
-// PROMOS MULTIPLAS + TIMER REAL
+// PROMOS COM CONTROLE (SEM DUPLICAR)
 // ==============================
 async function carregarPromocao() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const titulo = urlParams.get("promo");
   const descricao = urlParams.get("desc");
-  const tempo = urlParams.get("tempo"); // AGORA EM SEGUNDOS
+  const tempo = urlParams.get("tempo");
 
   const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocoes.json";
 
-  // SALVAR NOVA PROMO VIA LINK/PUSH
-  if (titulo && descricao) {
+  // 🔥 ID UNICO BASEADO NA PROMO
+  const promoId = titulo + "_" + descricao;
+
+  const jaSalvou = sessionStorage.getItem(promoId);
+
+  // SALVAR SÓ UMA VEZ
+  if (titulo && descricao && !jaSalvou) {
 
     const agora = Date.now();
-    const duracao = tempo ? parseInt(tempo) * 1000 : 60000; // default 1 min
+    const duracao = tempo ? parseInt(tempo) * 1000 : 60000;
 
     const novaPromo = {
       titulo,
@@ -52,9 +60,14 @@ async function carregarPromocao() {
       method: "POST",
       body: JSON.stringify(novaPromo)
     });
+
+    sessionStorage.setItem(promoId, "true");
+
+    // LIMPA URL (CRUCIAL)
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // CARREGAR TODAS PROMOS
+  // CARREGAR PROMOS
   const res = await fetch(dbUrl);
   const promos = await res.json();
 
@@ -85,8 +98,7 @@ async function carregarPromocao() {
     const timerEl = div.querySelector(`#timer-${id}`);
 
     function atualizarTimer() {
-      const agora = Date.now();
-      const restante = p.expiraEm - agora;
+      const restante = p.expiraEm - Date.now();
 
       if (restante <= 0) {
         div.remove();
@@ -111,85 +123,10 @@ async function carregarPromocao() {
 }
 
 // ==============================
-// CONTADOR FIREBASE
-// ==============================
-async function carregarContador() {
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json");
-  const total = await res.json();
-  document.getElementById("contador").innerText = total || 300;
-}
-
-async function aumentarContador() {
-  const url = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json";
-  const res = await fetch(url);
-  let total = await res.json();
-
-  total = (total || 300) + 1;
-
-  await fetch(url, {
-    method: "PUT",
-    body: JSON.stringify(total)
-  });
-
-  document.getElementById("contador").innerText = total;
-}
-
-// ==============================
-// ATIVAR NOTIFICAÇÃO
-// ==============================
-async function ativarNotificacoes() {
-  const OneSignal = window.OneSignal;
-
-  await OneSignal.Notifications.requestPermission();
-
-  setTimeout(async () => {
-    const subId = await OneSignal.User.PushSubscription.id;
-
-    if (subId) {
-      await aumentarContador();
-      alert("¡Promociones activadas! 🔔");
-      localStorage.setItem("push_ativo", "true");
-      document.getElementById("btnAtivar").style.display = "none";
-    } else {
-      alert("Error al activar 😢");
-    }
-  }, 2000);
-}
-
-// ==============================
-// INSTALAÇÃO
-// ==============================
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById("btnInstalar").style.display = "block";
-});
-
-function instalarApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-  } else {
-    alert("En iPhone: usar 'Agregar a pantalla de inicio'");
-  }
-}
-
-// ==============================
 // INIT
 // ==============================
 window.onload = () => {
-  carregarContador();
   carregarPromocao();
-
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  const jaAtivo = localStorage.getItem("push_ativo");
-
-  if (!isStandalone) {
-    document.getElementById("btnInstalar").style.display = "block";
-  } else if (jaAtivo !== "true") {
-    document.getElementById("btnAtivar").style.display = "block";
-  }
 };
 </script>
 
@@ -209,19 +146,6 @@ body {
 .logo {
   width: 120px;
   margin: 20px auto;
-}
-
-h1 {
-  color: #6a0dad;
-}
-
-.contador {
-  background: #f3e8ff;
-  padding: 10px;
-  border-radius: 10px;
-  margin: 15px 0;
-  color: #6a0dad;
-  font-weight: bold;
 }
 
 .banner {
@@ -245,22 +169,20 @@ h1 {
   margin-top: 8px;
 }
 
-button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  background: #6a0dad;
-  color: white;
+.links {
+  margin-top: 20px;
 }
 
 .links a {
   display: block;
-  margin: 5px;
-  color: #6a0dad;
+  margin: 10px;
+  font-size: 18px;
   text-decoration: none;
+  color: #6a0dad;
+}
+
+.links i {
+  margin-right: 8px;
 }
 </style>
 
@@ -275,26 +197,22 @@ button {
 <h1>Programa de Fidelidad</h1>
 <p>Recibe promociones y platos del día</p>
 
-<div class="contador">
-🔥 <span id="contador">...</span> clientes ya reciben promociones
-</div>
-
 <img src="banner.jpg" class="banner">
 
 <div id="promoBox" style="display:none;"></div>
 
-<button id="btnInstalar" onclick="instalarApp()" style="display:none;">
-📲 Instalar App
-</button>
-
-<button id="btnAtivar" onclick="ativarNotificacoes()" style="display:none;">
-🔔 Activar Promociones
-</button>
-
 <div class="links">
-<a href="https://api.whatsapp.com/send?phone=5219986023759">WhatsApp</a>
-<a href="https://www.instagram.com/fooduaiso">Instagram</a>
-<a href="https://uaisocancun.ola.click/products">Ver menú</a>
+<a href="https://api.whatsapp.com/send?phone=5219986023759">
+<i class="fab fa-whatsapp"></i> WhatsApp
+</a>
+
+<a href="https://www.instagram.com/fooduaiso">
+<i class="fab fa-instagram"></i> Instagram
+</a>
+
+<a href="https://uaisocancun.ola.click/products">
+<i class="fas fa-utensils"></i> Ver menú
+</a>
 </div>
 
 </div>
