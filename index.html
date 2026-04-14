@@ -108,11 +108,33 @@ async function aumentarContador() {
 }
 
 // ==============================
-// PROMOÇÃO DINÂMICA
+// PROMO AUTOMÁTICA VIA PUSH
 // ==============================
 async function carregarPromocao() {
 
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocao.json");
+  const urlParams = new URLSearchParams(window.location.search);
+  const titulo = urlParams.get("promo");
+  const descricao = urlParams.get("desc");
+
+  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocao.json";
+
+  // SE VEIO DO PUSH → SALVA AUTOMÁTICO
+  if (titulo && descricao) {
+
+    const promoData = {
+      titulo: titulo,
+      descricao: descricao,
+      ativo: true
+    };
+
+    await fetch(dbUrl, {
+      method: "PUT",
+      body: JSON.stringify(promoData)
+    });
+  }
+
+  // CARREGA DO BANCO
+  const res = await fetch(dbUrl);
   const promo = await res.json();
 
   if (promo && promo.ativo) {
