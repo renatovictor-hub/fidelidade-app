@@ -43,13 +43,7 @@ if (isIOS && isInAppBrowser) {
         font-family:sans-serif;
       ">
         <h2>📲 Abrir en Safari</h2>
-
-        <p>
-          Para activar promociones,<br>
-          abre esta página en Safari
-        </p>
-
-        <br>
+        <p>Para activar promociones, abre esta página en Safari</p>
 
         <button onclick="abrirSafari()" style="
           padding:15px;
@@ -62,12 +56,9 @@ if (isIOS && isInAppBrowser) {
           👉 Abrir en Safari
         </button>
 
-        <br><br>
-
-        <p style="font-size:14px; color:gray;">
+        <p style="font-size:14px; color:gray; margin-top:15px;">
           Si no funciona:<br>
-          toca (…) y selecciona<br>
-          <b>"Abrir en Safari"</b>
+          toca (…) → "Abrir en Safari"
         </p>
       </div>
     `;
@@ -93,18 +84,16 @@ OneSignalDeferred.push(async function(OneSignal) {
 });
 
 // ==============================
-// CONTADOR (FIREBASE)
+// CONTADOR FIREBASE
 // ==============================
 async function carregarContador() {
   const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json");
   const total = await res.json();
-
   document.getElementById("contador").innerText = total || 300;
 }
 
 async function aumentarContador() {
   const url = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json";
-
   const res = await fetch(url);
   let total = await res.json();
 
@@ -116,6 +105,23 @@ async function aumentarContador() {
   });
 
   document.getElementById("contador").innerText = total;
+}
+
+// ==============================
+// PROMOÇÃO DINÂMICA
+// ==============================
+async function carregarPromocao() {
+
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocao.json");
+  const promo = await res.json();
+
+  if (promo && promo.ativo) {
+
+    document.getElementById("promoBox").style.display = "block";
+    document.getElementById("promoTitulo").innerText = promo.titulo;
+    document.getElementById("promoDescricao").innerText = promo.descricao;
+
+  }
 }
 
 // ==============================
@@ -168,11 +174,12 @@ function instalarApp() {
 }
 
 // ==============================
-// CONTROLE DE BOTÕES
+// CONTROLE UI
 // ==============================
 window.onload = () => {
 
   carregarContador();
+  carregarPromocao();
 
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   const jaAtivo = localStorage.getItem("push_ativo");
@@ -232,6 +239,13 @@ h1 {
   border-radius: 15px;
 }
 
+.promo {
+  background: #fff3cd;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 15px;
+}
+
 button {
   width: 100%;
   padding: 15px;
@@ -278,6 +292,12 @@ button {
 </div>
 
 <img src="banner.jpg" class="banner">
+
+<!-- PROMOÇÃO -->
+<div id="promoBox" class="promo" style="display:none;">
+  <h3 id="promoTitulo"></h3>
+  <p id="promoDescricao"></p>
+</div>
 
 <button id="btnInstalar" class="btn-primary" onclick="instalarApp()" style="display:none;">
 📲 Instalar App
