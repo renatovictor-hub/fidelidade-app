@@ -12,66 +12,6 @@
 
 <script>
 // ==============================
-// DETECÇÃO
-// ==============================
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
-
-// ==============================
-// OVERLAY iPhone (WhatsApp)
-// ==============================
-if (isIOS && isInAppBrowser) {
-  document.addEventListener("DOMContentLoaded", function() {
-
-    const overlay = document.createElement("div");
-
-    overlay.innerHTML = `
-      <div style="
-        position:fixed;
-        top:0;
-        left:0;
-        width:100%;
-        height:100%;
-        background:white;
-        z-index:9999;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        flex-direction:column;
-        padding:30px;
-        text-align:center;
-        font-family:sans-serif;
-      ">
-        <h2>📲 Abrir en Safari</h2>
-        <p>Para activar promociones, abre esta página en Safari</p>
-
-        <button onclick="abrirSafari()" style="
-          padding:15px;
-          font-size:18px;
-          background:#6a0dad;
-          color:white;
-          border:none;
-          border-radius:10px;
-        ">
-          👉 Abrir en Safari
-        </button>
-
-        <p style="font-size:14px; color:gray; margin-top:15px;">
-          Si no funciona:<br>
-          toca (…) → "Abrir en Safari"
-        </p>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-  });
-
-  function abrirSafari() {
-    window.location.href = window.location.href;
-  }
-}
-
-// ==============================
 // ONESIGNAL
 // ==============================
 window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -84,46 +24,22 @@ OneSignalDeferred.push(async function(OneSignal) {
 });
 
 // ==============================
-// CONTADOR FIREBASE
-// ==============================
-async function carregarContador() {
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json");
-  const total = await res.json();
-  document.getElementById("contador").innerText = total || 300;
-}
-
-async function aumentarContador() {
-  const url = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json";
-  const res = await fetch(url);
-  let total = await res.json();
-
-  total = (total || 300) + 1;
-
-  await fetch(url, {
-    method: "PUT",
-    body: JSON.stringify(total)
-  });
-
-  document.getElementById("contador").innerText = total;
-}
-
-// ==============================
-// PROMOS COM TIMER REAL TIME
+// PROMOS MULTIPLAS + TIMER REAL
 // ==============================
 async function carregarPromocao() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const titulo = urlParams.get("promo");
   const descricao = urlParams.get("desc");
-  const tempo = urlParams.get("tempo");
+  const tempo = urlParams.get("tempo"); // AGORA EM SEGUNDOS
 
   const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocoes.json";
 
-  // SALVAR NOVA PROMO VIA PUSH
+  // SALVAR NOVA PROMO VIA LINK/PUSH
   if (titulo && descricao) {
 
     const agora = Date.now();
-    const duracao = tempo ? parseInt(tempo) * 60000 : 3600000;
+    const duracao = tempo ? parseInt(tempo) * 1000 : 60000; // default 1 min
 
     const novaPromo = {
       titulo,
@@ -138,7 +54,7 @@ async function carregarPromocao() {
     });
   }
 
-  // CARREGAR TODAS
+  // CARREGAR TODAS PROMOS
   const res = await fetch(dbUrl);
   const promos = await res.json();
 
@@ -166,7 +82,6 @@ async function carregarPromocao() {
 
     container.appendChild(div);
 
-    // TIMER EM TEMPO REAL
     const timerEl = div.querySelector(`#timer-${id}`);
 
     function atualizarTimer() {
@@ -195,42 +110,28 @@ async function carregarPromocao() {
   }
 }
 
-    div.style = `
-      background:#fff3cd;
-      padding:15px;
-      border-radius:12px;
-      margin-top:10px;
-    `;
-
-    div.innerHTML = `
-      <h3>${p.titulo}</h3>
-      <p>${p.descricao}</p>
-      <p style="color:red; font-weight:bold;">
-        ⏳ Termina en ${horas}h ${mins}m
-      </p>
-    `;
-
-    container.appendChild(div);
-
-  });
-
-  // mostra container se tiver promo
-  if (container.innerHTML !== "") {
-    container.style.display = "block";
-  }
+// ==============================
+// CONTADOR FIREBASE
+// ==============================
+async function carregarContador() {
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json");
+  const total = await res.json();
+  document.getElementById("contador").innerText = total || 300;
 }
 
-  // CARREGA DO BANCO
-  const res = await fetch(dbUrl);
-  const promo = await res.json();
+async function aumentarContador() {
+  const url = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/contador.json";
+  const res = await fetch(url);
+  let total = await res.json();
 
-  if (promo && promo.ativo) {
+  total = (total || 300) + 1;
 
-    document.getElementById("promoBox").style.display = "block";
-    document.getElementById("promoTitulo").innerText = promo.titulo;
-    document.getElementById("promoDescricao").innerText = promo.descricao;
+  await fetch(url, {
+    method: "PUT",
+    body: JSON.stringify(total)
+  });
 
-  }
+  document.getElementById("contador").innerText = total;
 }
 
 // ==============================
@@ -245,14 +146,10 @@ async function ativarNotificacoes() {
     const subId = await OneSignal.User.PushSubscription.id;
 
     if (subId) {
-
       await aumentarContador();
-
       alert("¡Promociones activadas! 🔔");
-
       localStorage.setItem("push_ativo", "true");
       document.getElementById("btnAtivar").style.display = "none";
-
     } else {
       alert("Error al activar 😢");
     }
@@ -267,47 +164,31 @@ let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-
   document.getElementById("btnInstalar").style.display = "block";
 });
 
 function instalarApp() {
-  if (isIOS) {
-    alert("Toca compartir ⬆️ y luego 'Agregar a pantalla de inicio'");
-    return;
-  }
-
   if (deferredPrompt) {
     deferredPrompt.prompt();
+  } else {
+    alert("En iPhone: usar 'Agregar a pantalla de inicio'");
   }
 }
 
 // ==============================
-// CONTROLE UI
+// INIT
 // ==============================
 window.onload = () => {
-
   carregarContador();
   carregarPromocao();
 
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   const jaAtivo = localStorage.getItem("push_ativo");
 
-  if (jaAtivo === "true") {
-    document.getElementById("btnAtivar").style.display = "none";
-  }
-
-  if (isIOS && !isStandalone) {
-    document.getElementById("btnInstalar").style.display = "block";
-    return;
-  }
-
   if (!isStandalone) {
     document.getElementById("btnInstalar").style.display = "block";
-  } else {
-    if (jaAtivo !== "true") {
-      document.getElementById("btnAtivar").style.display = "block";
-    }
+  } else if (jaAtivo !== "true") {
+    document.getElementById("btnAtivar").style.display = "block";
   }
 };
 </script>
@@ -315,7 +196,7 @@ window.onload = () => {
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   text-align: center;
 }
 
@@ -348,11 +229,20 @@ h1 {
   border-radius: 15px;
 }
 
-.promo {
-  background: #fff3cd;
+.promo-card {
+  background: linear-gradient(135deg, #6a0dad, #9b30ff);
+  color: white;
   padding: 15px;
-  border-radius: 12px;
-  margin-top: 15px;
+  border-radius: 15px;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.timer {
+  background: rgba(255,255,255,0.2);
+  padding: 5px;
+  border-radius: 8px;
+  margin-top: 8px;
 }
 
 button {
@@ -361,20 +251,9 @@ button {
   margin-top: 10px;
   border: none;
   border-radius: 12px;
-  font-size: 16px;
   font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-primary {
   background: #6a0dad;
   color: white;
-}
-
-.urgencia {
-  color: red;
-  margin-top: 10px;
-  font-weight: bold;
 }
 
 .links a {
@@ -382,44 +261,6 @@ button {
   margin: 5px;
   color: #6a0dad;
   text-decoration: none;
-}
-  .promo-container {
-  margin-top: 15px;
-}
-
-.promo-card {
-  background: linear-gradient(135deg, #6a0dad, #9b30ff);
-  color: white;
-  padding: 15px;
-  border-radius: 15px;
-  margin-top: 10px;
-  text-align: left;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-  animation: fadeIn 0.4s ease;
-}
-
-.promo-card h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.promo-card p {
-  margin: 5px 0;
-  font-size: 14px;
-}
-
-.timer {
-  background: rgba(255,255,255,0.2);
-  padding: 6px 10px;
-  border-radius: 8px;
-  display: inline-block;
-  margin-top: 8px;
-  font-weight: bold;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 </style>
 
@@ -440,29 +281,20 @@ button {
 
 <img src="banner.jpg" class="banner">
 
-<!-- PROMOÇÃO -->
-<div id="promoBox" class="promo-container" style="display:none;"></div>
-  
-  <h3 id="promoTitulo"></h3>
-  <p id="promoDescricao"></p>
-</div>
+<div id="promoBox" style="display:none;"></div>
 
-<button id="btnInstalar" class="btn-primary" onclick="instalarApp()" style="display:none;">
+<button id="btnInstalar" onclick="instalarApp()" style="display:none;">
 📲 Instalar App
 </button>
 
-<button id="btnAtivar" class="btn-primary" onclick="ativarNotificacoes()" style="display:none;">
+<button id="btnAtivar" onclick="ativarNotificacoes()" style="display:none;">
 🔔 Activar Promociones
 </button>
 
-<div class="urgencia">
-⚡ Promociones desaparecen en pocas horas
-</div>
-
 <div class="links">
-<a href="https://api.whatsapp.com/send?phone=5219986023759">📲 WhatsApp</a>
-<a href="https://www.instagram.com/fooduaiso">📸 Instagram</a>
-<a href="https://uaisocancun.ola.click/products">📋 Ver menú</a>
+<a href="https://api.whatsapp.com/send?phone=5219986023759">WhatsApp</a>
+<a href="https://www.instagram.com/fooduaiso">Instagram</a>
+<a href="https://uaisocancun.ola.click/products">Ver menú</a>
 </div>
 
 </div>
