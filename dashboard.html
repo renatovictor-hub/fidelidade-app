@@ -34,12 +34,9 @@ button {
 }
 
 .primary { background:#6a0dad; color:white; width:100%; }
-.copy { background:#333; color:white; }
 .delete { background:red; color:white; }
-.push { background:#0a84ff; color:white; }
 
 .stats { text-align:center; font-size:18px; margin-bottom:20px; }
-
 .timer { font-weight:bold; }
 </style>
 
@@ -72,8 +69,8 @@ button {
 const db = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
 const site = "https://fidelidade-app-akcn.vercel.app";
 
-// 🔴 COLE SUA REST API KEY AQUI
-const REST_API_KEY = "COLE_AQUI_SUA_KEY";
+// 🔥 SUA KEY JÁ CONFIGURADA
+const REST_API_KEY = "os_v2_app_cd6qqerxb5aivhvfzozut5owgucs23efcdcemzedbmcboer2ggjbs3xbavievtp5o67eds43x6fd4w3jla3sjf6v6wwviq4fdgtsuey";
 const APP_ID = "10fd0812-370f-408a-9ea5-cbb349f5d635";
 
 // ================= CONTADOR
@@ -83,7 +80,7 @@ async function cargarContador(){
   document.getElementById("contador").innerText = data || 0;
 }
 
-// ================= CRIAR + ENVIAR
+// ================= CRIAR + ENVIAR PUSH
 async function procesarPromo(){
 
   const titulo = document.getElementById("titulo").value;
@@ -99,7 +96,7 @@ async function procesarPromo(){
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Basic " + REST_API_KEY
+      "Authorization": "Key " + REST_API_KEY
     },
     body: JSON.stringify({
       app_id: APP_ID,
@@ -147,7 +144,6 @@ async function cargarPromos(){
       <h3>${p.titulo}</h3>
       <p>${p.descricao}</p>
       <p class="timer" id="t-${id}"></p>
-
       <button class="delete" onclick="eliminar('${id}')">❌ Eliminar</button>
     `;
 
