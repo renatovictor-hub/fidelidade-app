@@ -211,63 +211,75 @@ async function salvarPromo(titulo, desc, exp) {
 
 // ================= CARREGAR PROMOS =================
 async function carregarPromos() {
+    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+    const data = await res.json();
 
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-  const data = await res.json();
+    const lista = document.getElementById("listaPromos");
+    
+    // Limpar timers antigos da memória antes de limpar o HTML
+    Object.values(timersAtivos).forEach(clearInterval);
+    timersAtivos = {};
+    
+    lista.innerHTML = "";
 
-  const lista = document.getElementById("listaPromos");
-  lista.innerHTML = "";
+    if (!data) return;
 
-  if (!data) return;
+    Object.entries(data).forEach(([id, promo]) => {
+        // Pular se a promo for nula ou não tiver expiração (evita o erro de duplicação/NaN)
+        if (!promo || !promo.exp) return;
 
-  Object.entries(data).forEach(([id, promo]) => {
+        const agora = Date.now();
+        const expiraEm = Number(promo.exp); // Garante que é um número
 
-    const restante = promo.exp - Date.now();
+        if (expiraEm - agora <= 0) return;
 
-    if (restante <= 0) return;
+        const div = document.createElement("div");
+        div.className = "promo";
 
-    const div = document.createElement("div");
-    div.className = "promo";
+        div.innerHTML = `
+            <b>${promo.titulo}</b><br>
+            ${promo.desc}<br>
+            ⏳ <span class="timer" id="timer_${id}">Calculando...</span>
+            <button class="btn-danger" style="padding:5px; margin-top:5px" onclick="eliminarPromo('${id}')">Eliminar</button>
+        `;
 
-    div.innerHTML = `
-      <b>${promo.titulo}</b><br>
-      ${promo.desc}<br>
-      ⏳ <span class="timer" id="timer_${id}"></span>
-      <button class="btn-danger" onclick="eliminarPromo('${id}')">Eliminar</button>
-    `;
-
-    lista.appendChild(div);
-
-    iniciarTimer(id, promo.exp);
-
-  });
-
+        lista.appendChild(div);
+        iniciarTimer(id, expiraEm);
+    });
 }
 
-carregarPromos();
-
-// ================= TIMER =================
+// ================= TIMER MELHORADO =================
 function iniciarTimer(id, exp) {
+    const el = document.getElementById("timer_" + id);
+    if (!el) return;
 
-  const el = document.getElementById("timer_" + id);
+    // Função interna para atualizar o texto
+    const atualizar = () => {
+        const restante = exp - Date.now();
 
-  setInterval(() => {
+        if (restante <= 0) {
+            el.innerText = "Expirado";
+            clearInterval(timersAtivos[id]);
+            return;
+        }
 
-    const restante = exp - Date.now();
+        const s = Math.floor(restante / 1000);
+        const m = Math.floor(s / 60);
+        const h = Math.floor(m / 60);
 
-    if (restante <= 0) {
-      el.innerText = "Expirado";
-      return;
-    }
+        // Formatação bonita: 00h 00m 00s
+        const displayH = h;
+        const displayM = m % 60;
+        const displayS = s % 60;
 
-    const s = Math.floor(restante / 1000);
-    const m = Math.floor(s / 60);
-    const h = Math.floor(m / 60);
+        el.innerText = `${displayH}h ${displayM}m ${displayS}s`;
+    };
 
-    el.innerText = h + "h " + (m % 60) + "m " + (s % 60) + "s";
+    // Rodar uma vez imediatamente para não mostrar "Calculando..." por 1 segundo
+    atualizar();
 
-  }, 1000);
-
+    // Guardar o intervalo para poder limpar depois
+    timersAtivos[id] = setInterval(atualizar, 1000);
 }
 
 // ================= ELIMINAR PROMO =================
