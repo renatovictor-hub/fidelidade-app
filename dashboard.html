@@ -25,6 +25,7 @@ body {
   padding: 20px;
   border-radius: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
 }
 
 h1 {
@@ -38,16 +39,14 @@ input, textarea {
   margin-top: 10px;
   border-radius: 10px;
   border: 1px solid #ccc;
-  font-size: 14px;
 }
 
 button {
   width: 100%;
   padding: 15px;
-  margin-top: 15px;
+  margin-top: 10px;
   border-radius: 12px;
   border: none;
-  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -57,15 +56,25 @@ button {
   color: white;
 }
 
-.preview {
-  margin-top: 15px;
-  padding: 15px;
+.btn-danger {
+  background: red;
+  color: white;
+}
+
+.promo {
   background: #f3e8ff;
+  padding: 15px;
   border-radius: 10px;
+  margin-top: 10px;
+}
+
+.timer {
+  color: red;
+  font-weight: bold;
 }
 
 .log {
-  margin-top: 15px;
+  margin-top: 10px;
   font-size: 12px;
   background: black;
   color: #00ff88;
@@ -73,6 +82,7 @@ button {
   border-radius: 10px;
   height: 150px;
   overflow-y: auto;
+  display: none;
 }
 </style>
 
@@ -82,55 +92,69 @@ button {
 
 <div class="container">
 
-  <h1>📲 Dashboard Promos</h1>
+<h1>📲 Dashboard</h1>
 
-  <div class="card">
+<!-- CLIENTES -->
+<div class="card">
+  <h3>👥 Clientes</h3>
+  <div id="totalClientes">Cargando...</div>
+</div>
 
-    <label>Título</label>
-    <input id="titulo" placeholder="Ej: 2x1 en pizzas 🍕">
+<!-- CRIAR PROMO -->
+<div class="card">
 
-    <label>Descripción</label>
-    <textarea id="desc" placeholder="Ej: Solo hoy hasta las 10pm"></textarea>
+  <h3>🚀 Nueva Promoción</h3>
 
-    <label>Duración (segundos)</label>
-    <input id="duracion" type="number" value="86400">
+  <input id="titulo" placeholder="Título">
+  <textarea id="desc" placeholder="Descripción"></textarea>
 
-    <button onclick="previewPromo()" class="btn-primary">
-      👁 Ver Preview
-    </button>
+  <input id="duracion" type="number" value="3600">
 
-    <div id="previewBox" class="preview" style="display:none;"></div>
+  <button onclick="enviarPush()" class="btn-primary">
+    Enviar Push
+  </button>
 
-    <button onclick="enviarPush()" class="btn-primary">
-      🚀 Enviar Push
-    </button>
+</div>
 
-    <div id="log" class="log"></div>
+<!-- PROMOS ATIVAS -->
+<div class="card">
+  <h3>🔥 Promociones activas</h3>
+  <div id="listaPromos"></div>
+</div>
 
-  </div>
+<!-- LOG -->
+<div class="card">
+  <button onclick="toggleLog()">📄 Mostrar / Ocultar Log</button>
+  <div id="log" class="log"></div>
+</div>
 
 </div>
 
 <script>
 
+// ================= LOG =================
 function log(msg) {
   document.getElementById("log").innerHTML += msg + "<br>";
 }
 
-// ================= PREVIEW =================
-function previewPromo() {
-
-  const titulo = document.getElementById("titulo").value;
-  const desc = document.getElementById("desc").value;
-
-  const box = document.getElementById("previewBox");
-
-  box.style.display = "block";
-  box.innerHTML = `
-    <b>${titulo}</b><br>
-    ${desc}
-  `;
+function toggleLog() {
+  const logBox = document.getElementById("log");
+  logBox.style.display = logBox.style.display === "none" ? "block" : "none";
 }
+
+// ================= CLIENTES =================
+async function carregarClientes() {
+
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+  const data = await res.json();
+
+  const total = data ? Object.keys(data).length : 0;
+
+  document.getElementById("totalClientes").innerText = total + " clientes";
+
+}
+
+carregarClientes();
 
 // ================= ENVIAR PUSH =================
 async function enviarPush() {
@@ -139,52 +163,121 @@ async function enviarPush() {
   const desc = document.getElementById("desc").value;
   const duracion = document.getElementById("duracion").value;
 
-  if (!titulo || !desc) {
-    alert("Completa título y descripción");
-    return;
-  }
-
-  const expires = Date.now() + (duracion * 1000);
+  const exp = Date.now() + (duracion * 1000);
 
   const link = "https://fidelidade-app-akcn.vercel.app/?promo="
     + encodeURIComponent(titulo)
     + "&desc=" + encodeURIComponent(desc)
-    + "&exp=" + expires;
+    + "&exp=" + exp;
 
   log("📤 Enviando...");
-  log("Título: " + titulo);
-  log("Desc: " + desc);
-  log("Link: " + link);
 
-  try {
+  const res = await fetch("/api/sendPush", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ titulo, desc, link })
+  });
 
-    const res = await fetch("/api/sendPush", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        titulo,
-        desc,
-        link
-      })
-    });
+  const data = await res.json();
 
-    const data = await res.json();
+  log("📥 " + JSON.stringify(data));
 
-    log("📥 Respuesta:");
-    log(JSON.stringify(data));
+  if (res.ok) {
+    salvarPromo(titulo, desc, exp);
+    alert("✅ Enviado!");
+  } else {
+    alert("❌ Error");
+  }
 
-    if (res.ok) {
-      alert("✅ Push enviado!");
-    } else {
-      alert("❌ Error al enviar");
+}
+
+// ================= SALVAR PROMO =================
+async function salvarPromo(titulo, desc, exp) {
+
+  await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+    method: "POST",
+    body: JSON.stringify({
+      titulo,
+      desc,
+      exp
+    })
+  });
+
+  carregarPromos();
+
+}
+
+// ================= CARREGAR PROMOS =================
+async function carregarPromos() {
+
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+  const data = await res.json();
+
+  const lista = document.getElementById("listaPromos");
+  lista.innerHTML = "";
+
+  if (!data) return;
+
+  Object.entries(data).forEach(([id, promo]) => {
+
+    const restante = promo.exp - Date.now();
+
+    if (restante <= 0) return;
+
+    const div = document.createElement("div");
+    div.className = "promo";
+
+    div.innerHTML = `
+      <b>${promo.titulo}</b><br>
+      ${promo.desc}<br>
+      ⏳ <span class="timer" id="timer_${id}"></span>
+      <button class="btn-danger" onclick="eliminarPromo('${id}')">Eliminar</button>
+    `;
+
+    lista.appendChild(div);
+
+    iniciarTimer(id, promo.exp);
+
+  });
+
+}
+
+carregarPromos();
+
+// ================= TIMER =================
+function iniciarTimer(id, exp) {
+
+  const el = document.getElementById("timer_" + id);
+
+  setInterval(() => {
+
+    const restante = exp - Date.now();
+
+    if (restante <= 0) {
+      el.innerText = "Expirado";
+      return;
     }
 
-  } catch (e) {
-    log("❌ Error: " + e.message);
-    alert("Error conexión");
-  }
+    const s = Math.floor(restante / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+
+    el.innerText = h + "h " + (m % 60) + "m " + (s % 60) + "s";
+
+  }, 1000);
+
+}
+
+// ================= ELIMINAR PROMO =================
+async function eliminarPromo(id) {
+
+  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, {
+    method: "DELETE"
+  });
+
+  carregarPromos();
 
 }
 
