@@ -1,243 +1,661 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uai Sô - Promociones</title>
+
+    <title>Dashboard Uai Sô - Gestión de Notificaciones</title>
+
     <style>
+
         :root {
+
             --roxo: #6a0dad;
+
             --amarelo: #ffcc00;
+
             --branco: #ffffff;
+
             --cinza-fundo: #f0f2f5;
+
+            --perigo: #ff4444;
+
         }
+
+
+
+        * { box-sizing: border-box; }
+
+
 
         body {
+
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
             background-color: var(--cinza-fundo);
+
             margin: 0;
+
             padding: 0;
+
             color: #333;
+
         }
 
-        /* Cabeçalho do App do Cliente */
+
+
         header {
+
             background-color: var(--roxo);
+
             color: var(--branco);
+
             padding: 20px;
+
             text-align: center;
+
             border-bottom: 5px solid var(--amarelo);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+            margin-bottom: 30px;
+
         }
 
-        header h1 { margin: 0; font-size: 28px; }
-        header p { margin: 5px 0 0 0; font-size: 14px; color: var(--amarelo); }
 
-        .container {
-            padding: 20px;
-            max-width: 600px;
+
+        .main-container {
+
+            max-width: 1100px;
+
             margin: 0 auto;
+
+            padding: 0 20px;
+
+            display: grid;
+
+            grid-template-columns: 1fr 2fr;
+
+            gap: 20px;
+
         }
 
-        /* Cards das Promos */
-        .promo-card {
+
+
+        @media (max-width: 850px) {
+
+            .main-container { grid-template-columns: 1fr; }
+
+        }
+
+
+
+        .card {
+
             background: var(--branco);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+
+            padding: 25px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+
             margin-bottom: 20px;
-            border-left: 6px solid var(--amarelo);
-            position: relative;
+
         }
 
-        .promo-title {
-            color: var(--roxo);
-            font-size: 20px;
+
+
+        h3 {
+
             margin-top: 0;
-            margin-bottom: 10px;
+
+            color: var(--roxo);
+
+            border-left: 4px solid var(--amarelo);
+
+            padding-left: 10px;
+
         }
 
-        .promo-desc { font-size: 16px; margin-bottom: 15px; line-height: 1.4; }
-        
-        .timer-box {
-            background: #fff8d6;
-            padding: 10px;
-            border-radius: 8px;
-            display: inline-block;
+
+
+        .input-group { margin-bottom: 15px; }
+
+
+
+        label {
+
+            display: block;
+
+            margin-bottom: 5px;
+
             font-weight: bold;
-            color: #d32f2f;
+
             font-size: 14px;
+
         }
 
-        /* Modal do Push (Aparece quando vem da notificação) */
-        #promoModal {
-            display: none; /* Escondido por padrão */
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-            box-sizing: border-box;
-        }
 
-        .modal-content {
-            background: var(--branco);
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 400px;
+
+        input, textarea {
+
             width: 100%;
-            border: 5px solid var(--amarelo);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: popIn 0.3s ease-out;
-        }
 
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+            padding: 12px;
 
-        .modal-content h2 { color: var(--roxo); margin-top: 0; }
-        .modal-content p { font-size: 18px; }
-        
-        .btn-close {
-            background: var(--roxo);
-            color: var(--branco);
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
+            border: 1px solid #ddd;
+
+            border-radius: 8px;
+
             font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 20px;
-            width: 100%;
+
+            outline-color: var(--roxo);
+
         }
 
-        .empty-state { text-align: center; color: #666; margin-top: 40px; }
+
+
+        textarea { height: 100px; resize: none; }
+
+
+
+        button {
+
+            width: 100%;
+
+            padding: 14px;
+
+            border-radius: 8px;
+
+            border: none;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: transform 0.2s, background 0.3s;
+
+        }
+
+
+
+        .btn-primary {
+
+            background: var(--roxo);
+
+            color: var(--branco);
+
+        }
+
+
+
+        .btn-primary:hover { background: #550a8a; }
+
+
+
+        .btn-danger {
+
+            background: var(--perigo);
+
+            color: white;
+
+            padding: 8px;
+
+            font-size: 13px;
+
+        }
+
+
+
+        .promo-item {
+
+            background: #fdf9e6;
+
+            padding: 15px;
+
+            border-radius: 10px;
+
+            border-left: 5px solid var(--amarelo);
+
+            margin-bottom: 15px;
+
+        }
+
+
+
+        .timer {
+
+            color: var(--roxo);
+
+            font-weight: bold;
+
+            font-size: 1.1em;
+
+        }
+
+
+
+        .log-box {
+
+            background: #1e1e1e;
+
+            color: #00ff88;
+
+            padding: 15px;
+
+            border-radius: 8px;
+
+            font-family: monospace;
+
+            font-size: 12px;
+
+            height: 200px;
+
+            overflow-y: auto;
+
+            display: none;
+
+        }
+
+
+
+        .stats {
+
+            font-size: 24px;
+
+            font-weight: bold;
+
+            color: var(--roxo);
+
+        }
+
     </style>
+
 </head>
+
 <body>
 
-    <header>
-        <h1>Uai Sô</h1>
-        <p>¡Tus Promociones Exclusivas!</p>
-    </header>
 
-    <div id="promoModal">
-        <div class="modal-content">
-            <h2>🎉 ¡Oferta Especial!</h2>
-            <h3 id="modalTitle" style="color: var(--roxo);"></h3>
-            <p id="modalDesc"></p>
-            <div class="timer-box">
-                ⏳ Termina en: <span id="modalTimer">--:--:--</span>
-            </div>
-            <button class="btn-close" onclick="cerrarModal()">¡Lo quiero!</button>
+
+<header>
+
+    <h1>Uai Sô - Gestión de Notificaciones</h1>
+
+</header>
+
+
+
+<div class="main-container">
+
+    
+
+    <aside>
+
+        <div class="card">
+
+            <h3>👥 Base de Clientes</h3>
+
+            <div id="totalClientes" class="stats">Cargando...</div>
+
         </div>
-    </div>
 
-    <div class="container" id="listaPromosCliente">
-        <div class="empty-state">Buscando promociones fresquitas... 🥟</div>
-    </div>
 
-    <script>
-        let timersAtivos = {};
 
-        // 1. CAPTURAR DADOS DO PUSH (URL)
-        const params = new URLSearchParams(window.location.search);
-        const pPromo = params.get('promo');
-        const pDesc = params.get('desc');
-        const pExp = params.get('exp');
+        <div class="card">
 
-        // Se a URL tiver dados do push, mostra o Modal
-        if (pPromo && pDesc && pExp) {
-            document.getElementById('promoModal').style.display = 'flex';
-            document.getElementById('modalTitle').innerText = decodeURIComponent(pPromo);
-            document.getElementById('modalDesc').innerText = decodeURIComponent(pDesc);
-            iniciarTimer('modalTimer', Number(pExp));
-        }
+            <h3>📄 Logs del Sistema</h3>
 
-        // Fechar modal e limpar a URL para não abrir de novo se atualizar a página
-        function cerrarModal() {
-            document.getElementById('promoModal').style.display = 'none';
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+            <button onclick="toggleLog()" style="background:#eee; color:#333; margin-bottom:10px;">Ver Logs</button>
 
-        // 2. CARREGAR TODAS AS PROMOS DO FIREBASE
-        async function carregarPromos() {
-            try {
-                const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-                const data = await res.json();
-                const lista = document.getElementById("listaPromosCliente");
-                
-                lista.innerHTML = ""; // Limpa o "Buscando..."
+            <div id="log" class="log-box"></div>
 
-                if (!data) {
-                    lista.innerHTML = "<div class='empty-state'>😔 No hay promociones activas en este momento.<br>¡Vuelve más tarde!</div>";
-                    return;
-                }
+        </div>
 
-                let temPromoAtiva = false;
+    </aside>
 
-                Object.entries(data).forEach(([id, promo]) => {
-                    if (!promo || !promo.exp) return;
-                    
-                    const expiraEm = Number(promo.exp);
-                    if (expiraEm - Date.now() <= 0) return; // Se já passou do tempo, não mostra
 
-                    temPromoAtiva = true;
-                    
-                    const div = document.createElement("div");
-                    div.className = "promo-card";
-                    div.innerHTML = `
-                        <h3 class="promo-title">${promo.titulo}</h3>
-                        <div class="promo-desc">${promo.desc}</div>
-                        <div class="timer-box">
-                            ⏳ Termina en: <span id="timer_${id}">--:--:--</span>
-                        </div>
-                    `;
-                    lista.appendChild(div);
-                    iniciarTimer(`timer_${id}`, expiraEm, id);
-                });
 
-                if (!temPromoAtiva) {
-                    lista.innerHTML = "<div class='empty-state'>😔 No hay promociones activas en este momento.<br>¡Vuelve más tarde!</div>";
-                }
+    <main>
 
-            } catch (e) {
-                console.error("Error al cargar promos:", e);
-                document.getElementById("listaPromosCliente").innerHTML = "<div class='empty-state'>Error al conectar con el servidor.</div>";
-            }
-        }
+        <div class="card">
 
-        // 3. FUNÇÃO DO RELÓGIO (TIMER)
-        function iniciarTimer(elementId, exp, idParaLimpar = null) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
+            <h3>🚀 Crear Nueva Promoción</h3>
 
-            const update = () => {
-                const resto = exp - Date.now();
-                if (resto <= 0) {
-                    el.innerText = "¡Expirado!";
-                    if (idParaLimpar && timersAtivos[idParaLimpar]) {
-                        clearInterval(timersAtivos[idParaLimpar]);
-                    }
-                    return;
-                }
-                const s = Math.floor(resto / 1000);
-                const m = Math.floor(s / 60);
-                const h = Math.floor(m / 60);
-                el.innerText = `${h}h ${m % 60}m ${s % 60}s`;
-            };
             
-            update();
-            const interval = setInterval(update, 1000);
-            if (idParaLimpar) timersAtivos[idParaLimpar] = interval;
+
+            <div class="input-group">
+
+                <label>Título de la Notificación</label>
+
+                <input id="titulo" placeholder="Ej: ¡Promoción de Pastel!">
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label>Mensaje (Descripción)</label>
+
+                <textarea id="desc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label>Duración (Segundos)</label>
+
+                <input id="duracion" type="number" value="3600">
+
+                <small>3600 = 1 hora / 86400 = 24 horas</small>
+
+            </div>
+
+
+
+            <button onclick="enviarPush()" class="btn-primary">ENVIAR PUSH AHORA</button>
+
+        </div>
+
+
+
+        <div class="card">
+
+            <h3>🔥 Promociones Activas en la App</h3>
+
+            <div id="listaPromos"></div>
+
+        </div>
+
+    </main>
+
+
+
+</div>
+
+
+
+<script>
+
+let timersAtivos = {};
+
+
+
+function log(msg) {
+
+    const box = document.getElementById("log");
+
+    box.innerHTML += `> ${msg}<br>`;
+
+    box.scrollTop = box.scrollHeight;
+
+}
+
+
+
+function toggleLog() {
+
+    const logBox = document.getElementById("log");
+
+    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
+
+}
+
+
+
+// CARGAR CLIENTES
+
+async function carregarClientes() {
+
+    try {
+
+        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+
+        const data = await res.json();
+
+        const total = data ? Object.keys(data).length : 0;
+
+        document.getElementById("totalClientes").innerText = total + " clientes";
+
+    } catch (e) {
+
+        log("Error clientes: " + e.message);
+
+    }
+
+}
+
+carregarClientes();
+
+
+
+// ENVIAR PUSH
+
+async function enviarPush() {
+
+    const titulo = document.getElementById("titulo").value;
+
+    const desc = document.getElementById("desc").value;
+
+    const duracion = document.getElementById("duracion").value;
+
+
+
+    if (!titulo || !desc) return alert("¡Por favor, completa los campos!");
+
+
+
+    const exp = Date.now() + (parseInt(duracion) * 1000);
+
+    const link = `https://fidelidade-app-akcn.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+
+
+
+    log("Intentando enviar push...");
+
+
+
+    try {
+
+        const res = await fetch("/api/sendpush", {
+
+            method: "POST",
+
+            headers: { "Content-Type": "application/json" },
+
+            body: JSON.stringify({ titulo, desc, link })
+
+        });
+
+
+
+        const data = await res.json();
+
+        log("Respuesta API: " + JSON.stringify(data));
+
+
+
+        if (res.ok) {
+
+            await salvarPromoNoFirebase(titulo, desc, exp);
+
+            alert("¡Notificación enviada con éxito!");
+
+            document.getElementById("titulo").value = "";
+
+            document.getElementById("desc").value = "";
+
+        } else {
+
+            alert("Error al enviar: " + JSON.stringify(data));
+
         }
 
-        // Inicia a busca no Firebase assim que a página abre
-        carregarPromos();
-    </script>
+    } catch (e) {
+
+        log("Error Fatal: " + e.message);
+
+    }
+
+}
+
+
+
+// GUARDAR EN FIREBASE (Nombre corregido)
+
+async function salvarPromoNoFirebase(titulo, desc, exp) {
+
+    try {
+
+        log("Guardando en Firebase...");
+
+        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+
+            method: "POST",
+
+            body: JSON.stringify({ titulo, desc, exp: Number(exp) })
+
+        });
+
+        log("✅ Éxito en Firebase.");
+
+        await carregarPromos();
+
+    } catch (e) {
+
+        log("Error Firebase: " + e.message);
+
+    }
+
+}
+
+
+
+// CARGAR PROMOS
+
+async function carregarPromos() {
+
+    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+
+    const data = await res.json();
+
+    const lista = document.getElementById("listaPromos");
+
+
+
+    Object.values(timersAtivos).forEach(clearInterval);
+
+    timersAtivos = {};
+
+    lista.innerHTML = "";
+
+
+
+    if (!data) {
+
+        lista.innerHTML = "<i>No hay promociones activas.</i>";
+
+        return;
+
+    }
+
+
+
+    Object.entries(data).forEach(([id, promo]) => {
+
+        if (!promo || !promo.exp) return;
+
+        const expiraEm = Number(promo.exp);
+
+        if (expiraEm - Date.now() <= 0) return;
+
+
+
+        const div = document.createElement("div");
+
+        div.className = "promo-item";
+
+        div.innerHTML = `
+
+            <strong>${promo.titulo}</strong><br>
+
+            <small>${promo.desc}</small><br>
+
+            ⏳ <span class="timer" id="timer_${id}">--:--:--</span>
+
+            <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">Eliminar</button>
+
+        `;
+
+        lista.appendChild(div);
+
+        iniciarTimer(id, expiraEm);
+
+    });
+
+}
+
+
+
+function iniciarTimer(id, exp) {
+
+    const el = document.getElementById("timer_" + id);
+
+    const update = () => {
+
+        const resto = exp - Date.now();
+
+        if (resto <= 0) {
+
+            el.innerText = "Expirado";
+
+            clearInterval(timersAtivos[id]);
+
+            return;
+
+        }
+
+        const s = Math.floor(resto / 1000);
+
+        const m = Math.floor(s / 60);
+
+        const h = Math.floor(m / 60);
+
+        el.innerText = `${h}h ${m % 60}m ${s % 60}s`;
+
+    };
+
+    update();
+
+    timersAtivos[id] = setInterval(update, 1000);
+
+}
+
+
+
+async function eliminarPromo(id) {
+
+    if(!confirm("¿Eliminar promoción?")) return;
+
+    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
+
+    carregarPromos();
+
+}
+
+
+
+carregarPromos();
+
+</script>
+
 </body>
+
 </html>
