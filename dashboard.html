@@ -81,6 +81,7 @@ button:hover {
 </div>
 
 <script>
+
 function log(msg) {
   const logBox = document.getElementById("log");
   logBox.innerHTML += msg + "<br>";
@@ -121,7 +122,21 @@ async function procesarPromo() {
     const data = await res.json();
 
     log("📥 Respuesta:");
-    log(JSON.stringify(data));
+
+    // 🔥 MOSTRA ERRO DETALHADO
+    if (data.errors) {
+      data.errors.forEach(err => {
+        log("❌ " + err);
+        console.error("ERRO DETALHADO:", err);
+      });
+    } else if (data.erro && data.erro.errors) {
+      data.erro.errors.forEach(err => {
+        log("❌ " + err);
+        console.error("ERRO DETALHADO:", err);
+      });
+    } else {
+      log(JSON.stringify(data));
+    }
 
     console.log("RESPUESTA COMPLETA:", data);
 
@@ -130,8 +145,6 @@ async function procesarPromo() {
       log("✅ Enviado correctamente");
     } else {
       alert("❌ Error al enviar push");
-      log("❌ ERROR:");
-      log(JSON.stringify(data.erro || data));
     }
 
   } catch (e) {
@@ -139,6 +152,7 @@ async function procesarPromo() {
     log("❌ ERROR FETCH");
   }
 }
+
 </script>
 
 </body>
