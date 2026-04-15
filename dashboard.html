@@ -1,30 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Fidelidad</title>
+
+<title>Dashboard Uai Sô</title>
 
 <style>
 body {
   font-family: Arial;
   background: #f5f5f5;
   margin: 0;
-  padding: 20px;
 }
 
 .container {
   max-width: 500px;
   margin: auto;
+  padding: 20px;
+}
+
+.card {
   background: white;
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 h1 {
-  text-align: center;
   color: #6a0dad;
+  text-align: center;
 }
 
 input, textarea {
@@ -33,72 +38,118 @@ input, textarea {
   margin-top: 10px;
   border-radius: 10px;
   border: 1px solid #ccc;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 button {
   width: 100%;
   padding: 15px;
   margin-top: 15px;
-  background: #6a0dad;
-  color: white;
-  border: none;
   border-radius: 12px;
-  font-size: 18px;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
 }
 
-button:hover {
-  background: #5800b3;
+.btn-primary {
+  background: #6a0dad;
+  color: white;
+}
+
+.preview {
+  margin-top: 15px;
+  padding: 15px;
+  background: #f3e8ff;
+  border-radius: 10px;
 }
 
 .log {
-  margin-top: 20px;
-  background: #000;
-  color: #0f0;
-  padding: 10px;
+  margin-top: 15px;
   font-size: 12px;
+  background: black;
+  color: #00ff88;
+  padding: 10px;
+  border-radius: 10px;
   height: 150px;
   overflow-y: auto;
-  border-radius: 10px;
 }
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>🚀 Panel de Promociones</h1>
+  <h1>📲 Dashboard Promos</h1>
 
-<input id="titulo" placeholder="Título de la promo">
-<textarea id="desc" placeholder="Descripción"></textarea>
+  <div class="card">
 
-<button onclick="procesarPromo()">🔥 Enviar Promo + Push</button>
+    <label>Título</label>
+    <input id="titulo" placeholder="Ej: 2x1 en pizzas 🍕">
 
-<div class="log" id="log"></div>
+    <label>Descripción</label>
+    <textarea id="desc" placeholder="Ej: Solo hoy hasta las 10pm"></textarea>
+
+    <label>Duración (segundos)</label>
+    <input id="duracion" type="number" value="86400">
+
+    <button onclick="previewPromo()" class="btn-primary">
+      👁 Ver Preview
+    </button>
+
+    <div id="previewBox" class="preview" style="display:none;"></div>
+
+    <button onclick="enviarPush()" class="btn-primary">
+      🚀 Enviar Push
+    </button>
+
+    <div id="log" class="log"></div>
+
+  </div>
 
 </div>
 
 <script>
 
 function log(msg) {
-  const logBox = document.getElementById("log");
-  logBox.innerHTML += msg + "<br>";
-  logBox.scrollTop = logBox.scrollHeight;
+  document.getElementById("log").innerHTML += msg + "<br>";
 }
 
-async function procesarPromo() {
+// ================= PREVIEW =================
+function previewPromo() {
 
   const titulo = document.getElementById("titulo").value;
   const desc = document.getElementById("desc").value;
 
+  const box = document.getElementById("previewBox");
+
+  box.style.display = "block";
+  box.innerHTML = `
+    <b>${titulo}</b><br>
+    ${desc}
+  `;
+}
+
+// ================= ENVIAR PUSH =================
+async function enviarPush() {
+
+  const titulo = document.getElementById("titulo").value;
+  const desc = document.getElementById("desc").value;
+  const duracion = document.getElementById("duracion").value;
+
   if (!titulo || !desc) {
-    alert("Completa todos los campos");
+    alert("Completa título y descripción");
     return;
   }
 
-  const link = window.location.origin + "/?promo=" + encodeURIComponent(titulo) + "&desc=" + encodeURIComponent(desc);
+  const expires = Date.now() + (duracion * 1000);
+
+  const link = "https://fidelidade-app-akcn.vercel.app/?promo="
+    + encodeURIComponent(titulo)
+    + "&desc=" + encodeURIComponent(desc)
+    + "&exp=" + expires;
 
   log("📤 Enviando...");
   log("Título: " + titulo);
@@ -122,35 +173,19 @@ async function procesarPromo() {
     const data = await res.json();
 
     log("📥 Respuesta:");
-
-    // 🔥 MOSTRA ERRO DETALHADO
-    if (data.errors) {
-      data.errors.forEach(err => {
-        log("❌ " + err);
-        console.error("ERRO DETALHADO:", err);
-      });
-    } else if (data.erro && data.erro.errors) {
-      data.erro.errors.forEach(err => {
-        log("❌ " + err);
-        console.error("ERRO DETALHADO:", err);
-      });
-    } else {
-      log(JSON.stringify(data));
-    }
-
-    console.log("RESPUESTA COMPLETA:", data);
+    log(JSON.stringify(data));
 
     if (res.ok) {
-      alert("🚀 Push enviado!");
-      log("✅ Enviado correctamente");
+      alert("✅ Push enviado!");
     } else {
-      alert("❌ Error al enviar push");
+      alert("❌ Error al enviar");
     }
 
   } catch (e) {
-    console.error(e);
-    log("❌ ERROR FETCH");
+    log("❌ Error: " + e.message);
+    alert("Error conexión");
   }
+
 }
 
 </script>
