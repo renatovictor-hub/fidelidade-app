@@ -1,298 +1,330 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt-br">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Uai Sô - Push</title>
+    <style>
+        :root {
+            --roxo: #6a0dad;
+            --amarelo: #ffcc00;
+            --branco: #ffffff;
+            --cinza-fundo: #f0f2f5;
+            --perigo: #ff4444;
+        }
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+        * { box-sizing: border-box; }
 
-<title>Dashboard Uai Sô</title>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--cinza-fundo);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
 
-<style>
-body {
-  font-family: Arial;
-  background: #f5f5f5;
-  margin: 0;
-}
+        header {
+            background-color: var(--roxo);
+            color: var(--branco);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid var(--amarelo);
+            margin-bottom: 30px;
+        }
 
-.container {
-  max-width: 500px;
-  margin: auto;
-  padding: 20px;
-}
+        .main-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr; /* Lado a lado no PC */
+            gap: 20px;
+        }
 
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
-}
+        @media (max-width: 850px) {
+            .main-container {
+                grid-template-columns: 1fr; /* Coluna única no Mobile */
+            }
+        }
 
-h1 {
-  color: #6a0dad;
-  text-align: center;
-}
+        .card {
+            background: var(--branco);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
 
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-}
+        h3 {
+            margin-top: 0;
+            color: var(--roxo);
+            border-left: 4px solid var(--amarelo);
+            padding-left: 10px;
+        }
 
-button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 10px;
-  border-radius: 12px;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-}
+        .input-group {
+            margin-bottom: 15px;
+        }
 
-.btn-primary {
-  background: #6a0dad;
-  color: white;
-}
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
 
-.btn-danger {
-  background: red;
-  color: white;
-}
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline-color: var(--roxo);
+        }
 
-.promo {
-  background: #f3e8ff;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 10px;
-}
+        textarea { height: 100px; resize: none; }
 
-.timer {
-  color: red;
-  font-weight: bold;
-}
+        button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+        }
 
-.log {
-  margin-top: 10px;
-  font-size: 12px;
-  background: black;
-  color: #00ff88;
-  padding: 10px;
-  border-radius: 10px;
-  height: 150px;
-  overflow-y: auto;
-  display: none;
-}
-</style>
+        .btn-primary {
+            background: var(--roxo);
+            color: var(--branco);
+        }
 
+        .btn-primary:hover { background: #550a8a; }
+
+        .btn-danger {
+            background: var(--perigo);
+            color: white;
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        .promo-item {
+            background: #fdf9e6;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid var(--amarelo);
+            margin-bottom: 15px;
+        }
+
+        .timer {
+            color: var(--roxo);
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .log-box {
+            background: #1e1e1e;
+            color: #00ff88;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .stats {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--roxo);
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="container">
+<header>
+    <h1>Uai Sô - Gestão de Notificações</h1>
+</header>
 
-<h1>📲 Dashboard</h1>
+<div class="main-container">
+    
+    <aside>
+        <div class="card">
+            <h3>👥 Base de Clientes</h3>
+            <div id="totalClientes" class="stats">Carregando...</div>
+        </div>
 
-<!-- CLIENTES -->
-<div class="card">
-  <h3>👥 Clientes</h3>
-  <div id="totalClientes">Cargando...</div>
-</div>
+        <div class="card">
+            <h3>📄 Logs do Sistema</h3>
+            <button onclick="toggleLog()" style="background:#eee; color:#333; margin-bottom:10px;">Ver Logs</button>
+            <div id="log" class="log-box"></div>
+        </div>
+    </aside>
 
-<!-- CRIAR PROMO -->
-<div class="card">
+    <main>
+        <div class="card">
+            <h3>🚀 Criar Nova Promoção</h3>
+            
+            <div class="input-group">
+                <label>Título da Notificação</label>
+                <input id="titulo" placeholder="Ex: Promoção de Pastel!">
+            </div>
 
-  <h3>🚀 Nueva Promoción</h3>
+            <div class="input-group">
+                <label>Mensagem (Descrição)</label>
+                <textarea id="desc" placeholder="Ex: Compre 1 e leve 2 apenas hoje!"></textarea>
+            </div>
 
-  <input id="titulo" placeholder="Título">
-  <textarea id="desc" placeholder="Descripción"></textarea>
+            <div class="input-group">
+                <label>Duração (Segundos)</label>
+                <input id="duracion" type="number" value="3600">
+                <small>3600 = 1 hora / 86400 = 24 horas</small>
+            </div>
 
-  <input id="duracion" type="number" value="3600">
+            <button onclick="enviarPush()" class="btn-primary">ENVIAR PUSH AGORA</button>
+        </div>
 
-  <button onclick="enviarPush()" class="btn-primary">
-    Enviar Push
-  </button>
-
-</div>
-
-<!-- PROMOS ATIVAS -->
-<div class="card">
-  <h3>🔥 Promociones activas</h3>
-  <div id="listaPromos"></div>
-</div>
-
-<!-- LOG -->
-<div class="card">
-  <button onclick="toggleLog()">📄 Mostrar / Ocultar Log</button>
-  <div id="log" class="log"></div>
-</div>
+        <div class="card">
+            <h3>🔥 Promoções Ativas no App</h3>
+            <div id="listaPromos"></div>
+        </div>
+    </main>
 
 </div>
 
 <script>
+let timersAtivos = {};
 
-// ================= LOG =================
 function log(msg) {
-  document.getElementById("log").innerHTML += msg + "<br>";
+    const box = document.getElementById("log");
+    box.innerHTML += `> ${msg}<br>`;
+    box.scrollTop = box.scrollHeight;
 }
 
 function toggleLog() {
-  const logBox = document.getElementById("log");
-  logBox.style.display = logBox.style.display === "none" ? "block" : "none";
+    const logBox = document.getElementById("log");
+    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
 }
 
-// ================= CLIENTES =================
+// BUSCAR CLIENTES NO FIREBASE
 async function carregarClientes() {
-
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
-  const data = await res.json();
-
-  const total = data ? Object.keys(data).length : 0;
-
-  document.getElementById("totalClientes").innerText = total + " clientes";
-
+    try {
+        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+        const data = await res.json();
+        const total = data ? Object.keys(data).length : 0;
+        document.getElementById("totalClientes").innerText = total;
+    } catch (e) {
+        log("Erro clientes: " + e.message);
+    }
 }
-
 carregarClientes();
 
-// ================= ENVIAR PUSH =================
+// ENVIAR PUSH VIA API VERCEL
 async function enviarPush() {
+    const titulo = document.getElementById("titulo").value;
+    const desc = document.getElementById("desc").value;
+    const duracion = document.getElementById("duracion").value;
 
-  const titulo = document.getElementById("titulo").value;
-  const desc = document.getElementById("desc").value;
-  const duracion = document.getElementById("duracion").value;
+    if (!titulo || !desc) return alert("Preencha os campos!");
 
-  const exp = Date.now() + (duracion * 1000);
+    const exp = Date.now() + (parseInt(duracion) * 1000);
+    const link = `https://fidelidade-app-akcn.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
 
-  const link = "https://fidelidade-app-akcn.vercel.app/?promo="
-    + encodeURIComponent(titulo)
-    + "&desc=" + encodeURIComponent(desc)
-    + "&exp=" + exp;
+    log("Tentando enviar push...");
 
-  log("📤 Enviando...");
+    try {
+        const res = await fetch("/api/sendpush", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ titulo, desc, link })
+        });
 
-  const res = await fetch("/api/sendPush", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ titulo, desc, link })
-  });
+        const data = await res.json();
+        log("Resposta API: " + JSON.stringify(data));
 
-  const data = await res.json();
-
-  log("📥 " + JSON.stringify(data));
-
-  if (res.ok) {
-    salvarPromo(titulo, desc, exp);
-    alert("✅ Enviado!");
-  } else {
-    alert("❌ Error");
-  }
-
+        if (res.ok) {
+            await salvarNoFirebase(titulo, desc, exp);
+            alert("Sucesso!");
+            document.getElementById("titulo").value = "";
+            document.getElementById("desc").value = "";
+        } else {
+            alert("Erro no envio!");
+        }
+    } catch (e) {
+        log("Erro Fatal: " + e.message);
+    }
 }
 
-// ================= SALVAR PROMO =================
-async function salvarPromo(titulo, desc, exp) {
-
-  await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
-    method: "POST",
-    body: JSON.stringify({
-      titulo,
-      desc,
-      exp
-    })
-  });
-
-  carregarPromos();
-
+async function salvarNoFirebase(titulo, desc, exp) {
+    await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+        method: "POST",
+        body: JSON.stringify({ titulo, desc, exp: Number(exp) })
+    });
+    carregarPromos();
 }
 
-// ================= CARREGAR PROMOS =================
+// CARREGAR E EXIBIR PROMOS COM TIMER
 async function carregarPromos() {
     const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
     const data = await res.json();
-
     const lista = document.getElementById("listaPromos");
-    
-    // Limpar timers antigos da memória antes de limpar o HTML
+
+    // Limpeza de segurança
     Object.values(timersAtivos).forEach(clearInterval);
     timersAtivos = {};
-    
     lista.innerHTML = "";
 
-    if (!data) return;
+    if (!data) {
+        lista.innerHTML = "<i>Nenhuma promoção ativa no momento.</i>";
+        return;
+    }
 
     Object.entries(data).forEach(([id, promo]) => {
-        // Pular se a promo for nula ou não tiver expiração (evita o erro de duplicação/NaN)
         if (!promo || !promo.exp) return;
-
-        const agora = Date.now();
-        const expiraEm = Number(promo.exp); // Garante que é um número
-
-        if (expiraEm - agora <= 0) return;
+        
+        const expiraEm = Number(promo.exp);
+        if (expiraEm - Date.now() <= 0) return;
 
         const div = document.createElement("div");
-        div.className = "promo";
-
+        div.className = "promo-item";
         div.innerHTML = `
-            <b>${promo.titulo}</b><br>
-            ${promo.desc}<br>
-            ⏳ <span class="timer" id="timer_${id}">Calculando...</span>
-            <button class="btn-danger" style="padding:5px; margin-top:5px" onclick="eliminarPromo('${id}')">Eliminar</button>
+            <strong>${promo.titulo}</strong><br>
+            <small>${promo.desc}</small><br>
+            ⏳ <span class="timer" id="timer_${id}">--:--:--</span>
+            <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">Apagar</button>
         `;
-
         lista.appendChild(div);
         iniciarTimer(id, expiraEm);
     });
 }
 
-// ================= TIMER MELHORADO =================
 function iniciarTimer(id, exp) {
     const el = document.getElementById("timer_" + id);
-    if (!el) return;
-
-    // Função interna para atualizar o texto
-    const atualizar = () => {
-        const restante = exp - Date.now();
-
-        if (restante <= 0) {
+    const update = () => {
+        const resto = exp - Date.now();
+        if (resto <= 0) {
             el.innerText = "Expirado";
             clearInterval(timersAtivos[id]);
             return;
         }
-
-        const s = Math.floor(restante / 1000);
+        const s = Math.floor(resto / 1000);
         const m = Math.floor(s / 60);
         const h = Math.floor(m / 60);
-
-        // Formatação bonita: 00h 00m 00s
-        const displayH = h;
-        const displayM = m % 60;
-        const displayS = s % 60;
-
-        el.innerText = `${displayH}h ${displayM}m ${displayS}s`;
+        el.innerText = `${h}h ${m % 60}m ${s % 60}s`;
     };
-
-    // Rodar uma vez imediatamente para não mostrar "Calculando..." por 1 segundo
-    atualizar();
-
-    // Guardar o intervalo para poder limpar depois
-    timersAtivos[id] = setInterval(atualizar, 1000);
+    update();
+    timersAtivos[id] = setInterval(update, 1000);
 }
 
-// ================= ELIMINAR PROMO =================
 async function eliminarPromo(id) {
-
-  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, {
-    method: "DELETE"
-  });
-
-  carregarPromos();
-
+    if(!confirm("Remover promoção?")) return;
+    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
+    carregarPromos();
 }
 
+carregarPromos();
 </script>
 
 </body>
