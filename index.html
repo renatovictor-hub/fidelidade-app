@@ -7,10 +7,8 @@
 
 <link rel="manifest" href="/manifest.json">
 
-<!-- ICONES -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
 <script>
@@ -27,98 +25,80 @@ OneSignalDeferred.push(async function(OneSignal) {
 });
 
 // ==============================
-// PROMOS COM CONTROLE (SEM DUPLICAR)
+// LER PROMOS ATIVAS DO DASHBOARD
 // ==============================
 async function carregarPromocao() {
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const titulo = urlParams.get("promo");
-  const descricao = urlParams.get("desc");
-  const tempo = urlParams.get("tempo");
-
-  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocoes.json";
-
-  // 🔥 ID UNICO BASEADO NA PROMO
-  const promoId = titulo + "_" + descricao;
-
-  const jaSalvou = sessionStorage.getItem(promoId);
-
-  // SALVAR SÓ UMA VEZ
-  if (titulo && descricao && !jaSalvou) {
-
-    const agora = Date.now();
-    const duracao = tempo ? parseInt(tempo) * 1000 : 60000;
-
-    const novaPromo = {
-      titulo,
-      descricao,
-      criadoEm: agora,
-      expiraEm: agora + duracao
-    };
-
-    await fetch(dbUrl, {
-      method: "POST",
-      body: JSON.stringify(novaPromo)
-    });
-
-    sessionStorage.setItem(promoId, "true");
-
-    // LIMPA URL (CRUCIAL)
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-
-  // CARREGAR PROMOS
-  const res = await fetch(dbUrl);
-  const promos = await res.json();
-
+  // Alterado para a mesma rota que o Dashboard usa: promos.json
+  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json";
   const container = document.getElementById("promoBox");
-  container.innerHTML = "";
+  
+  try {
+    const res = await fetch(dbUrl);
+    const promos = await res.json();
+    
+    container.innerHTML = "";
 
-  if (!promos) return;
-
-  const agora = Date.now();
-
-  Object.keys(promos).forEach(id => {
-
-    const p = promos[id];
-
-    if (p.expiraEm < agora) return;
-
-    const div = document.createElement("div");
-    div.className = "promo-card";
-
-    div.innerHTML = `
-      <h3>${p.titulo}</h3>
-      <p>${p.descricao}</p>
-      <div class="timer" id="timer-${id}"></div>
-    `;
-
-    container.appendChild(div);
-
-    const timerEl = div.querySelector(`#timer-${id}`);
-
-    function atualizarTimer() {
-      const restante = p.expiraEm - Date.now();
-
-      if (restante <= 0) {
-        div.remove();
-        return;
-      }
-
-      const totalSeg = Math.floor(restante / 1000);
-      const h = Math.floor(totalSeg / 3600);
-      const m = Math.floor((totalSeg % 3600) / 60);
-      const s = totalSeg % 60;
-
-      timerEl.innerText = `⏳ ${h}h ${m}m ${s}s`;
+    // Se a URL tiver parâmetros antigos do push, nós a limpamos para o cliente não ver links feios
+    if (window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    atualizarTimer();
-    setInterval(atualizarTimer, 1000);
-  });
+    if (!promos) return;
 
-  if (container.innerHTML !== "") {
-    container.style.display = "block";
+    const agora = Date.now();
+    let temPromoAtiva = false;
+
+    Object.keys(promos).forEach(id => {
+      const p = promos[id];
+      
+      // Verifica se a promo existe e pega o tempo que definimos no Dashboard (p.exp)
+      if (!p || !p.exp) return;
+      const expiraEm = Number(p.exp);
+
+      if (expiraEm < agora) return; // Se já passou do tempo, não mostra
+
+      temPromoAtiva = true;
+
+      const div = document.createElement("div");
+      div.className = "promo-card";
+
+      // Usando p.desc que é o nome da variável no Dashboard
+      div.innerHTML = `
+        <h3 style="margin: 0 0 8px 0;">${p.titulo}</h3>
+        <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.4;">${p.desc}</p>
+        <div class="timer" id="timer-${id}"></div>
+      `;
+
+      container.appendChild(div);
+
+      const timerEl = div.querySelector(`#timer-${id}`);
+
+      function atualizarTimer() {
+        const restante = expiraEm - Date.now();
+
+        if (restante <= 0) {
+          div.remove();
+          return;
+        }
+
+        const totalSeg = Math.floor(restante / 1000);
+        const h = Math.floor(totalSeg / 3600);
+        const m = Math.floor((totalSeg % 3600) / 60);
+        const s = totalSeg % 60;
+
+        timerEl.innerText = `⏳ Termina en: ${h}h ${m}m ${s}s`;
+      }
+
+      atualizarTimer();
+      setInterval(atualizarTimer, 1000);
+    });
+
+    if (temPromoAtiva) {
+      container.style.display = "block";
+    }
+
+  } catch (error) {
+    console.error("Erro ao carregar promoções:", error);
   }
 }
 
@@ -153,36 +133,57 @@ body {
   border-radius: 15px;
 }
 
+/* Título das Promos */
+.titulo-secao {
+  color: #6a0dad;
+  font-size: 20px;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
 .promo-card {
   background: linear-gradient(135deg, #6a0dad, #9b30ff);
   color: white;
-  padding: 15px;
+  padding: 20px;
   border-radius: 15px;
-  margin-top: 10px;
+  margin-top: 15px;
   text-align: left;
+  box-shadow: 0 4px 10px rgba(106, 13, 173, 0.3);
 }
 
 .timer {
   background: rgba(255,255,255,0.2);
-  padding: 5px;
+  padding: 8px;
   border-radius: 8px;
   margin-top: 8px;
+  font-weight: bold;
+  font-size: 14px;
 }
 
 .links {
-  margin-top: 20px;
+  margin-top: 30px;
 }
 
 .links a {
   display: block;
-  margin: 10px;
+  margin: 15px 10px;
   font-size: 18px;
   text-decoration: none;
   color: #6a0dad;
+  background: #f0f2f5;
+  padding: 15px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.links a:hover {
+  background: #e4e6e9;
 }
 
 .links i {
   margin-right: 8px;
+  font-size: 20px;
 }
 </style>
 
@@ -194,8 +195,8 @@ body {
 
 <img src="logo.png" class="logo">
 
-<h1>Programa de Fidelidad</h1>
-<p>Recibe promociones y platos del día</p>
+<h1 style="color: #6a0dad;">Programa de Fidelidad</h1>
+<p style="color: #555;">Recibe promociones y platos del día</p>
 
 <img src="banner.jpg" class="banner">
 
@@ -203,11 +204,11 @@ body {
 
 <div class="links">
 <a href="https://api.whatsapp.com/send?phone=5219986023759">
-<i class="fab fa-whatsapp"></i> WhatsApp
+<i class="fab fa-whatsapp" style="color: #25D366;"></i> WhatsApp
 </a>
 
 <a href="https://www.instagram.com/fooduaiso">
-<i class="fab fa-instagram"></i> Instagram
+<i class="fab fa-instagram" style="color: #E1306C;"></i> Instagram
 </a>
 
 <a href="https://uaisocancun.ola.click/products">
