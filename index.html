@@ -7,117 +7,66 @@
 
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
+<script>
+const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+if (isIOS && isInAppBrowser) {
+  document.addEventListener("DOMContentLoaded", function() {
+    const overlay = document.createElement("div");
+    overlay.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:30px;text-align:center;font-family:sans-serif;";
+    overlay.innerHTML = `
+        <h2 style="color:#6a0dad">📲 Abrir en Safari</h2>
+        <p>Para activar promociones y usar el App, necesitas abrir en Safari.</p>
+        <br>
+        <button onclick="location.reload()" style="padding:15px;font-size:18px;background:#6a0dad;color:white;border:none;border-radius:10px;">👉 Reintentar abrir</button>
+        <br><br>
+        <p style="font-size:14px; color:gray;">Toca los tres puntos <b>(…)</b> o el ícono de brújula y selecciona <b>"Abrir en Safari"</b></p>
+    `;
+    document.body.appendChild(overlay);
+  });
+}
+</script>
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
   await OneSignal.init({
     appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+    safari_web_id: "web.onesignal.auto",
     notifyButton: { enable: false }
   });
 });
 </script>
 
 <style>
-:root {
-    --roxo: #6a0dad;
-    --amarelo: #ffcc00;
-    --branco: #ffffff;
-}
-
+:root { --roxo: #6a0dad; --amarelo: #ffcc00; --branco: #ffffff; }
 body { margin: 0; font-family: Arial, sans-serif; background: var(--branco); text-align: center; }
 .container { max-width: 400px; margin: auto; padding: 20px; }
 .logo { width: 120px; margin: 10px auto; }
 h1 { color: var(--roxo); }
 
-.contador {
-  background: #f3e8ff;
-  padding: 10px;
-  border-radius: 10px;
-  margin: 10px 0;
-  color: var(--roxo);
-  font-weight: bold;
-}
-
+.contador { background: #f3e8ff; padding: 10px; border-radius: 10px; margin: 10px 0; color: var(--roxo); font-weight: bold; }
 .banner { width: 100%; border-radius: 15px; margin: 10px 0; }
 
-.promo-header {
-    color: var(--roxo);
-    font-weight: bold;
-    font-size: 18px;
-    margin: 20px 0 10px 0;
-    display: none;
-}
-
+.promo-header { color: var(--roxo); font-weight: bold; font-size: 18px; margin: 20px 0 10px 0; display: none; }
 #promoBox { text-align: left; }
-.promo-card {
-  background: linear-gradient(135deg, var(--roxo), #8a2be2);
-  color: white;
-  padding: 15px;
-  border-radius: 15px;
-  margin-bottom: 12px;
-  position: relative;
+.promo-card { background: linear-gradient(135deg, var(--roxo), #8a2be2); color: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; }
+.timer { background: rgba(255,255,255,0.2); padding: 5px; border-radius: 8px; margin-top: 8px; font-size: 13px; font-weight: bold; display: inline-block; }
+
+.btn-promo-whatsapp { 
+    background: #25d366; color: white; border: none; padding: 10px 18px; border-radius: 8px; 
+    font-weight: bold; margin-top: 10px; display: inline-flex; align-items: center; text-decoration: none; 
 }
 
-.timer {
-  background: rgba(255,255,255,0.2);
-  padding: 5px;
-  border-radius: 8px;
-  margin-top: 8px;
-  font-size: 13px;
-  font-weight: bold;
-  display: inline-block;
-}
-
-/* BOTÃO WHATSAPP DENTRO DA PROMO */
-.btn-promo-whatsapp {
-    background: #25d366;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 14px;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    text-decoration: none;
-    width: fit-content;
-}
-.btn-promo-whatsapp i { margin-right: 5px; }
-
-/* BOTÕES GERAIS */
-button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 10px;
-  border-radius: 12px;
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
+button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
 .btn-primary { background: var(--roxo); color: white; }
-
-.btn-activate { 
-    background: var(--amarelo); 
-    color: var(--roxo); 
-    border: 2px solid var(--roxo);
-    margin-bottom: 15px;
-}
+.btn-activate { background: var(--amarelo); color: var(--roxo); border: 2px solid var(--roxo); margin-bottom: 15px; }
 
 .links { margin-top: 25px; }
-.links a {
-  display: block;
-  margin: 10px;
-  color: var(--roxo);
-  text-decoration: none;
-  font-weight: bold;
-}
+.links a { display: block; margin: 10px; color: var(--roxo); text-decoration: none; font-weight: bold; }
 </style>
 </head>
 
@@ -129,16 +78,22 @@ button {
 
     <div id="formUsuario">
       <h3>👋 Bienvenido</h3>
-      <input id="nombreInput" placeholder="Tu nombre completo" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;">
-      <button onclick="guardarUsuario()" class="btn-primary">Ver Promociones</button>
+      <p>Regístrate para ver promociones exclusivas</p>
+      <input id="nombreInput" placeholder="Tu nombre completo" style="width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;">
+      <button onclick="guardarUsuario()" class="btn-primary">Entrar al App</button>
     </div>
 
     <div id="areaPrivada" style="display:none;">
-        <button onclick="activarNotificaciones()" class="btn-activate" id="btnAtivar" style="display:none;">
+        
+        <button onclick="ativarNotificacoes()" class="btn-activate" id="btnAtivar" style="display:none;">
             🔔 ACTIVAR PROMOCIONES
         </button>
 
-        <div class="contador" id="contadorClientes">🔥 +300 clientes ya reciben promociones</div>
+        <button id="btnInstalar" class="btn-primary" onclick="instalarApp()" style="display:none;">
+            📲 Instalar App en Celular
+        </button>
+
+        <div class="contador" id="contadorClientes">🔥 Cargando comunidad...</div>
         
         <img src="banner.jpg" class="banner">
 
@@ -147,10 +102,6 @@ button {
         </div>
 
         <div id="promoBox"></div>
-
-        <button onclick="instalarApp()" class="btn-primary" id="btnInstalar" style="display:none;">
-            📲 Instalar App
-        </button>
     </div>
 
     <div class="links">
@@ -161,6 +112,55 @@ button {
 </div>
 
 <script>
+// --- VARIÁVEIS DE CONTROLE ---
+const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+let deferredPrompt;
+let nomeSalvo = localStorage.getItem("nome_usuario");
+let userId = localStorage.getItem("user_id") || "user_" + Math.floor(Math.random() * 1000000000);
+localStorage.setItem("user_id", userId);
+
+// --- INICIALIZAÇÃO ---
+window.onload = () => {
+    if (nomeSalvo) {
+        exibirApp();
+    }
+};
+
+function exibirApp() {
+    document.getElementById("formUsuario").style.display = "none";
+    document.getElementById("areaPrivada").style.display = "block";
+    document.getElementById("titulo").innerText = "👋 Hola, " + nomeSalvo;
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const jaAtivo = localStorage.getItem("push_ativo");
+
+    if (jaAtivo !== "true" && isStandalone) {
+        document.getElementById("btnAtivar").style.display = "block";
+    }
+
+    if (!isStandalone) {
+        document.getElementById("btnInstalar").style.display = "block";
+    }
+
+    atualizarContador();
+    carregarPromos();
+}
+
+// --- FUNÇÕES CORE ---
+async function guardarUsuario() {
+    const nome = document.getElementById("nombreInput").value;
+    if (!nome) return alert("Ingresa tu nombre");
+    
+    await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
+        method: "POST",
+        body: JSON.stringify({ user_id: userId, nombre: nome, created_at: Date.now() })
+    });
+
+    localStorage.setItem("nome_usuario", nome);
+    nomeSalvo = nome;
+    exibirApp();
+}
+
 async function atualizarContador() {
     try {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
@@ -170,111 +170,71 @@ async function atualizarContador() {
     } catch (e) { console.log(e); }
 }
 
-let userId = localStorage.getItem("user_id") || "user_" + Math.floor(Math.random() * 1000000000);
-localStorage.setItem("user_id", userId);
-let nomeSalvo = localStorage.getItem("nome_usuario");
-
-function gerenciarInterface() {
-    if (nomeSalvo) {
-        document.getElementById("formUsuario").style.display = "none";
-        document.getElementById("areaPrivada").style.display = "block";
-        document.getElementById("titulo").innerText = "👋 Hola, " + nomeSalvo;
-        
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        const jaAtivo = localStorage.getItem("push_ativo");
-        
-        if (jaAtivo !== "true" && isStandalone) {
-            document.getElementById("btnAtivar").style.display = "block";
-        }
-        
-        carregarPromos();
-        atualizarContador();
-    }
-}
-
-async function guardarUsuario() {
-  const nome = document.getElementById("nombreInput").value;
-  if (!nome) return alert("Ingresa tu nombre");
-  await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
-    method: "POST",
-    body: JSON.stringify({ user_id: userId, nombre: nome, created_at: Date.now() })
-  });
-  localStorage.setItem("nome_usuario", nome);
-  location.reload();
-}
-
 async function carregarPromos() {
-  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json";
-  const container = document.getElementById("promoBox");
-  const alertaTexto = document.getElementById("promoTextoAlerta");
-  
-  try {
-    const res = await fetch(dbUrl);
-    const promos = await res.json();
-    if (!promos) return;
+    const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json";
+    const container = document.getElementById("promoBox");
+    const alertaTexto = document.getElementById("promoTextoAlerta");
+    
+    try {
+        const res = await fetch(dbUrl);
+        const promos = await res.json();
+        if (!promos) return;
 
-    const agora = Date.now();
-    let temPromo = false;
+        const agora = Date.now();
+        Object.keys(promos).forEach(id => {
+            const p = promos[id];
+            if (!p || !p.exp || p.exp < agora) return;
 
-    Object.keys(promos).forEach(id => {
-      const p = promos[id];
-      if (!p || !p.exp || p.exp < agora) return;
+            alertaTexto.style.display = "block";
+            const div = document.createElement("div");
+            div.className = "promo-card";
+            const msgTxt = encodeURIComponent(`Soy Capilover quiero la promo exclusiva para miembros: ${p.desc}`);
+            
+            div.innerHTML = `
+                <h3 style="margin:0;">${p.titulo}</h3>
+                <p style="margin:5px 0; font-size:15px;">${p.desc}</p>
+                <div class="timer" id="timer-${id}">⏳ Cargando...</div><br>
+                <a href="https://api.whatsapp.com/send?phone=5219986023759&text=${msgTxt}" target="_blank" class="btn-promo-whatsapp">
+                    <i class="fab fa-whatsapp"></i> Yo quiero
+                </a>
+            `;
+            container.appendChild(div);
 
-      temPromo = true;
-      const div = document.createElement("div");
-      div.className = "promo-card";
-
-      // Link do WhatsApp dinâmico
-      const msgTxt = encodeURIComponent(`Soy Capilover quiero la promo exclusiva para miembros: ${p.desc}`);
-      const waLink = `https://api.whatsapp.com/send?phone=5219986023759&text=${msgTxt}`;
-
-      div.innerHTML = `
-        <h3 style="margin:0;">${p.titulo}</h3>
-        <p style="margin:5px 0; font-size:15px;">${p.desc}</p>
-        <div class="timer" id="timer-${id}">⏳ Cargando...</div><br>
-        <a href="${waLink}" target="_blank" class="btn-promo-whatsapp">
-            <i class="fab fa-whatsapp"></i> Yo quiero
-        </a>
-      `;
-      container.appendChild(div);
-
-      setInterval(() => {
-        const resto = p.exp - Date.now();
-        const el = document.getElementById(`timer-${id}`);
-        if (resto <= 0) { div.remove(); return; }
-        const h = Math.floor(resto / 3600000);
-        const m = Math.floor((resto % 3600000) / 60000);
-        const s = Math.floor((resto % 60000) / 1000);
-        if(el) el.innerText = `⏳ Finaliza en: ${h}h ${m}m ${s}s`;
-      }, 1000);
-    });
-
-    if (temPromo) alertaTexto.style.display = "block";
-  } catch (e) { console.log(e); }
+            setInterval(() => {
+                const resto = p.exp - Date.now();
+                const el = document.getElementById(`timer-${id}`);
+                if (resto <= 0) { div.remove(); return; }
+                const h = Math.floor(resto / 3600000);
+                const m = Math.floor((resto % 3600000) / 60000);
+                const s = Math.floor((resto % 60000) / 1000);
+                if(el) el.innerText = `⏳ Finaliza en: ${h}h ${m}m ${s}s`;
+            }, 1000);
+        });
+    } catch (e) { console.log(e); }
 }
 
-async function activarNotificaciones() {
-  await window.OneSignal.Notifications.requestPermission();
-  localStorage.setItem("push_ativo", "true");
-  document.getElementById("btnAtivar").style.display = "none";
-  alert("🔔 Notificaciones Activadas");
-}
-
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  if (nomeSalvo) document.getElementById("btnInstalar").style.display = "block";
+// --- PWA & NOTIFICAÇÕES ---
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if(nomeSalvo) document.getElementById("btnInstalar").style.display = "block";
 });
 
 function instalarApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => { document.getElementById("btnInstalar").style.display = "none"; });
-  }
+    if (isIOSDevice) {
+        alert("Para instalar: Toca el botón compartir ⬆️ y luego 'Agregar a pantalla de inicio' 📲");
+    } else if (deferredPrompt) {
+        deferredPrompt.prompt();
+    }
 }
 
-window.onload = gerenciarInterface;
+async function ativarNotificacoes() {
+    const OneSignal = window.OneSignal;
+    await OneSignal.Notifications.requestPermission();
+    localStorage.setItem("push_ativo", "true");
+    document.getElementById("btnAtivar").style.display = "none";
+    alert("¡Promociones activadas! 🔔");
+}
 </script>
 
 </body>
