@@ -235,35 +235,35 @@ async function enviarPush() {
     log("Intentando enviar push...");
 
     try {
-        // Asegúrate de que el archivo en GitHub sea "sendpush.js" (minúsculas)
-        const res = await fetch("/api/sendpush", {
+        const res = await fetch("/api/sendpush", { // <--- VERIFICA SI ES MINÚSCULA
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ titulo, desc, link })
         });
 
-        const data = await res.json();
-        log("Respuesta API: " + JSON.stringify(data));
-
-        if (res.ok) {
-            await salvarNoFirebase(titulo, desc, exp);
-            alert("¡Notificación enviada con éxito!");
-            document.getElementById("titulo").value = "";
-            document.getElementById("desc").value = "";
+        // Verificamos si la respuesta es HTML (error de servidor) o JSON
+        const contentType = res.headers.get("content-type");
+        
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            const data = await res.json();
+            log("Respuesta API: " + JSON.stringify(data));
+            
+            if (res.ok) {
+                await salvarNoFirebase(titulo, desc, exp);
+                alert("¡Notificación enviada con éxito!");
+            } else {
+                alert("Error de OneSignal: " + (data.errors ? data.errors[0] : "Desconocido"));
+            }
         } else {
-            alert("¡Error al enviar la notificación!");
+            // Si no es JSON, leemos el texto del error
+            const errorText = await res.text();
+            log("❌ Error del Servidor (HTML): " + res.status);
+            alert("Error 404 o 500: La ruta /api/sendpush no responde correctamente.");
         }
+
     } catch (e) {
         log("Error Fatal: " + e.message);
     }
-}
-
-async function salvarNoFirebase(titulo, desc, exp) {
-    await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
-        method: "POST",
-        body: JSON.stringify({ titulo, desc, exp: Number(exp) })
-    });
-    carregarPromos();
 }
 
 // CARGAR Y EXIBIR PROMOS CON TIMER
