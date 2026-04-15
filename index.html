@@ -1,661 +1,278 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
+<meta charset="UTF-8">
+<title>Fidelidad Restaurante</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ICONES -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <title>Dashboard Uai Sô - Gestión de Notificaciones</title>
+<!-- OneSignal -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
-    <style>
+<script>
+// ==============================
+// ONESIGNAL
+// ==============================
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.init({
+    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+    safari_web_id: "web.onesignal.auto",
+    notifyButton: { enable: false }
+  });
+});
 
-        :root {
+// ==============================
+// PROMOS COM CONTROLE (SEM DUPLICAR)
+// ==============================
+async function carregarPromocao() {
 
-            --roxo: #6a0dad;
+  const urlParams = new URLSearchParams(window.location.search);
+  const titulo = urlParams.get("promo");
+  const descricao = urlParams.get("desc");
+  const tempo = urlParams.get("tempo");
 
-            --amarelo: #ffcc00;
+  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promocoes.json";
 
-            --branco: #ffffff;
+  // 🔥 ID UNICO BASEADO NA PROMO
+  const promoId = titulo + "_" + descricao;
 
-            --cinza-fundo: #f0f2f5;
+  const jaSalvou = sessionStorage.getItem(promoId);
+
+  // SALVAR SÓ UMA VEZ
+  if (titulo && descricao && !jaSalvou) {
 
-            --perigo: #ff4444;
+    const agora = Date.now();
+    const duracao = tempo ? parseInt(tempo) * 1000 : 60000;
 
-        }
-
-
-
-        * { box-sizing: border-box; }
-
-
-
-        body {
-
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
-            background-color: var(--cinza-fundo);
-
-            margin: 0;
-
-            padding: 0;
-
-            color: #333;
-
-        }
-
-
-
-        header {
-
-            background-color: var(--roxo);
-
-            color: var(--branco);
-
-            padding: 20px;
-
-            text-align: center;
-
-            border-bottom: 5px solid var(--amarelo);
-
-            margin-bottom: 30px;
-
-        }
-
-
-
-        .main-container {
-
-            max-width: 1100px;
-
-            margin: 0 auto;
-
-            padding: 0 20px;
-
-            display: grid;
-
-            grid-template-columns: 1fr 2fr;
-
-            gap: 20px;
-
-        }
-
-
-
-        @media (max-width: 850px) {
-
-            .main-container { grid-template-columns: 1fr; }
-
-        }
-
-
-
-        .card {
-
-            background: var(--branco);
-
-            padding: 25px;
-
-            border-radius: 12px;
-
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-
-            margin-bottom: 20px;
-
-        }
-
-
-
-        h3 {
-
-            margin-top: 0;
-
-            color: var(--roxo);
-
-            border-left: 4px solid var(--amarelo);
-
-            padding-left: 10px;
-
-        }
-
-
-
-        .input-group { margin-bottom: 15px; }
-
-
-
-        label {
-
-            display: block;
-
-            margin-bottom: 5px;
-
-            font-weight: bold;
-
-            font-size: 14px;
-
-        }
-
-
-
-        input, textarea {
-
-            width: 100%;
-
-            padding: 12px;
-
-            border: 1px solid #ddd;
-
-            border-radius: 8px;
-
-            font-size: 16px;
-
-            outline-color: var(--roxo);
-
-        }
-
-
-
-        textarea { height: 100px; resize: none; }
-
-
-
-        button {
-
-            width: 100%;
-
-            padding: 14px;
-
-            border-radius: 8px;
-
-            border: none;
-
-            font-size: 16px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-
-            transition: transform 0.2s, background 0.3s;
-
-        }
-
-
-
-        .btn-primary {
-
-            background: var(--roxo);
-
-            color: var(--branco);
-
-        }
-
-
-
-        .btn-primary:hover { background: #550a8a; }
-
-
-
-        .btn-danger {
-
-            background: var(--perigo);
-
-            color: white;
-
-            padding: 8px;
-
-            font-size: 13px;
-
-        }
-
-
-
-        .promo-item {
-
-            background: #fdf9e6;
-
-            padding: 15px;
-
-            border-radius: 10px;
-
-            border-left: 5px solid var(--amarelo);
-
-            margin-bottom: 15px;
-
-        }
-
-
-
-        .timer {
-
-            color: var(--roxo);
-
-            font-weight: bold;
-
-            font-size: 1.1em;
-
-        }
-
-
-
-        .log-box {
-
-            background: #1e1e1e;
-
-            color: #00ff88;
-
-            padding: 15px;
-
-            border-radius: 8px;
-
-            font-family: monospace;
-
-            font-size: 12px;
-
-            height: 200px;
-
-            overflow-y: auto;
-
-            display: none;
-
-        }
-
-
-
-        .stats {
-
-            font-size: 24px;
-
-            font-weight: bold;
-
-            color: var(--roxo);
-
-        }
-
-    </style>
+    const novaPromo = {
+      titulo,
+      descricao,
+      criadoEm: agora,
+      expiraEm: agora + duracao
+    };
+
+    await fetch(dbUrl, {
+      method: "POST",
+      body: JSON.stringify(novaPromo)
+    });
+
+    sessionStorage.setItem(promoId, "true");
+
+    // LIMPA URL (CRUCIAL)
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  // CARREGAR PROMOS
+  const res = await fetch(dbUrl);
+  const promos = await res.json();
+
+  const container = document.getElementById("promoBox");
+  container.innerHTML = "";
+
+  if (!promos) return;
+
+  const agora = Date.now();
+
+  Object.keys(promos).forEach(id => {
+
+    const p = promos[id];
+
+    if (p.expiraEm < agora) return;
+
+    const div = document.createElement("div");
+    div.className = "promo-card";
+
+    div.innerHTML = `
+      <h3>${p.titulo}</h3>
+      <p>${p.descricao}</p>
+      <div class="timer" id="timer-${id}"></div>
+    `;
+
+    container.appendChild(div);
+
+    const timerEl = div.querySelector(`#timer-${id}`);
+
+    function atualizarTimer() {
+      const restante = p.expiraEm - Date.now();
+
+      if (restante <= 0) {
+        div.remove();
+        return;
+      }
+
+      const totalSeg = Math.floor(restante / 1000);
+      const h = Math.floor(totalSeg / 3600);
+      const m = Math.floor((totalSeg % 3600) / 60);
+      const s = totalSeg % 60;
+
+      timerEl.innerText = `⏳ ${h}h ${m}m ${s}s`;
+    }
+
+    atualizarTimer();
+    setInterval(atualizarTimer, 1000);
+  });
+
+  if (container.innerHTML !== "") {
+    container.style.display = "block";
+  }
+}
+
+// ==============================
+// INIT
+// ==============================
+window.onload = () => {
+  carregarPromocao();
+};
+</script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  text-align: center;
+}
+
+.container {
+  padding: 20px;
+  max-width: 400px;
+  margin: auto;
+}
+
+.logo {
+  width: 120px;
+  margin: 20px auto;
+}
+
+.banner {
+  width: 100%;
+  border-radius: 15px;
+}
+
+.promo-card {
+  background: linear-gradient(135deg, #6a0dad, #9b30ff);
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.timer {
+  background: rgba(255,255,255,0.2);
+  padding: 5px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.links {
+  margin-top: 20px;
+}
+
+.links a {
+  display: block;
+  margin: 10px;
+  font-size: 18px;
+  text-decoration: none;
+  color: #6a0dad;
+}
+
+.links i {
+  margin-right: 8px;
+}
+</style>
 
 </head>
 
 <body>
 
+<div class="container">
 
+<img src="logo.png" class="logo">
 
-<header>
+<h1>Programa de Fidelidad</h1>
+<p>Recibe promociones y platos del día</p>
 
-    <h1>Uai Sô - Gestión de Notificaciones</h1>
+<img src="banner.jpg" class="banner">
 
-</header>
+<div id="promoBox" style="display:none;"></div>
 
+<div class="links">
+<a href="https://api.whatsapp.com/send?phone=5219986023759">
+<i class="fab fa-whatsapp"></i> WhatsApp
+</a>
 
+<a href="https://www.instagram.com/fooduaiso">
+<i class="fab fa-instagram"></i> Instagram
+</a>
 
-<div class="main-container">
-
-    
-
-    <aside>
-
-        <div class="card">
-
-            <h3>👥 Base de Clientes</h3>
-
-            <div id="totalClientes" class="stats">Cargando...</div>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h3>📄 Logs del Sistema</h3>
-
-            <button onclick="toggleLog()" style="background:#eee; color:#333; margin-bottom:10px;">Ver Logs</button>
-
-            <div id="log" class="log-box"></div>
-
-        </div>
-
-    </aside>
-
-
-
-    <main>
-
-        <div class="card">
-
-            <h3>🚀 Crear Nueva Promoción</h3>
-
-            
-
-            <div class="input-group">
-
-                <label>Título de la Notificación</label>
-
-                <input id="titulo" placeholder="Ej: ¡Promoción de Pastel!">
-
-            </div>
-
-
-
-            <div class="input-group">
-
-                <label>Mensaje (Descripción)</label>
-
-                <textarea id="desc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
-
-            </div>
-
-
-
-            <div class="input-group">
-
-                <label>Duración (Segundos)</label>
-
-                <input id="duracion" type="number" value="3600">
-
-                <small>3600 = 1 hora / 86400 = 24 horas</small>
-
-            </div>
-
-
-
-            <button onclick="enviarPush()" class="btn-primary">ENVIAR PUSH AHORA</button>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h3>🔥 Promociones Activas en la App</h3>
-
-            <div id="listaPromos"></div>
-
-        </div>
-
-    </main>
-
-
-
+<a href="https://uaisocancun.ola.click/products">
+<i class="fas fa-utensils"></i> Ver menú
+</a>
 </div>
 
-
-
+</div>
 <script>
 
-let timersAtivos = {};
+// ==============================
+// GERAR ID ÚNICO
+// ==============================
+let userId = localStorage.getItem("user_id");
 
-
-
-function log(msg) {
-
-    const box = document.getElementById("log");
-
-    box.innerHTML += `> ${msg}<br>`;
-
-    box.scrollTop = box.scrollHeight;
-
+if (!userId) {
+  userId = "user_" + Math.floor(Math.random() * 1000000000);
+  localStorage.setItem("user_id", userId);
 }
 
-
-
-function toggleLog() {
-
-    const logBox = document.getElementById("log");
-
-    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
-
-}
-
-
-
-// CARGAR CLIENTES
-
-async function carregarClientes() {
-
-    try {
-
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
-
-        const data = await res.json();
-
-        const total = data ? Object.keys(data).length : 0;
-
-        document.getElementById("totalClientes").innerText = total + " clientes";
-
-    } catch (e) {
-
-        log("Error clientes: " + e.message);
-
-    }
-
-}
-
-carregarClientes();
-
-
-
-// ENVIAR PUSH
-
-async function enviarPush() {
-
-    const titulo = document.getElementById("titulo").value;
-
-    const desc = document.getElementById("desc").value;
-
-    const duracion = document.getElementById("duracion").value;
-
-
-
-    if (!titulo || !desc) return alert("¡Por favor, completa los campos!");
-
-
-
-    const exp = Date.now() + (parseInt(duracion) * 1000);
-
-    const link = `https://fidelidade-app-akcn.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
-
-
-
-    log("Intentando enviar push...");
-
-
-
-    try {
-
-        const res = await fetch("/api/sendpush", {
-
-            method: "POST",
-
-            headers: { "Content-Type": "application/json" },
-
-            body: JSON.stringify({ titulo, desc, link })
-
-        });
-
-
-
-        const data = await res.json();
-
-        log("Respuesta API: " + JSON.stringify(data));
-
-
-
-        if (res.ok) {
-
-            await salvarPromoNoFirebase(titulo, desc, exp);
-
-            alert("¡Notificación enviada con éxito!");
-
-            document.getElementById("titulo").value = "";
-
-            document.getElementById("desc").value = "";
-
-        } else {
-
-            alert("Error al enviar: " + JSON.stringify(data));
-
-        }
-
-    } catch (e) {
-
-        log("Error Fatal: " + e.message);
-
-    }
-
-}
-
-
-
-// GUARDAR EN FIREBASE (Nombre corregido)
-
-async function salvarPromoNoFirebase(titulo, desc, exp) {
-
-    try {
-
-        log("Guardando en Firebase...");
-
-        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
-
-            method: "POST",
-
-            body: JSON.stringify({ titulo, desc, exp: Number(exp) })
-
-        });
-
-        log("✅ Éxito en Firebase.");
-
-        await carregarPromos();
-
-    } catch (e) {
-
-        log("Error Firebase: " + e.message);
-
-    }
-
-}
-
-
-
-// CARGAR PROMOS
-
-async function carregarPromos() {
-
-    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-
-    const data = await res.json();
-
-    const lista = document.getElementById("listaPromos");
-
-
-
-    Object.values(timersAtivos).forEach(clearInterval);
-
-    timersAtivos = {};
-
-    lista.innerHTML = "";
-
-
-
-    if (!data) {
-
-        lista.innerHTML = "<i>No hay promociones activas.</i>";
-
-        return;
-
-    }
-
-
-
-    Object.entries(data).forEach(([id, promo]) => {
-
-        if (!promo || !promo.exp) return;
-
-        const expiraEm = Number(promo.exp);
-
-        if (expiraEm - Date.now() <= 0) return;
-
-
-
-        const div = document.createElement("div");
-
-        div.className = "promo-item";
-
-        div.innerHTML = `
-
-            <strong>${promo.titulo}</strong><br>
-
-            <small>${promo.desc}</small><br>
-
-            ⏳ <span class="timer" id="timer_${id}">--:--:--</span>
-
-            <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">Eliminar</button>
-
-        `;
-
-        lista.appendChild(div);
-
-        iniciarTimer(id, expiraEm);
-
+// ==============================
+// LOGIN ONESIGNAL
+// ==============================
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.login(userId);
+});
+
+// ==============================
+// VERIFICAR SE JÁ FOI SALVO
+// ==============================
+let jaSalvo = localStorage.getItem("user_saved");
+
+// ==============================
+// SALVAR SÓ UMA VEZ
+// ==============================
+async function salvarUsuario() {
+
+  if (jaSalvo === "true") {
+    console.log("Usuario já salvo:", userId);
+    return;
+  }
+
+  try {
+
+    await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
+      method: "POST",
+      body: JSON.stringify({
+        user_id: userId,
+        created_at: Date.now()
+      })
     });
 
-}
+    localStorage.setItem("user_saved", "true");
 
+    console.log("Usuario salvo:", userId);
 
-
-function iniciarTimer(id, exp) {
-
-    const el = document.getElementById("timer_" + id);
-
-    const update = () => {
-
-        const resto = exp - Date.now();
-
-        if (resto <= 0) {
-
-            el.innerText = "Expirado";
-
-            clearInterval(timersAtivos[id]);
-
-            return;
-
-        }
-
-        const s = Math.floor(resto / 1000);
-
-        const m = Math.floor(s / 60);
-
-        const h = Math.floor(m / 60);
-
-        el.innerText = `${h}h ${m % 60}m ${s % 60}s`;
-
-    };
-
-    update();
-
-    timersAtivos[id] = setInterval(update, 1000);
+  } catch (e) {
+    console.error("Erro ao salvar:", e);
+  }
 
 }
 
-
-
-async function eliminarPromo(id) {
-
-    if(!confirm("¿Eliminar promoción?")) return;
-
-    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
-
-    carregarPromos();
-
-}
-
-
-
-carregarPromos();
+salvarUsuario();
 
 </script>
 
 </body>
-
 </html>
