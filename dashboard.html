@@ -91,6 +91,39 @@ async function procesarPromo(){
 
   document.getElementById("linkGerado").value = link;
 
+  try {
+
+    const response = await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Key " + REST_API_KEY
+      },
+      body: JSON.stringify({
+        app_id: APP_ID,
+        included_segments: ["All"],
+        headings: { en: titulo },
+        contents: { en: desc },
+        url: link
+      })
+    });
+
+    const data = await response.json();
+
+    console.log("Resposta OneSignal:", data);
+
+    if (response.ok) {
+      alert("🚀 Push enviado com sucesso!");
+    } else {
+      alert("❌ Erro ao enviar push: " + JSON.stringify(data));
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Erro de conexão (provável bloqueio CORS)");
+  }
+}
+
   // 🔥 ENVIA PUSH
   await fetch("https://onesignal.com/api/v1/notifications", {
     method: "POST",
