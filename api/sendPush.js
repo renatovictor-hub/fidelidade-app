@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const response = await fetch("https://api.onesignal.com/notifications", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer 2lnapwbmreg5uz7z76ur5il6v",
+        "Authorization": "Bearer os_v2_org_t7orppt7xngzzbjbff3efhrne7bhxskatb5ugz4nxfbzlkqqu4q6nra2hcn6qfc54fjohmgawzupz5sj6mu4cx27bqmfmk7ua2sig7q",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
