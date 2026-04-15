@@ -6,9 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="manifest" href="/manifest.json">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
 <script>
@@ -22,172 +20,185 @@ OneSignalDeferred.push(async function(OneSignal) {
 </script>
 
 <style>
-body { margin: 0; font-family: Arial; background: #ffffff; text-align: center; }
+:root {
+    --roxo: #6a0dad;
+    --amarelo: #ffcc00;
+    --branco: #ffffff;
+}
+
+body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--branco); text-align: center; color: #333; }
 .container { max-width: 400px; margin: auto; padding: 20px; }
-.logo { width: 120px; margin: 20px auto; }
-h1 { color: #6a0dad; }
+.logo { width: 120px; margin: 10px auto; }
+h1 { color: var(--roxo); margin-bottom: 5px; }
 
 .contador {
   background: #f3e8ff;
   padding: 10px;
   border-radius: 10px;
-  margin: 15px 0;
-  color: #6a0dad;
+  margin: 10px 0;
+  color: var(--roxo);
   font-weight: bold;
-}
-
-.banner { width: 100%; border-radius: 15px; margin: 15px 0; }
-
-/* SEÇÃO DE PROMOS */
-.promo-header {
-    color: #ff4444;
-    font-weight: bold;
-    font-size: 18px;
-    margin: 20px 0 10px 0;
-    text-transform: uppercase;
-    display: none; /* Só aparece se houver promo */
-}
-
-#promoBox { text-align: left; }
-.promo-card {
-  background: linear-gradient(135deg, #6a0dad, #9b30ff);
-  color: white;
-  padding: 15px;
-  border-radius: 15px;
-  margin-bottom: 10px;
-  box-shadow: 0 4px 10px rgba(106, 13, 173, 0.3);
-}
-.timer {
-  background: rgba(255,255,255,0.2);
-  padding: 5px;
-  border-radius: 8px;
-  margin-top: 8px;
   font-size: 14px;
-  font-weight: bold;
 }
 
+/* ALERTA DE PROMOS - CORES DA MARCA */
+.promo-header {
+    color: var(--roxo);
+    font-weight: 800;
+    font-size: 18px;
+    margin: 15px 0 5px 0;
+    display: none;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+.promo-header span { color: #d4af37; } /* Um dourado/amarelo mais forte para o destaque */
+
+.banner { width: 100%; border-radius: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+/* BOTÕES */
 button {
   width: 100%;
-  padding: 15px;
+  padding: 16px;
   margin-top: 10px;
   border-radius: 12px;
   border: none;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
+  transition: 0.3s;
 }
 
-.btn-primary { background: #6a0dad; color: white; }
+.btn-primary { background: var(--roxo); color: white; }
+.btn-activate { 
+    background: var(--amarelo); 
+    color: var(--roxo); 
+    border: 2px solid var(--roxo);
+    box-shadow: 0 4px 10px rgba(255, 204, 0, 0.4);
+    animation: pulse 2s infinite;
+}
 
-.links { margin-top: 25px; }
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+#promoBox { text-align: left; }
+.promo-card {
+  background: linear-gradient(135deg, var(--roxo), #8a2be2);
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 10px;
+}
+.timer {
+  background: rgba(255,204,0,0.3);
+  padding: 6px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  border: 1px solid var(--amarelo);
+}
+
+.links { margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
 .links a {
   display: block;
-  margin: 10px;
-  color: #6a0dad;
+  margin: 12px;
+  color: var(--roxo);
   text-decoration: none;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 17px;
 }
-.links i { margin-right: 8px; }
 </style>
 </head>
 
 <body>
 
 <div class="container">
+    <img src="logo.png" class="logo">
+    <h1 id="bienvenida">Uai Sô</h1>
 
-<img src="logo.png" class="logo">
+    <div id="formUsuario">
+      <p style="margin-bottom:15px; font-weight:bold;">✨ Regístrate para ver ofertas</p>
+      <input id="nombreInput" placeholder="Tu nombre" style="width:100%;padding:12px;margin-top:5px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;">
+      <button onclick="guardarUsuario()" class="btn-primary">Entrar al App</button>
+    </div>
 
-<h1>Uai Sô</h1>
+    <div id="areaPrivada" style="display:none;">
+        <div class="contador" id="contadorClientes">🔥 +300 clientes conectados</div>
+        
+        <button onclick="activarNotificaciones()" class="btn-activate" id="btnAtivar" style="display:none;">
+            🔔 ACTIVAR NOTIFICACIONES
+        </button>
 
-<div id="formUsuario">
-  <h3>👋 Bienvenido</h3>
-  <input id="nombreInput" placeholder="Tu nombre completo" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
-  <input id="telefonoInput" placeholder="Teléfono (opcional)" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
-  <button onclick="guardarUsuario()" class="btn-primary">Guardar</button>
-</div>
+        <button onclick="instalarApp()" class="btn-primary" id="btnInstalar" style="display:none;">
+            📲 INSTALAR APP NO CELULAR
+        </button>
 
-<h2 id="bienvenida" style="display:none; color: #6a0dad;"></h2>
+        <div id="promoTextoAlerta" class="promo-header">
+            🔥 PROMOS ACTIVAS <span>¡CORRE!</span>
+        </div>
+        
+        <img src="banner.jpg" class="banner">
 
-<div class="contador" id="contadorClientes">
-🔥 Cargando comunidad...
-</div>
+        <div id="promoBox"></div>
+    </div>
 
-<img src="banner.jpg" class="banner">
-
-<div id="promoTextoAlerta" class="promo-header">
-    🔥 ¡Promociones activas! Corre que se acaba
-</div>
-
-<div id="promoBox" style="display:none;"></div>
-
-<button onclick="instalarApp()" class="btn-primary" id="btnInstalar" style="display:none;">
-📲 Instalar App
-</button>
-
-<button onclick="activarNotificaciones()" class="btn-primary" id="btnAtivar" style="display:none;">
-🔔 Activar Promociones
-</button>
-
-<div class="links">
-  <a href="https://api.whatsapp.com/send?phone=5219986023759"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-  <a href="https://www.instagram.com/fooduaiso"><i class="fab fa-instagram"></i> Instagram</a>
-  <a href="https://uaisocancun.ola.click/products"><i class="fas fa-utensils"></i> Ver menú</a>
-</div>
-
+    <div class="links">
+      <a href="https://api.whatsapp.com/send?phone=5219986023759"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      <a href="https://www.instagram.com/fooduaiso"><i class="fab fa-instagram"></i> Instagram</a>
+      <a href="https://uaisocancun.ola.click/products"><i class="fas fa-utensils"></i> Ver menú</a>
+    </div>
 </div>
 
 <script>
-// ================= CONTADOR REAL DE CLIENTES =================
 async function atualizarContador() {
     try {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
         const data = await res.json();
         const total = data ? Object.keys(data).length : 0;
-        // Adicionamos um número base (ex: 300) para parecer uma comunidade maior se desejar, 
-        // ou apenas o total real:
         document.getElementById("contadorClientes").innerText = `🔥 +${300 + total} clientes ya reciben promociones`;
-    } catch (e) {
-        document.getElementById("contadorClientes").innerText = `🔥 ¡Únete a nuestra comunidad!`;
+    } catch (e) { console.log(e); }
+}
+
+let userId = localStorage.getItem("user_id") || "user_" + Math.floor(Math.random() * 1000000000);
+localStorage.setItem("user_id", userId);
+
+let nomeSalvo = localStorage.getItem("nome_usuario");
+
+function gerenciarInterface() {
+    if (nomeSalvo) {
+        document.getElementById("formUsuario").style.display = "none";
+        document.getElementById("areaPrivada").style.display = "block";
+        document.getElementById("bienvenida").innerText = "👋 Hola, " + nomeSalvo;
+        
+        // Verifica se precisa mostrar o botão de notificações
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const jaAtivo = localStorage.getItem("push_ativo");
+        
+        if (jaAtivo !== "true" && isStandalone) {
+            document.getElementById("btnAtivar").style.display = "block";
+        }
+        
+        carregarPromos();
+        atualizarContador();
     }
 }
 
-// ================= USER ID & NOME =================
-let userId = localStorage.getItem("user_id");
-if (!userId) {
-  userId = "user_" + Math.floor(Math.random() * 1000000000);
-  localStorage.setItem("user_id", userId);
-}
-
-let nomeSalvo = localStorage.getItem("nome_usuario");
-if (nomeSalvo) {
-  document.getElementById("formUsuario").style.display = "none";
-  document.getElementById("bienvenida").style.display = "block";
-  document.getElementById("bienvenida").innerText = "👋 Hola, " + nomeSalvo;
-}
-
-// ================= SALVAR USUARIO =================
 async function guardarUsuario() {
   const nome = document.getElementById("nombreInput").value;
-  const telefone = document.getElementById("telefonoInput").value;
-
   if (!nome) return alert("Ingresa tu nombre");
 
   await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
     method: "POST",
-    body: JSON.stringify({
-      user_id: userId,
-      nombre: nome,
-      telefono: telefone || "",
-      created_at: Date.now()
-    })
+    body: JSON.stringify({ user_id: userId, nombre: nome, created_at: Date.now() })
   });
 
   localStorage.setItem("nome_usuario", nome);
+  nomeSalvo = nome;
   location.reload();
 }
 
-// ================= CARREGAR PROMOS =================
 async function carregarPromos() {
   const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json";
   const container = document.getElementById("promoBox");
@@ -209,9 +220,9 @@ async function carregarPromos() {
       const div = document.createElement("div");
       div.className = "promo-card";
       div.innerHTML = `
-        <h3 style="margin:0;">${p.titulo}</h3>
-        <p style="margin:5px 0;">${p.desc}</p>
-        <div class="timer" id="timer-${id}"></div>
+        <h3 style="margin:0; font-size:18px;">${p.titulo}</h3>
+        <p style="margin:5px 0; font-size:14px; opacity:0.9;">${p.desc}</p>
+        <div class="timer" id="timer-${id}">⏳ Cargando tiempo...</div>
       `;
       container.appendChild(div);
 
@@ -222,61 +233,36 @@ async function carregarPromos() {
         const h = Math.floor(resto / 3600000);
         const m = Math.floor((resto % 3600000) / 60000);
         const s = Math.floor((resto % 60000) / 1000);
-        if(el) el.innerText = `⏳ Termina en: ${h}h ${m}m ${s}s`;
+        if(el) el.innerText = `⏳ TERMINA EN: ${h}h ${m}m ${s}s`;
       }, 1000);
     });
 
-    if (temPromo) {
-        container.style.display = "block";
-        alertaTexto.style.display = "block"; // Mostra o texto "Corre que acaba"
-    }
-  } catch (e) { console.log("Error promos:", e); }
+    if (temPromo) alertaTexto.style.display = "block";
+  } catch (e) { console.log(e); }
 }
 
-// ================= ONESIGNAL =================
-OneSignalDeferred.push(async function(OneSignal) {
-  await OneSignal.login(userId);
-  if (nomeSalvo) {
-    await OneSignal.User.addTag("nombre", nomeSalvo);
-  }
-});
+async function activarNotificaciones() {
+  await window.OneSignal.Notifications.requestPermission();
+  localStorage.setItem("push_ativo", "true");
+  document.getElementById("btnAtivar").style.display = "none";
+  alert("¡Notificaciones Activadas! 🔔");
+}
 
-// ================= PWA & NOTIFICAÇÕES =================
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById("btnInstalar").style.display = "block";
+  if (nomeSalvo) document.getElementById("btnInstalar").style.display = "block";
 });
 
 function instalarApp() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => {
-        document.getElementById("btnInstalar").style.display = "none";
-    });
+    deferredPrompt.userChoice.then(() => { document.getElementById("btnInstalar").style.display = "none"; });
   }
 }
 
-async function activarNotificaciones() {
-  await window.OneSignal.Notifications.requestPermission();
-  alert("¡Promociones activadas! 🔔");
-  localStorage.setItem("push_ativo", "true");
-  document.getElementById("btnAtivar").style.display = "none";
-}
-
-window.onload = () => {
-  atualizarContador();
-  carregarPromos();
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  const jaAtivo = localStorage.getItem("push_ativo");
-
-  if (jaAtivo === "true") {
-    document.getElementById("btnAtivar").style.display = "none";
-  } else if (isStandalone) {
-    document.getElementById("btnAtivar").style.display = "block";
-  }
-};
+window.onload = gerenciarInterface;
 </script>
 
 </body>
