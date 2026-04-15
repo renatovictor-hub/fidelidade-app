@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard PRO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Fidelidad</title>
 
 <style>
 body {
@@ -13,105 +13,96 @@ body {
   padding: 20px;
 }
 
+.container {
+  max-width: 500px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
 h1 {
   text-align: center;
   color: #6a0dad;
 }
 
-.card {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
 input, textarea {
   width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
   border: 1px solid #ccc;
+  font-size: 16px;
 }
 
 button {
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 10px;
   width: 100%;
-  font-weight: bold;
-}
-
-.primary { background: #6a0dad; color: white; }
-.delete { background: red; color: white; }
-
-.stats {
-  text-align: center;
+  padding: 15px;
+  margin-top: 15px;
+  background: #6a0dad;
+  color: white;
+  border: none;
+  border-radius: 12px;
   font-size: 18px;
-  margin-bottom: 20px;
+  cursor: pointer;
 }
 
-.timer {
-  font-weight: bold;
+button:hover {
+  background: #5800b3;
+}
+
+.log {
+  margin-top: 20px;
+  background: #000;
+  color: #0f0;
+  padding: 10px;
+  font-size: 12px;
+  height: 150px;
+  overflow-y: auto;
+  border-radius: 10px;
 }
 </style>
-
 </head>
 
 <body>
 
-<h1>📊 Dashboard PRO</h1>
+<div class="container">
 
-<div class="stats">
-🔥 Clientes activos: <span id="contador">...</span>
+<h1>🚀 Panel de Promociones</h1>
+
+<input id="titulo" placeholder="Título de la promo">
+<textarea id="desc" placeholder="Descripción"></textarea>
+
+<button onclick="procesarPromo()">🔥 Enviar Promo + Push</button>
+
+<div class="log" id="log"></div>
+
 </div>
-
-<div class="card">
-  <h3>🚀 Crear Promoción + Enviar Push</h3>
-
-  <input id="titulo" placeholder="🔥 Título">
-  <textarea id="desc" placeholder="Descripción"></textarea>
-  <input id="tempo" placeholder="Duración en segundos (ej: 3600)">
-
-  <button class="primary" onclick="procesarPromo()">Crear + Enviar Push</button>
-
-  <textarea id="linkGerado" placeholder="Link generado aparecerá aquí"></textarea>
-</div>
-
-<div id="promos"></div>
 
 <script>
-
-const db = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
-const site = "https://fidelidade-app-akcn.vercel.app";
-
-// ================= CONTADOR
-async function cargarContador(){
-  try {
-    const res = await fetch(db + "/contador.json");
-    const data = await res.json();
-    document.getElementById("contador").innerText = data || 0;
-  } catch {
-    document.getElementById("contador").innerText = "0";
-  }
+function log(msg) {
+  const logBox = document.getElementById("log");
+  logBox.innerHTML += msg + "<br>";
+  logBox.scrollTop = logBox.scrollHeight;
 }
 
-// ================= CREAR + PUSH
-async function procesarPromo(){
+async function procesarPromo() {
 
   const titulo = document.getElementById("titulo").value;
   const desc = document.getElementById("desc").value;
-  const tempo = document.getElementById("tempo").value || 3600;
 
   if (!titulo || !desc) {
-    alert("Preencha título e descrição");
+    alert("Completa todos los campos");
     return;
   }
 
-  const link = `${site}/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&tempo=${tempo}`;
-  document.getElementById("linkGerado").value = link;
+  const link = window.location.origin + "/?promo=" + encodeURIComponent(titulo) + "&desc=" + encodeURIComponent(desc);
+
+  log("📤 Enviando...");
+  log("Título: " + titulo);
+  log("Desc: " + desc);
+  log("Link: " + link);
 
   try {
 
@@ -128,91 +119,26 @@ async function procesarPromo(){
     });
 
     const data = await res.json();
-    console.log(data);
 
-    alert("🚀 Push enviado!");
+    log("📥 Respuesta:");
+    log(JSON.stringify(data));
 
-  } catch (e) {
-    console.error(e);
-    alert("❌ Error al enviar push");
-  }
-}
+    console.log("RESPUESTA COMPLETA:", data);
 
-// ================= FORMATAR TEMPO
-function formatar(seg){
-  const h = Math.floor(seg / 3600);
-  const m = Math.floor((seg % 3600) / 60);
-  const s = seg % 60;
-  return `${h}h ${m}m ${s}s`;
-}
-
-// ================= LISTAR PROMOS
-async function cargarPromos(){
-
-  try {
-    const res = await fetch(db + "/promocoes.json");
-    const promos = await res.json();
-
-    const container = document.getElementById("promos");
-    container.innerHTML = "";
-
-    if (!promos) return;
-
-    const agora = Date.now();
-
-    Object.keys(promos).forEach(id => {
-
-      const p = promos[id];
-      const restante = p.expiraEm - agora;
-
-      if (restante <= 0) return;
-
-      const div = document.createElement("div");
-      div.className = "card";
-
-      div.innerHTML = `
-        <h3>${p.titulo}</h3>
-        <p>${p.descricao}</p>
-        <p class="timer" id="t-${id}"></p>
-        <button class="delete" onclick="eliminar('${id}')">❌ Eliminar</button>
-      `;
-
-      container.appendChild(div);
-
-      const el = div.querySelector(`#t-${id}`);
-
-      function atualizar(){
-        const rest = p.expiraEm - Date.now();
-        if (rest <= 0) { div.remove(); return; }
-        el.innerText = "⏳ " + formatar(Math.floor(rest/1000));
-      }
-
-      atualizar();
-      setInterval(atualizar, 1000);
-    });
+    if (res.ok) {
+      alert("🚀 Push enviado!");
+      log("✅ Enviado correctamente");
+    } else {
+      alert("❌ Error al enviar push");
+      log("❌ ERROR:");
+      log(JSON.stringify(data.erro || data));
+    }
 
   } catch (e) {
     console.error(e);
+    log("❌ ERROR FETCH");
   }
 }
-
-// ================= DELETE
-async function eliminar(id){
-  await fetch(db + "/promocoes/" + id + ".json", {
-    method: "DELETE"
-  });
-  cargarPromos();
-}
-
-// ================= INIT
-function init(){
-  cargarContador();
-  cargarPromos();
-}
-
-init();
-setInterval(cargarPromos, 5000);
-
 </script>
 
 </body>
