@@ -12,15 +12,15 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer os_v2_app_cd6qqerxb5aivhvfzozut5owgw7eg6jube3up3nmw45ydck3i4cdr2ij2cwvoucasf3mlcyiz4k7v7xh4tc55tiet4vkjxhdt7ml3sy"
+        "Authorization": "Bearer os_v2_app_cd6qqerxb5aivhvfzozut5owgw7eg6jube3up3nmw45ydck3i4cdr2ij2cwvuocasf3mlcyiz4k7v7xh4tc55tiet4vkjxhdt7ml3sy"
       },
       body: JSON.stringify({
         app_id: "10fd0812-370f-408a-9ea5-cbb349f5d635",
 
         target_channel: "push",
 
-        // 🔥 NOVO PADRÃO OBRIGATÓRIO
-        included_segments: ["Total Subscriptions"],
+        // 🔥 CORRETO
+        included_segments: ["All"],
 
         headings: {
           en: titulo,
@@ -32,22 +32,27 @@ export default async function handler(req, res) {
           es: desc
         },
 
-        web_url: link   // 🔥 IMPORTANTE (não usar mais "url")
+        web_url: link
       })
     });
 
     const data = await response.json();
 
-    console.log("OneSignal:", data);
+    console.log("OneSignal response:", data);
 
     if (!response.ok) {
       return res.status(400).json(data);
     }
 
-    return res.status(200).json(data);
+    return res.status(200).json({
+      success: true,
+      data: data
+    });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Erro ao enviar push" });
+    return res.status(500).json({
+      error: "Erro ao enviar push"
+    });
   }
 }
