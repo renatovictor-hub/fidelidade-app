@@ -1,246 +1,243 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uai Sô - Promociones</title>
+    <style>
+        :root {
+            --roxo: #6a0dad;
+            --amarelo: #ffcc00;
+            --branco: #ffffff;
+            --cinza-fundo: #f0f2f5;
+        }
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--cinza-fundo);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
 
-<title>Uai Sô Fidelidad</title>
+        /* Cabeçalho do App do Cliente */
+        header {
+            background-color: var(--roxo);
+            color: var(--branco);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid var(--amarelo);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
-<link rel="manifest" href="/manifest.json">
+        header h1 { margin: 0; font-size: 28px; }
+        header p { margin: 5px 0 0 0; font-size: 14px; color: var(--amarelo); }
 
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-<script>
-window.OneSignalDeferred = window.OneSignalDeferred || [];
+        /* Cards das Promos */
+        .promo-card {
+            background: var(--branco);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border-left: 6px solid var(--amarelo);
+            position: relative;
+        }
 
-OneSignalDeferred.push(async function(OneSignal) {
-  await OneSignal.init({
-    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-    notifyButton: { enable: false }
-  });
-});
-</script>
+        .promo-title {
+            color: var(--roxo);
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #ffffff;
-  text-align: center;
-}
+        .promo-desc { font-size: 16px; margin-bottom: 15px; line-height: 1.4; }
+        
+        .timer-box {
+            background: #fff8d6;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: bold;
+            color: #d32f2f;
+            font-size: 14px;
+        }
 
-.container {
-  max-width: 400px;
-  margin: auto;
-  padding: 20px;
-}
+        /* Modal do Push (Aparece quando vem da notificação) */
+        #promoModal {
+            display: none; /* Escondido por padrão */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-.logo {
-  width: 120px;
-  margin: 20px auto;
-}
+        .modal-content {
+            background: var(--branco);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            border: 5px solid var(--amarelo);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: popIn 0.3s ease-out;
+        }
 
-h1 {
-  color: #6a0dad;
-}
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
 
-.contador {
-  background: #f3e8ff;
-  padding: 10px;
-  border-radius: 10px;
-  margin: 15px 0;
-  color: #6a0dad;
-  font-weight: bold;
-}
+        .modal-content h2 { color: var(--roxo); margin-top: 0; }
+        .modal-content p { font-size: 18px; }
+        
+        .btn-close {
+            background: var(--roxo);
+            color: var(--branco);
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
 
-.banner {
-  width: 100%;
-  border-radius: 15px;
-  margin: 15px 0;
-}
-
-button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 10px;
-  border-radius: 12px;
-  border: none;
-  font-size: 16px;
-}
-
-.btn-primary {
-  background: #6a0dad;
-  color: white;
-}
-
-.links a {
-  display: block;
-  margin: 5px;
-  color: #6a0dad;
-  text-decoration: none;
-  font-weight: bold;
-}
-</style>
-
+        .empty-state { text-align: center; color: #666; margin-top: 40px; }
+    </style>
 </head>
-
 <body>
 
-<div class="container">
+    <header>
+        <h1>Uai Sô</h1>
+        <p>¡Tus Promociones Exclusivas!</p>
+    </header>
 
-<img src="logo.png" class="logo">
+    <div id="promoModal">
+        <div class="modal-content">
+            <h2>🎉 ¡Oferta Especial!</h2>
+            <h3 id="modalTitle" style="color: var(--roxo);"></h3>
+            <p id="modalDesc"></p>
+            <div class="timer-box">
+                ⏳ Termina en: <span id="modalTimer">--:--:--</span>
+            </div>
+            <button class="btn-close" onclick="cerrarModal()">¡Lo quiero!</button>
+        </div>
+    </div>
 
-<h1>Programa de Fidelidad</h1>
+    <div class="container" id="listaPromosCliente">
+        <div class="empty-state">Buscando promociones fresquitas... 🥟</div>
+    </div>
 
-<!-- FORM USUARIO -->
-<div id="formUsuario">
+    <script>
+        let timersAtivos = {};
 
-  <h3>👋 Bienvenido</h3>
+        // 1. CAPTURAR DADOS DO PUSH (URL)
+        const params = new URLSearchParams(window.location.search);
+        const pPromo = params.get('promo');
+        const pDesc = params.get('desc');
+        const pExp = params.get('exp');
 
-  <input id="nombreInput" placeholder="Tu nombre completo"
-    style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
+        // Se a URL tiver dados do push, mostra o Modal
+        if (pPromo && pDesc && pExp) {
+            document.getElementById('promoModal').style.display = 'flex';
+            document.getElementById('modalTitle').innerText = decodeURIComponent(pPromo);
+            document.getElementById('modalDesc').innerText = decodeURIComponent(pDesc);
+            iniciarTimer('modalTimer', Number(pExp));
+        }
 
-  <input id="telefonoInput" placeholder="Teléfono (opcional)"
-    style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
+        // Fechar modal e limpar a URL para não abrir de novo se atualizar a página
+        function cerrarModal() {
+            document.getElementById('promoModal').style.display = 'none';
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
-  <button onclick="guardarUsuario()" class="btn-primary">
-    Guardar
-  </button>
+        // 2. CARREGAR TODAS AS PROMOS DO FIREBASE
+        async function carregarPromos() {
+            try {
+                const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+                const data = await res.json();
+                const lista = document.getElementById("listaPromosCliente");
+                
+                lista.innerHTML = ""; // Limpa o "Buscando..."
 
-</div>
+                if (!data) {
+                    lista.innerHTML = "<div class='empty-state'>😔 No hay promociones activas en este momento.<br>¡Vuelve más tarde!</div>";
+                    return;
+                }
 
-<h2 id="bienvenida" style="display:none;"></h2>
+                let temPromoAtiva = false;
 
-<div class="contador">
-🔥 +300 clientes ya reciben promociones
-</div>
+                Object.entries(data).forEach(([id, promo]) => {
+                    if (!promo || !promo.exp) return;
+                    
+                    const expiraEm = Number(promo.exp);
+                    if (expiraEm - Date.now() <= 0) return; // Se já passou do tempo, não mostra
 
-<img src="banner.jpg" class="banner">
+                    temPromoAtiva = true;
+                    
+                    const div = document.createElement("div");
+                    div.className = "promo-card";
+                    div.innerHTML = `
+                        <h3 class="promo-title">${promo.titulo}</h3>
+                        <div class="promo-desc">${promo.desc}</div>
+                        <div class="timer-box">
+                            ⏳ Termina en: <span id="timer_${id}">--:--:--</span>
+                        </div>
+                    `;
+                    lista.appendChild(div);
+                    iniciarTimer(`timer_${id}`, expiraEm, id);
+                });
 
-<button onclick="instalarApp()" class="btn-primary" id="btnInstalar" style="display:none;">
-📲 Instalar App
-</button>
+                if (!temPromoAtiva) {
+                    lista.innerHTML = "<div class='empty-state'>😔 No hay promociones activas en este momento.<br>¡Vuelve más tarde!</div>";
+                }
 
-<button onclick="activarNotificaciones()" class="btn-primary" id="btnAtivar" style="display:none;">
-🔔 Activar Promociones
-</button>
+            } catch (e) {
+                console.error("Error al cargar promos:", e);
+                document.getElementById("listaPromosCliente").innerHTML = "<div class='empty-state'>Error al conectar con el servidor.</div>";
+            }
+        }
 
-<div class="links">
-  <a href="https://api.whatsapp.com/send?phone=5219986023759">📲 WhatsApp</a>
-  <a href="https://www.instagram.com/fooduaiso">📸 Instagram</a>
-  <a href="https://uaisocancun.ola.click/products">📋 Ver menú</a>
-</div>
+        // 3. FUNÇÃO DO RELÓGIO (TIMER)
+        function iniciarTimer(elementId, exp, idParaLimpar = null) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
 
-</div>
+            const update = () => {
+                const resto = exp - Date.now();
+                if (resto <= 0) {
+                    el.innerText = "¡Expirado!";
+                    if (idParaLimpar && timersAtivos[idParaLimpar]) {
+                        clearInterval(timersAtivos[idParaLimpar]);
+                    }
+                    return;
+                }
+                const s = Math.floor(resto / 1000);
+                const m = Math.floor(s / 60);
+                const h = Math.floor(m / 60);
+                el.innerText = `${h}h ${m % 60}m ${s % 60}s`;
+            };
+            
+            update();
+            const interval = setInterval(update, 1000);
+            if (idParaLimpar) timersAtivos[idParaLimpar] = interval;
+        }
 
-<script>
-
-// ================= USER ID =================
-let userId = localStorage.getItem("user_id");
-
-if (!userId) {
-  userId = "user_" + Math.floor(Math.random() * 1000000000);
-  localStorage.setItem("user_id", userId);
-}
-
-// ================= MOSTRAR NOME =================
-let nomeSalvo = localStorage.getItem("nome_usuario");
-
-if (nomeSalvo) {
-  document.getElementById("formUsuario").style.display = "none";
-  document.getElementById("bienvenida").style.display = "block";
-  document.getElementById("bienvenida").innerText = "👋 Bienvenido " + nomeSalvo;
-}
-
-// ================= SALVAR USUARIO =================
-async function guardarUsuario() {
-
-  const nome = document.getElementById("nombreInput").value;
-  const telefone = document.getElementById("telefonoInput").value;
-
-  if (!nome) {
-    alert("Ingresa tu nombre");
-    return;
-  }
-
-  await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
-    method: "POST",
-    body: JSON.stringify({
-      user_id: userId,
-      nombre: nome,
-      telefono: telefone || "",
-      created_at: Date.now()
-    })
-  });
-
-  localStorage.setItem("nome_usuario", nome);
-
-  document.getElementById("formUsuario").style.display = "none";
-  document.getElementById("bienvenida").style.display = "block";
-  document.getElementById("bienvenida").innerText = "👋 Bienvenido " + nome;
-
-}
-
-// ================= ONESIGNAL =================
-OneSignalDeferred.push(async function(OneSignal) {
-
-  await OneSignal.login(userId);
-
-  if (nomeSalvo) {
-    await OneSignal.User.addTag("nombre", nomeSalvo);
-  }
-
-});
-
-// ================= INSTALAR APP =================
-let deferredPrompt;
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById("btnInstalar").style.display = "block";
-});
-
-function instalarApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-  }
-}
-
-// ================= NOTIFICACOES =================
-async function activarNotificaciones() {
-
-  const OneSignal = window.OneSignal;
-
-  await OneSignal.Notifications.requestPermission();
-
-  alert("Promociones activadas 🔔");
-
-  localStorage.setItem("push_ativo", "true");
-  document.getElementById("btnAtivar").style.display = "none";
-
-}
-
-window.onload = () => {
-
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  const jaAtivo = localStorage.getItem("push_ativo");
-
-  if (jaAtivo === "true") {
-    document.getElementById("btnAtivar").style.display = "none";
-    return;
-  }
-
-  if (isStandalone) {
-    document.getElementById("btnAtivar").style.display = "block";
-  } else {
-    document.getElementById("btnInstalar").style.display = "block";
-  }
-
-};
-
-</script>
-
+        // Inicia a busca no Firebase assim que a página abre
+        carregarPromos();
+    </script>
 </body>
 </html>
