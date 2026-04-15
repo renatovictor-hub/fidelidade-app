@@ -5,18 +5,85 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Dashboard</title>
+<title>Dashboard Uai Sô</title>
 
 <style>
-body { font-family: Arial; background:#f5f5f5; }
-.container { max-width:500px; margin:auto; padding:20px; }
-.card { background:white; padding:20px; border-radius:15px; margin-bottom:20px; }
-button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:10px; }
-.btn-primary { background:#6a0dad; color:white; }
-.btn-danger { background:red; color:white; }
-.promo { background:#f3e8ff; padding:10px; margin-top:10px; border-radius:10px; }
-.timer { color:red; }
-.log { background:black; color:#0f0; padding:10px; display:none; }
+body {
+  font-family: Arial;
+  background: #f5f5f5;
+  margin: 0;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+h1 {
+  color: #6a0dad;
+  text-align: center;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #6a0dad;
+  color: white;
+}
+
+.btn-danger {
+  background: red;
+  color: white;
+}
+
+.promo {
+  background: #f3e8ff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.timer {
+  color: red;
+  font-weight: bold;
+}
+
+.log {
+  margin-top: 10px;
+  font-size: 12px;
+  background: black;
+  color: #00ff88;
+  padding: 10px;
+  border-radius: 10px;
+  height: 150px;
+  overflow-y: auto;
+  display: none;
+}
 </style>
 
 </head>
@@ -25,138 +92,193 @@ button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:1
 
 <div class="container">
 
+<h1>📲 Dashboard</h1>
+
+<!-- CLIENTES -->
 <div class="card">
-<h3>👥 Clientes</h3>
-<div id="clientes"></div>
+  <h3>👥 Clientes</h3>
+  <div id="totalClientes">Cargando...</div>
 </div>
 
+<!-- CRIAR PROMO -->
 <div class="card">
-<h3>🚀 Nueva Promo</h3>
-<input id="titulo" placeholder="Título">
-<textarea id="desc"></textarea>
-<input id="duracion" type="number" value="3600">
-<button onclick="enviarPush()" class="btn-primary">Enviar</button>
+
+  <h3>🚀 Nueva Promoción</h3>
+
+  <input id="titulo" placeholder="Título">
+  <textarea id="desc" placeholder="Descripción"></textarea>
+
+  <input id="duracion" type="number" value="3600">
+
+  <button onclick="enviarPush()" class="btn-primary">
+    Enviar Push
+  </button>
+
 </div>
 
+<!-- PROMOS ATIVAS -->
 <div class="card">
-<h3>🔥 Promos</h3>
-<div id="promos"></div>
+  <h3>🔥 Promociones activas</h3>
+  <div id="listaPromos"></div>
 </div>
 
+<!-- LOG -->
 <div class="card">
-<button onclick="toggleLog()">Mostrar Log</button>
-<div id="log" class="log"></div>
+  <button onclick="toggleLog()">📄 Mostrar / Ocultar Log</button>
+  <div id="log" class="log"></div>
 </div>
 
 </div>
 
 <script>
 
-// LOG
-function log(t){ document.getElementById("log").innerHTML += t+"<br>"; }
-
-function toggleLog(){
-  let l=document.getElementById("log");
-  l.style.display=l.style.display==="none"?"block":"none";
+// ================= LOG =================
+function log(msg) {
+  document.getElementById("log").innerHTML += msg + "<br>";
 }
 
-// CLIENTES
-async function clientes(){
-  let r=await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
-  let d=await r.json();
-  document.getElementById("clientes").innerText = d?Object.keys(d).length+" clientes":"0";
+function toggleLog() {
+  const logBox = document.getElementById("log");
+  logBox.style.display = logBox.style.display === "none" ? "block" : "none";
 }
-clientes();
 
-// ENVIAR PUSH
-async function enviarPush(){
+// ================= CLIENTES =================
+async function carregarClientes() {
 
-  let titulo=document.getElementById("titulo").value;
-  let desc=document.getElementById("desc").value;
-  let dur=document.getElementById("duracion").value;
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+  const data = await res.json();
 
-  let exp=Date.now()+(dur*1000);
+  const total = data ? Object.keys(data).length : 0;
 
-  let link="https://fidelidade-app-akcn.vercel.app/?exp="+exp;
+  document.getElementById("totalClientes").innerText = total + " clientes";
 
-  log("Enviando...");
+}
 
-  let r=await fetch("/api/sendPush",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({titulo,desc,link})
+carregarClientes();
+
+// ================= ENVIAR PUSH =================
+async function enviarPush() {
+
+  const titulo = document.getElementById("titulo").value;
+  const desc = document.getElementById("desc").value;
+  const duracion = document.getElementById("duracion").value;
+
+  const exp = Date.now() + (duracion * 1000);
+
+  const link = "https://fidelidade-app-akcn.vercel.app/?promo="
+    + encodeURIComponent(titulo)
+    + "&desc=" + encodeURIComponent(desc)
+    + "&exp=" + exp;
+
+  log("📤 Enviando...");
+
+  const res = await fetch("/api/sendPush", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ titulo, desc, link })
   });
 
-  let d=await r.json();
-  log(JSON.stringify(d));
+  const data = await res.json();
 
-  if(r.ok){
-    alert("Enviado!");
-    carregarPromos();
+  log("📥 " + JSON.stringify(data));
+
+  if (res.ok) {
+    salvarPromo(titulo, desc, exp);
+    alert("✅ Enviado!");
+  } else {
+    alert("❌ Error");
   }
 
 }
 
-// PROMOS
-async function carregarPromos(){
+// ================= SALVAR PROMO =================
+async function salvarPromo(titulo, desc, exp) {
 
-  let r=await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-  let d=await r.json();
+  await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+    method: "POST",
+    body: JSON.stringify({
+      titulo,
+      desc,
+      exp
+    })
+  });
 
-  let box=document.getElementById("promos");
-  box.innerHTML="";
+  carregarPromos();
 
-  if(!d) return;
+}
 
-  Object.entries(d).forEach(([id,p])=>{
+// ================= CARREGAR PROMOS =================
+async function carregarPromos() {
 
-    if(!p.exp) return;
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+  const data = await res.json();
 
-    let rest=p.exp-Date.now();
-    if(rest<=0) return;
+  const lista = document.getElementById("listaPromos");
+  lista.innerHTML = "";
 
-    let div=document.createElement("div");
-    div.className="promo";
+  if (!data) return;
 
-    div.innerHTML=`
-      <b>${p.titulo}</b><br>
-      ${p.desc}<br>
-      ⏳ <span id="t_${id}"></span>
-      <button class="btn-danger" onclick="del('${id}')">Eliminar</button>
+  Object.entries(data).forEach(([id, promo]) => {
+
+    const restante = promo.exp - Date.now();
+
+    if (restante <= 0) return;
+
+    const div = document.createElement("div");
+    div.className = "promo";
+
+    div.innerHTML = `
+      <b>${promo.titulo}</b><br>
+      ${promo.desc}<br>
+      ⏳ <span class="timer" id="timer_${id}"></span>
+      <button class="btn-danger" onclick="eliminarPromo('${id}')">Eliminar</button>
     `;
 
-    box.appendChild(div);
+    lista.appendChild(div);
 
-    timer(id,p.exp);
+    iniciarTimer(id, promo.exp);
 
   });
 
 }
+
 carregarPromos();
 
-// TIMER
-function timer(id,exp){
+// ================= TIMER =================
+function iniciarTimer(id, exp) {
 
-  let el=document.getElementById("t_"+id);
+  const el = document.getElementById("timer_" + id);
 
-  let i=setInterval(()=>{
-    let r=exp-Date.now();
-    if(r<=0){ el.innerText="Expirado"; clearInterval(i); return; }
+  setInterval(() => {
 
-    let s=Math.floor(r/1000);
-    let m=Math.floor(s/60);
-    let h=Math.floor(m/60);
+    const restante = exp - Date.now();
 
-    el.innerText=h+"h "+(m%60)+"m "+(s%60)+"s";
+    if (restante <= 0) {
+      el.innerText = "Expirado";
+      return;
+    }
 
-  },1000);
+    const s = Math.floor(restante / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+
+    el.innerText = h + "h " + (m % 60) + "m " + (s % 60) + "s";
+
+  }, 1000);
 
 }
 
-// DELETE
-async function del(id){
-  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`,{method:"DELETE"});
+// ================= ELIMINAR PROMO =================
+async function eliminarPromo(id) {
+
+  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, {
+    method: "DELETE"
+  });
+
   carregarPromos();
+
 }
 
 </script>
