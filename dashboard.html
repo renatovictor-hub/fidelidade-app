@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Uai Sô - Push</title>
+    <title>Dashboard Uai Sô - Gestión de Notificaciones</title>
     <style>
         :root {
             --roxo: #6a0dad;
@@ -37,14 +37,12 @@
             margin: 0 auto;
             padding: 0 20px;
             display: grid;
-            grid-template-columns: 1fr 2fr; /* Lado a lado en PC */
+            grid-template-columns: 1fr 2fr;
             gap: 20px;
         }
 
         @media (max-width: 850px) {
-            .main-container {
-                grid-template-columns: 1fr; /* Una sola columna en móvil */
-            }
+            .main-container { grid-template-columns: 1fr; }
         }
 
         .card {
@@ -62,9 +60,7 @@
             padding-left: 10px;
         }
 
-        .input-group {
-            margin-bottom: 15px;
-        }
+        .input-group { margin-bottom: 15px; }
 
         label {
             display: block;
@@ -73,7 +69,7 @@
             font-size: 14px;
         }
 
-        input, textarea, select {
+        input, textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -208,7 +204,7 @@ function toggleLog() {
     logBox.style.display = logBox.style.display === "none" ? "block" : "none";
 }
 
-// BUSCAR CLIENTES EN FIREBASE
+// CARGAR CLIENTES
 async function carregarClientes() {
     try {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
@@ -221,7 +217,7 @@ async function carregarClientes() {
 }
 carregarClientes();
 
-// ENVIAR PUSH VIA API VERCEL
+// ENVIAR PUSH
 async function enviarPush() {
     const titulo = document.getElementById("titulo").value;
     const desc = document.getElementById("desc").value;
@@ -235,56 +231,60 @@ async function enviarPush() {
     log("Intentando enviar push...");
 
     try {
-        const res = await fetch("/api/sendpush", { // <--- VERIFICA SI ES MINÚSCULA
+        const res = await fetch("/api/sendpush", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ titulo, desc, link })
         });
 
-        // Verificamos si la respuesta es HTML (error de servidor) o JSON
-        const contentType = res.headers.get("content-type");
-        
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-            const data = await res.json();
-            log("Respuesta API: " + JSON.stringify(data));
-            
-            if (res.ok) {
-                await salvarNoFirebase(titulo, desc, exp);
-                alert("¡Notificación enviada con éxito!");
-            } else {
-                alert("Error de OneSignal: " + (data.errors ? data.errors[0] : "Desconocido"));
-            }
-        } else {
-            // Si no es JSON, leemos el texto del error
-            const errorText = await res.text();
-            log("❌ Error del Servidor (HTML): " + res.status);
-            alert("Error 404 o 500: La ruta /api/sendpush no responde correctamente.");
-        }
+        const data = await res.json();
+        log("Respuesta API: " + JSON.stringify(data));
 
+        if (res.ok) {
+            await salvarPromoNoFirebase(titulo, desc, exp);
+            alert("¡Notificación enviada con éxito!");
+            document.getElementById("titulo").value = "";
+            document.getElementById("desc").value = "";
+        } else {
+            alert("Error al enviar: " + JSON.stringify(data));
+        }
     } catch (e) {
         log("Error Fatal: " + e.message);
     }
 }
 
-// CARGAR Y EXIBIR PROMOS CON TIMER
+// GUARDAR EN FIREBASE (Nombre corregido)
+async function salvarPromoNoFirebase(titulo, desc, exp) {
+    try {
+        log("Guardando en Firebase...");
+        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+            method: "POST",
+            body: JSON.stringify({ titulo, desc, exp: Number(exp) })
+        });
+        log("✅ Éxito en Firebase.");
+        await carregarPromos();
+    } catch (e) {
+        log("Error Firebase: " + e.message);
+    }
+}
+
+// CARGAR PROMOS
 async function carregarPromos() {
     const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
     const data = await res.json();
     const lista = document.getElementById("listaPromos");
 
-    // Limpieza de seguridad para evitar duplicados
     Object.values(timersAtivos).forEach(clearInterval);
     timersAtivos = {};
     lista.innerHTML = "";
 
     if (!data) {
-        lista.innerHTML = "<i>No hay promociones activas en este momento.</i>";
+        lista.innerHTML = "<i>No hay promociones activas.</i>";
         return;
     }
 
     Object.entries(data).forEach(([id, promo]) => {
         if (!promo || !promo.exp) return;
-        
         const expiraEm = Number(promo.exp);
         if (expiraEm - Date.now() <= 0) return;
 
@@ -320,13 +320,12 @@ function iniciarTimer(id, exp) {
 }
 
 async function eliminarPromo(id) {
-    if(!confirm("¿Deseas eliminar esta promoción?")) return;
+    if(!confirm("¿Eliminar promoción?")) return;
     await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
     carregarPromos();
 }
 
 carregarPromos();
 </script>
-
 </body>
 </html>
