@@ -38,8 +38,17 @@ h1 { color: #6a0dad; }
 
 .banner { width: 100%; border-radius: 15px; margin: 15px 0; }
 
-/* PROMOS DINAMICAS */
-#promoBox { margin-top: 15px; text-align: left; }
+/* SEÇÃO DE PROMOS */
+.promo-header {
+    color: #ff4444;
+    font-weight: bold;
+    font-size: 18px;
+    margin: 20px 0 10px 0;
+    text-transform: uppercase;
+    display: none; /* Só aparece se houver promo */
+}
+
+#promoBox { text-align: left; }
 .promo-card {
   background: linear-gradient(135deg, #6a0dad, #9b30ff);
   color: white;
@@ -100,11 +109,15 @@ button {
 
 <h2 id="bienvenida" style="display:none; color: #6a0dad;"></h2>
 
-<div class="contador">
-🔥 +300 clientes ya reciben promociones
+<div class="contador" id="contadorClientes">
+🔥 Cargando comunidad...
 </div>
 
 <img src="banner.jpg" class="banner">
+
+<div id="promoTextoAlerta" class="promo-header">
+    🔥 ¡Promociones activas! Corre que se acaba
+</div>
 
 <div id="promoBox" style="display:none;"></div>
 
@@ -125,6 +138,20 @@ button {
 </div>
 
 <script>
+// ================= CONTADOR REAL DE CLIENTES =================
+async function atualizarContador() {
+    try {
+        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+        const data = await res.json();
+        const total = data ? Object.keys(data).length : 0;
+        // Adicionamos um número base (ex: 300) para parecer uma comunidade maior se desejar, 
+        // ou apenas o total real:
+        document.getElementById("contadorClientes").innerText = `🔥 +${300 + total} clientes ya reciben promociones`;
+    } catch (e) {
+        document.getElementById("contadorClientes").innerText = `🔥 ¡Únete a nuestra comunidad!`;
+    }
+}
+
 // ================= USER ID & NOME =================
 let userId = localStorage.getItem("user_id");
 if (!userId) {
@@ -157,13 +184,14 @@ async function guardarUsuario() {
   });
 
   localStorage.setItem("nome_usuario", nome);
-  location.reload(); // Recarga para aplicar cambios y tags de OneSignal
+  location.reload();
 }
 
-// ================= CARREGAR PROMOS DO DASHBOARD =================
+// ================= CARREGAR PROMOS =================
 async function carregarPromos() {
   const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json";
   const container = document.getElementById("promoBox");
+  const alertaTexto = document.getElementById("promoTextoAlerta");
   
   try {
     const res = await fetch(dbUrl);
@@ -198,11 +226,14 @@ async function carregarPromos() {
       }, 1000);
     });
 
-    if (temPromo) container.style.display = "block";
+    if (temPromo) {
+        container.style.display = "block";
+        alertaTexto.style.display = "block"; // Mostra o texto "Corre que acaba"
+    }
   } catch (e) { console.log("Error promos:", e); }
 }
 
-// ================= ONESIGNAL LOGIN & TAGS =================
+// ================= ONESIGNAL =================
 OneSignalDeferred.push(async function(OneSignal) {
   await OneSignal.login(userId);
   if (nomeSalvo) {
@@ -235,6 +266,7 @@ async function activarNotificaciones() {
 }
 
 window.onload = () => {
+  atualizarContador();
   carregarPromos();
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   const jaAtivo = localStorage.getItem("push_ativo");
