@@ -2,162 +2,184 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard Promociones</title>
+<title>Dashboard PRO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial;
-  background: #f5f5f5;
-  margin: 0;
-  padding: 20px;
-}
-
-h1 {
-  text-align: center;
-  color: #6a0dad;
-}
+body { font-family: Arial; background:#f5f5f5; padding:20px; }
+h1 { text-align:center; color:#6a0dad; }
 
 .card {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  background:white;
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
 
-.promo {
-  border-left: 5px solid #6a0dad;
+input, textarea {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:8px;
+  border:1px solid #ccc;
 }
 
 button {
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 10px;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:10px;
 }
 
-.delete {
-  background: red;
-  color: white;
-}
+.primary { background:#6a0dad; color:white; width:100%; }
+.copy { background:#333; color:white; }
+.delete { background:red; color:white; }
+.push { background:#0a84ff; color:white; }
 
-.refresh {
-  background: #6a0dad;
-  color: white;
-  width: 100%;
-  margin-bottom: 20px;
-}
+.stats { text-align:center; font-size:18px; margin-bottom:20px; }
 
-.stats {
-  text-align: center;
-  font-size: 18px;
-  margin-bottom: 20px;
-}
+.timer { font-weight:bold; }
 </style>
 
 </head>
 
 <body>
 
-<h1>📊 Dashboard</h1>
+<h1>📊 Dashboard PRO</h1>
 
 <div class="stats">
 🔥 Clientes activos: <span id="contador">...</span>
 </div>
 
-<button class="refresh" onclick="cargarTodo()">🔄 Actualizar</button>
+<div class="card">
+  <h3>🚀 Crear Promoción + Enviar Push</h3>
+
+  <input id="titulo" placeholder="🔥 Título">
+  <textarea id="desc" placeholder="Descripción"></textarea>
+  <input id="tempo" placeholder="Duración en segundos (ej: 3600)">
+
+  <button class="primary" onclick="procesarPromo()">Crear + Enviar Push</button>
+
+  <textarea id="linkGerado"></textarea>
+</div>
 
 <div id="promos"></div>
 
 <script>
 
-const dbBase = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
+const db = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
+const site = "https://fidelidade-app-akcn.vercel.app";
 
-// ==============================
-// CARGAR CONTADOR
-// ==============================
-async function cargarContador() {
-  const res = await fetch(dbBase + "/contador.json");
+// 🔴 COLE SUA REST API KEY AQUI
+const REST_API_KEY = "COLE_AQUI_SUA_KEY";
+const APP_ID = "10fd0812-370f-408a-9ea5-cbb349f5d635";
+
+// ================= CONTADOR
+async function cargarContador(){
+  const res = await fetch(db+"/contador.json");
   const data = await res.json();
-
   document.getElementById("contador").innerText = data || 0;
 }
 
-// ==============================
-// CARGAR PROMOS
-// ==============================
-async function cargarPromos() {
+// ================= CRIAR + ENVIAR
+async function procesarPromo(){
 
-  const res = await fetch(dbBase + "/promocoes.json");
+  const titulo = document.getElementById("titulo").value;
+  const desc = document.getElementById("desc").value;
+  const tempo = document.getElementById("tempo").value || 3600;
+
+  const link = `${site}/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&tempo=${tempo}`;
+
+  document.getElementById("linkGerado").value = link;
+
+  // 🔥 ENVIA PUSH
+  await fetch("https://onesignal.com/api/v1/notifications", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Basic " + REST_API_KEY
+    },
+    body: JSON.stringify({
+      app_id: APP_ID,
+      included_segments: ["All"],
+      headings: { en: titulo },
+      contents: { en: desc },
+      url: link
+    })
+  });
+
+  alert("🚀 Push enviado!");
+}
+
+// ================= FORMATAR TEMPO
+function formatar(seg){
+  const h=Math.floor(seg/3600);
+  const m=Math.floor((seg%3600)/60);
+  const s=seg%60;
+  return `${h}h ${m}m ${s}s`;
+}
+
+// ================= LISTAR PROMOS
+async function cargarPromos(){
+
+  const res = await fetch(db+"/promocoes.json");
   const promos = await res.json();
 
   const container = document.getElementById("promos");
-  container.innerHTML = "";
+  container.innerHTML="";
 
-  if (!promos) {
-    container.innerHTML = "<p>No hay promociones</p>";
-    return;
-  }
+  if(!promos) return;
 
-  const ahora = Date.now();
+  const agora = Date.now();
 
-  Object.keys(promos).forEach(id => {
+  Object.keys(promos).forEach(id=>{
 
     const p = promos[id];
-
-    const restante = p.expiraEm - ahora;
-
-    if (restante <= 0) return;
-
-    const totalSeg = Math.floor(restante / 1000);
-    const h = Math.floor(totalSeg / 3600);
-    const m = Math.floor((totalSeg % 3600) / 60);
-    const s = totalSeg % 60;
+    const restante = p.expiraEm - agora;
+    if(restante<=0) return;
 
     const div = document.createElement("div");
-    div.className = "card promo";
+    div.className="card";
 
-    div.innerHTML = `
+    div.innerHTML=`
       <h3>${p.titulo}</h3>
       <p>${p.descricao}</p>
-      <p>⏳ ${h}h ${m}m ${s}s</p>
+      <p class="timer" id="t-${id}"></p>
 
-      <button class="delete" onclick="eliminarPromo('${id}')">
-        ❌ Eliminar
-      </button>
+      <button class="delete" onclick="eliminar('${id}')">❌ Eliminar</button>
     `;
 
     container.appendChild(div);
+
+    const el = div.querySelector(`#t-${id}`);
+
+    function atualizar(){
+      const rest = p.expiraEm - Date.now();
+      if(rest<=0){ div.remove(); return; }
+      el.innerText = "⏳ "+formatar(Math.floor(rest/1000));
+    }
+
+    atualizar();
+    setInterval(atualizar,1000);
   });
 }
 
-// ==============================
-// ELIMINAR PROMO
-// ==============================
-async function eliminarPromo(id) {
-
-  await fetch(dbBase + "/promocoes/" + id + ".json", {
-    method: "DELETE"
-  });
-
+// ================= DELETE
+async function eliminar(id){
+  await fetch(db+"/promocoes/"+id+".json",{method:"DELETE"});
   cargarPromos();
 }
 
-// ==============================
-// CARGAR TODO
-// ==============================
-function cargarTodo() {
+// ================= INIT
+function init(){
   cargarContador();
   cargarPromos();
 }
 
-// AUTO LOAD
-cargarTodo();
-
-// AUTO REFRESH A CADA 5s
-setInterval(cargarPromos, 5000);
+init();
+setInterval(cargarPromos,5000);
 
 </script>
 
