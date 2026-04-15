@@ -216,6 +216,51 @@ body {
 </div>
 
 </div>
+  <script>
+
+// ==============================
+// GERAR ID ÚNICO DO USUÁRIO
+// ==============================
+let userId = localStorage.getItem("user_id");
+
+if (!userId) {
+  userId = "user_" + Math.floor(Math.random() * 1000000000);
+  localStorage.setItem("user_id", userId);
+}
+
+// ==============================
+// LOGIN NO ONESIGNAL
+// ==============================
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.login(userId);
+});
+
+// ==============================
+// SALVAR NO FIREBASE
+// ==============================
+async function salvarUsuario() {
+
+  try {
+
+    await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
+      method: "POST",
+      body: JSON.stringify({
+        user_id: userId,
+        created_at: Date.now()
+      })
+    });
+
+    console.log("Usuario guardado:", userId);
+
+  } catch (e) {
+    console.error("Error guardando usuario:", e);
+  }
+
+}
+
+salvarUsuario();
+
+</script>
 
 </body>
 </html>
