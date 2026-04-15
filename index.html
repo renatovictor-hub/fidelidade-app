@@ -216,10 +216,10 @@ body {
 </div>
 
 </div>
-  <script>
+<script>
 
 // ==============================
-// GERAR ID ÚNICO DO USUÁRIO
+// GERAR ID ÚNICO
 // ==============================
 let userId = localStorage.getItem("user_id");
 
@@ -229,16 +229,26 @@ if (!userId) {
 }
 
 // ==============================
-// LOGIN NO ONESIGNAL
+// LOGIN ONESIGNAL
 // ==============================
 OneSignalDeferred.push(async function(OneSignal) {
   await OneSignal.login(userId);
 });
 
 // ==============================
-// SALVAR NO FIREBASE
+// VERIFICAR SE JÁ FOI SALVO
+// ==============================
+let jaSalvo = localStorage.getItem("user_saved");
+
+// ==============================
+// SALVAR SÓ UMA VEZ
 // ==============================
 async function salvarUsuario() {
+
+  if (jaSalvo === "true") {
+    console.log("Usuario já salvo:", userId);
+    return;
+  }
 
   try {
 
@@ -250,10 +260,12 @@ async function salvarUsuario() {
       })
     });
 
-    console.log("Usuario guardado:", userId);
+    localStorage.setItem("user_saved", "true");
+
+    console.log("Usuario salvo:", userId);
 
   } catch (e) {
-    console.error("Error guardando usuario:", e);
+    console.error("Erro ao salvar:", e);
   }
 
 }
