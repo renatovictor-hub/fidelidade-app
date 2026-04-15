@@ -2,29 +2,24 @@ export default async function handler(req, res) {
 
   try {
 
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
-    const { titulo, desc, link } = req.body || {};
-
-    if (!titulo || !desc) {
-      return res.status(400).json({ error: "Faltando dados" });
-    }
+    const { titulo, desc, link } = req.body;
 
     const response = await fetch("https://api.onesignal.com/notifications", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Authorization": "Bearer os_v2_app_cd6qqerxb5aivhvfzozut5owgwukxlod3ctuw5v2cep4jyxn46xk6urqt76rnkbwlzgm3ebgvytorglcc4wzkylfucyfldveye2omxq"
+        "Authorization": "Bearer os_v2_app_cd6qqerxb5aivhvfzozut5owgw2lnapwbmreg5uz7z76ur5il6vwde4sxehko5vrupfgj4zwvqy4najznu5a3bnljpyxsos7nieawlq",
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
+
         app_id: "10fd0812-370f-408a-9ea5-cbb349f5d635",
 
         target_channel: "push",
 
-        // 🔥 esse funciona na prática
-        included_segments: ["All"],
+        // 🔥 ESSA LINHA É O SEGREDO
+        include_aliases: {
+          external_id: ["all"]
+        },
 
         headings: {
           en: titulo
@@ -35,28 +30,22 @@ export default async function handler(req, res) {
         },
 
         web_url: link
+
       })
     });
 
     const data = await response.json();
 
-    console.log("OneSignal response:", data);
+    console.log("OneSignal:", data);
 
     if (!response.ok) {
-      return res.status(400).json({
-        erro: data
-      });
+      return res.status(400).json(data);
     }
 
-    return res.status(200).json({
-      success: true,
-      data
-    });
+    return res.status(200).json(data);
 
   } catch (err) {
-    console.error("ERRO SERVIDOR:", err);
-    return res.status(500).json({
-      error: "Erro interno"
-    });
+    console.error(err);
+    return res.status(500).json({ error: "Erro interno" });
   }
 }
