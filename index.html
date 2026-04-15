@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
 <meta charset="UTF-8">
+<title>Uai Sô Fidelidad</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Uai Sô Fidelidad</title>
-
 <link rel="manifest" href="/manifest.json">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
 
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
-
 OneSignalDeferred.push(async function(OneSignal) {
   await OneSignal.init({
     appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
@@ -23,27 +22,10 @@ OneSignalDeferred.push(async function(OneSignal) {
 </script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #ffffff;
-  text-align: center;
-}
-
-.container {
-  max-width: 400px;
-  margin: auto;
-  padding: 20px;
-}
-
-.logo {
-  width: 120px;
-  margin: 20px auto;
-}
-
-h1 {
-  color: #6a0dad;
-}
+body { margin: 0; font-family: Arial; background: #ffffff; text-align: center; }
+.container { max-width: 400px; margin: auto; padding: 20px; }
+.logo { width: 120px; margin: 20px auto; }
+h1 { color: #6a0dad; }
 
 .contador {
   background: #f3e8ff;
@@ -54,10 +36,25 @@ h1 {
   font-weight: bold;
 }
 
-.banner {
-  width: 100%;
+.banner { width: 100%; border-radius: 15px; margin: 15px 0; }
+
+/* PROMOS DINAMICAS */
+#promoBox { margin-top: 15px; text-align: left; }
+.promo-card {
+  background: linear-gradient(135deg, #6a0dad, #9b30ff);
+  color: white;
+  padding: 15px;
   border-radius: 15px;
-  margin: 15px 0;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 10px rgba(106, 13, 173, 0.3);
+}
+.timer {
+  background: rgba(255,255,255,0.2);
+  padding: 5px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 button {
@@ -67,22 +64,23 @@ button {
   border-radius: 12px;
   border: none;
   font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-.btn-primary {
-  background: #6a0dad;
-  color: white;
-}
+.btn-primary { background: #6a0dad; color: white; }
 
+.links { margin-top: 25px; }
 .links a {
   display: block;
-  margin: 5px;
+  margin: 10px;
   color: #6a0dad;
   text-decoration: none;
   font-weight: bold;
+  font-size: 18px;
 }
+.links i { margin-right: 8px; }
 </style>
-
 </head>
 
 <body>
@@ -91,32 +89,24 @@ button {
 
 <img src="logo.png" class="logo">
 
-<h1>Programa de Fidelidad</h1>
+<h1>Uai Sô</h1>
 
-<!-- FORM USUARIO -->
 <div id="formUsuario">
-
   <h3>👋 Bienvenido</h3>
-
-  <input id="nombreInput" placeholder="Tu nombre completo"
-    style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
-
-  <input id="telefonoInput" placeholder="Teléfono (opcional)"
-    style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
-
-  <button onclick="guardarUsuario()" class="btn-primary">
-    Guardar
-  </button>
-
+  <input id="nombreInput" placeholder="Tu nombre completo" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
+  <input id="telefonoInput" placeholder="Teléfono (opcional)" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc;">
+  <button onclick="guardarUsuario()" class="btn-primary">Guardar</button>
 </div>
 
-<h2 id="bienvenida" style="display:none;"></h2>
+<h2 id="bienvenida" style="display:none; color: #6a0dad;"></h2>
 
 <div class="contador">
 🔥 +300 clientes ya reciben promociones
 </div>
 
 <img src="banner.jpg" class="banner">
+
+<div id="promoBox" style="display:none;"></div>
 
 <button onclick="instalarApp()" class="btn-primary" id="btnInstalar" style="display:none;">
 📲 Instalar App
@@ -127,42 +117,34 @@ button {
 </button>
 
 <div class="links">
-  <a href="https://api.whatsapp.com/send?phone=5219986023759">📲 WhatsApp</a>
-  <a href="https://www.instagram.com/fooduaiso">📸 Instagram</a>
-  <a href="https://uaisocancun.ola.click/products">📋 Ver menú</a>
+  <a href="https://api.whatsapp.com/send?phone=5219986023759"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+  <a href="https://www.instagram.com/fooduaiso"><i class="fab fa-instagram"></i> Instagram</a>
+  <a href="https://uaisocancun.ola.click/products"><i class="fas fa-utensils"></i> Ver menú</a>
 </div>
 
 </div>
 
 <script>
-
-// ================= USER ID =================
+// ================= USER ID & NOME =================
 let userId = localStorage.getItem("user_id");
-
 if (!userId) {
   userId = "user_" + Math.floor(Math.random() * 1000000000);
   localStorage.setItem("user_id", userId);
 }
 
-// ================= MOSTRAR NOME =================
 let nomeSalvo = localStorage.getItem("nome_usuario");
-
 if (nomeSalvo) {
   document.getElementById("formUsuario").style.display = "none";
   document.getElementById("bienvenida").style.display = "block";
-  document.getElementById("bienvenida").innerText = "👋 Bienvenido " + nomeSalvo;
+  document.getElementById("bienvenida").innerText = "👋 Hola, " + nomeSalvo;
 }
 
 // ================= SALVAR USUARIO =================
 async function guardarUsuario() {
-
   const nome = document.getElementById("nombreInput").value;
   const telefone = document.getElementById("telefonoInput").value;
 
-  if (!nome) {
-    alert("Ingresa tu nombre");
-    return;
-  }
+  if (!nome) return alert("Ingresa tu nombre");
 
   await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
     method: "POST",
@@ -175,27 +157,61 @@ async function guardarUsuario() {
   });
 
   localStorage.setItem("nome_usuario", nome);
-
-  document.getElementById("formUsuario").style.display = "none";
-  document.getElementById("bienvenida").style.display = "block";
-  document.getElementById("bienvenida").innerText = "👋 Bienvenido " + nome;
-
+  location.reload(); // Recarga para aplicar cambios y tags de OneSignal
 }
 
-// ================= ONESIGNAL =================
+// ================= CARREGAR PROMOS DO DASHBOARD =================
+async function carregarPromos() {
+  const dbUrl = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json";
+  const container = document.getElementById("promoBox");
+  
+  try {
+    const res = await fetch(dbUrl);
+    const promos = await res.json();
+    if (!promos) return;
+
+    const agora = Date.now();
+    let temPromo = false;
+
+    Object.keys(promos).forEach(id => {
+      const p = promos[id];
+      if (!p || !p.exp || p.exp < agora) return;
+
+      temPromo = true;
+      const div = document.createElement("div");
+      div.className = "promo-card";
+      div.innerHTML = `
+        <h3 style="margin:0;">${p.titulo}</h3>
+        <p style="margin:5px 0;">${p.desc}</p>
+        <div class="timer" id="timer-${id}"></div>
+      `;
+      container.appendChild(div);
+
+      setInterval(() => {
+        const resto = p.exp - Date.now();
+        const el = document.getElementById(`timer-${id}`);
+        if (resto <= 0) { div.remove(); return; }
+        const h = Math.floor(resto / 3600000);
+        const m = Math.floor((resto % 3600000) / 60000);
+        const s = Math.floor((resto % 60000) / 1000);
+        if(el) el.innerText = `⏳ Termina en: ${h}h ${m}m ${s}s`;
+      }, 1000);
+    });
+
+    if (temPromo) container.style.display = "block";
+  } catch (e) { console.log("Error promos:", e); }
+}
+
+// ================= ONESIGNAL LOGIN & TAGS =================
 OneSignalDeferred.push(async function(OneSignal) {
-
   await OneSignal.login(userId);
-
   if (nomeSalvo) {
     await OneSignal.User.addTag("nombre", nomeSalvo);
   }
-
 });
 
-// ================= INSTALAR APP =================
+// ================= PWA & NOTIFICAÇÕES =================
 let deferredPrompt;
-
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -205,41 +221,30 @@ window.addEventListener("beforeinstallprompt", (e) => {
 function instalarApp() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+        document.getElementById("btnInstalar").style.display = "none";
+    });
   }
 }
 
-// ================= NOTIFICACOES =================
 async function activarNotificaciones() {
-
-  const OneSignal = window.OneSignal;
-
-  await OneSignal.Notifications.requestPermission();
-
-  alert("Promociones activadas 🔔");
-
+  await window.OneSignal.Notifications.requestPermission();
+  alert("¡Promociones activadas! 🔔");
   localStorage.setItem("push_ativo", "true");
   document.getElementById("btnAtivar").style.display = "none";
-
 }
 
 window.onload = () => {
-
+  carregarPromos();
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   const jaAtivo = localStorage.getItem("push_ativo");
 
   if (jaAtivo === "true") {
     document.getElementById("btnAtivar").style.display = "none";
-    return;
-  }
-
-  if (isStandalone) {
+  } else if (isStandalone) {
     document.getElementById("btnAtivar").style.display = "block";
-  } else {
-    document.getElementById("btnInstalar").style.display = "block";
   }
-
 };
-
 </script>
 
 </body>
