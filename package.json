@@ -1,0 +1,15 @@
+{
+  "name": "fidelidade-app",
+  "version": "1.0.0",
+  "description": "Fidelidade App - Loyalty program application",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build needed'",
+    "lint": "echo 'No linting configured for static HTML'"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12"
+  },
+  "devDependencies": {},
+  "private": true
+}
