@@ -83,7 +83,7 @@ button { width:100%;padding:15px;margin-top:15px;border:none;border-radius:10px;
 </div>
 
 <script>
-let userId = localStorage.getItem("uid") || "user_" + Math.floor(Math.random()*1e9);
+const onesignalId = await OneSignalInstance.User.getOnesignalId();
 localStorage.setItem("uid", userId);
 
 // ================= INSTALL PWA =================
