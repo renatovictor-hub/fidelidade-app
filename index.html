@@ -185,46 +185,67 @@
         setInterval(carregarConteudo, 15000); // Atualiza as promos a cada 15s
     }
 
-    async function carregarConteudo() {
-        try {
-            const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-            const promos = await res.json();
-            if (!promos) return;
+   async function carregarConteudo() {
+    try {
+        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+        const promos = await res.json();
+        if (!promos) return;
 
-            const agora = Date.now();
-            const box = document.getElementById("promoBox");
-            const expBox = document.getElementById("expiredBox");
-            box.innerHTML = ""; expBox.innerHTML = "";
+        const agora = Date.now();
+        const box = document.getElementById("promoBox");
+        const expBox = document.getElementById("expiredBox");
+        const header = document.getElementById("promoHeader");
+        const expSection = document.getElementById("expiredSection");
 
-            const ativas = []; const expiradas = [];
-            Object.values(promos).forEach(p => {
-                p.exp > agora ? ativas.push(p) : expiradas.push(p);
+        box.innerHTML = "";
+        expBox.innerHTML = "";
+
+        const ativas = [];
+        const expiradas = [];
+
+        // Separamos as promos
+        Object.keys(promos).forEach(id => {
+            const p = promos[id];
+            p.exp > agora ? ativas.push(p) : expiradas.push(p);
+        });
+
+        // 1. RENDERIZAR ATIVAS (Ordenadas da mais nova para a mais antiga)
+        if (ativas.length > 0) {
+            header.style.display = "block";
+            ativas.sort((a, b) => b.exp - a.exp).forEach(p => {
+                const card = document.createElement("div");
+                card.className = "promo-card";
+                const msg = encodeURIComponent(`¡Hola! Soy Capilover y quiero la promo: ${p.titulo}`);
+                card.innerHTML = `<h3>${p.titulo}</h3><p>${p.desc}</p>
+                    <a href="https://api.whatsapp.com/send?phone=5219986023759&text=${msg}" target="_blank" class="btn-wa-promo">
+                    <i class="fab fa-whatsapp"></i> YO QUIERO</a>`;
+                box.appendChild(card);
             });
+        } else {
+            header.style.display = "none";
+        }
 
-            if (ativas.length > 0) {
-                document.getElementById("promoHeader").style.display = "block";
-                ativas.forEach(p => {
-                    const card = document.createElement("div");
-                    card.className = "promo-card";
-                    card.innerHTML = `<h3>${p.titulo}</h3><p>${p.desc}</p>
-                        <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Quiero:%20${p.titulo}" class="btn-wa-promo">
-                        <i class="fab fa-whatsapp"></i> YO QUIERO</a>`;
-                    box.appendChild(card);
-                });
-            }
+        // 2. RENDERIZAR EXPIRADAS (CORREÇÃO AQUI: Ordenar e pegar as 3 mais recentes)
+        if (expiradas.length > 0) {
+            expSection.style.display = "block";
+            
+            // Ordenamos: a que expirou há menos tempo aparece primeiro
+            expiradas.sort((a, b) => b.exp - a.exp); 
+            
+            // Pegamos apenas as 3 primeiras dessa lista ordenada
+            const ultimasExpiradas = expiradas.slice(0, 3);
 
-            if (expiradas.length > 0) {
-                document.getElementById("expiredSection").style.display = "block";
-                expiradas.sort((a,b) => b.exp - a.exp).slice(0,3).forEach(p => {
-                    const card = document.createElement("div");
-                    card.className = "expired-card";
-                    card.innerHTML = `<b>${p.titulo}</b><br>${p.desc}`;
-                    expBox.appendChild(card);
-                });
-            }
-        } catch (e) { console.log(e); }
-    }
-
+            ultimasExpiradas.forEach(p => {
+                const card = document.createElement("div");
+                card.className = "expired-card";
+                card.innerHTML = `<b>${p.titulo}</b><br>${p.desc}`;
+                expBox.appendChild(card);
+            });
+        } else {
+            expSection.style.display = "none";
+        }
+    } catch (e) { console.error("Erro ao carregar conteúdo:", e); }
+}
     async function atualizarContador() {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
         const data = await res.json();
