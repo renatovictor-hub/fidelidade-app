@@ -16,158 +16,175 @@ let OneSignalInstance = null;
 
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
-  OneSignalInstance = OneSignal;
+  OneSignalInstance = OneSignal;
 
-  await OneSignal.init({
-    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-    notifyButton: { enable: false },
-    // Removi os caminhos manuais para evitar o conflito de Service Worker
-  });
+  await OneSignal.init({
+    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+    notifyButton: { enable: false }
+  });
 });
 </script>
 
 <style>
 :root { --roxo:#6a0dad; --amarelo:#ffcc00; }
-body { margin:0;font-family:sans-serif;text-align:center; background: #fff;}
+body { margin:0;font-family:sans-serif;text-align:center; background:#fff;}
 .container { max-width:400px;margin:auto;padding:20px;}
 
-/* Seus Steps */
-.step { display:none; padding: 20px; border-radius: 15px; border: 1px solid #eee; margin-top: 20px;}
+.step { display:none; padding:20px; border-radius:15px; border:1px solid #eee; margin-top:20px;}
 .active { display:block !important; }
 
 button { width:100%;padding:15px;margin-top:15px;border:none;border-radius:10px;font-weight:bold; cursor:pointer;}
 .btn1 { background:#6a0dad;color:#fff; }
-.btn2 { background:#ffcc00; color: #000; }
+.btn2 { background:#ffcc00;color:#000; }
 
-/* Cards das Promos */
 .card { background:#6a0dad;color:#fff;padding:15px;border-radius:15px;margin-top:10px;text-align:left;}
-.card-expired { background:#f2f2f2; color:#777; padding:12px; border-radius:12px; margin-top:10px; text-align:left; border-left: 4px solid #ccc; font-size: 14px;}
-.expired-title { color: #999; margin-top: 30px; font-size: 16px; border-top: 1px solid #eee; padding-top: 15px;}
+.card-expired { background:#f2f2f2;color:#777;padding:12px;border-radius:12px;margin-top:10px;text-align:left;border-left:4px solid #ccc;font-size:14px;}
+.expired-title { color:#999;margin-top:30px;font-size:16px;border-top:1px solid #eee;padding-top:15px;}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-    <div style="margin-bottom: 20px;">
-        <h1 style="color: var(--roxo);">Uai Sô</h1>
-    </div>
+  <div style="margin-bottom:20px;">
+    <h1 style="color:var(--roxo);">Uai Sô</h1>
+  </div>
 
-    <div id="installStep" class="step">
-        <h2>Instalar App</h2>
-        <p>Para recibir las mejores promos, instala nuestra App en tu celular.</p>
-        <button onclick="instalar()" class="btn1">INSTALAR</button>
-    </div>
+  <div id="installStep" class="step">
+    <h2>Instalar App</h2>
+    <p>Instala la app para recibir promos antes que todos.</p>
+    <button onclick="instalar()" class="btn1">INSTALAR</button>
+  </div>
 
-    <div id="notifStep" class="step">
-        <h2>Ativar Notificações</h2>
-        <p>¡No te pierdas de nada! Activa las alertas.</p>
-        <button onclick="ativarNotif()" class="btn2">ATIVAR ALERTAS</button>
-    </div>
+  <div id="notifStep" class="step">
+    <h2>Ativar Notificações</h2>
+    <p>Activa las alertas para no perder promociones.</p>
+    <button onclick="ativarNotif()" class="btn2">ATIVAR ALERTAS</button>
+  </div>
 
-    <div id="nomeStep" class="step">
-        <h2>Seu Nome</h2>
-        <input id="nome" placeholder="¿Cómo te llamas?" style="width:100%;padding:12px; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc;">
-        <button onclick="salvar()" class="btn1">CONTINUAR</button>
-    </div>
+  <div id="nomeStep" class="step">
+    <h2>Seu Nome</h2>
+    <input id="nome" placeholder="¿Cómo te llamas?" style="width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;">
+    <button onclick="salvar()" class="btn1">CONTINUAR</button>
+  </div>
 
-    <div id="app" style="display:none;">
-        <h2 id="hello" style="color: var(--roxo);"></h2>
-        <div id="promos"></div>
-        
-        <div id="expiredSection" style="display:none;">
-            <div class="expired-title">Anteriores</div>
-            <div id="expiredBox"></div>
-        </div>
+  <div id="app" style="display:none;">
+    <h2 id="hello" style="color:var(--roxo);"></h2>
+    <div id="promos"></div>
+
+    <div id="expiredSection" style="display:none;">
+      <div class="expired-title">Anteriores</div>
+      <div id="expiredBox"></div>
     </div>
+  </div>
 </div>
 
 <script>
-const onesignalId = await OneSignalInstance.User.getOnesignalId();
-localStorage.setItem("uid", userId);
+// ================= USER FIXO =================
+let userId = localStorage.getItem("uid");
+if (!userId) {
+  userId = "user_" + Math.floor(Math.random()*1e9);
+  localStorage.setItem("uid", userId);
+}
 
-// ================= INSTALL PWA =================
+// ================= INSTALL =================
 let deferredPrompt;
+
 window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  show("installStep");
+  e.preventDefault();
+  deferredPrompt = e;
+  show("installStep");
 });
 
 async function instalar(){
-  if (!deferredPrompt) {
-    // Se já estiver instalado ou não suportar, pula para notificações
-    show("notifStep");
-    return;
-  }
-  deferredPrompt.prompt();
-  const choice = await deferredPrompt.userChoice;
-  if (choice.outcome === "accepted") show("notifStep");
-  else show("notifStep"); // Continua mesmo se recusar instalação
+  if (!deferredPrompt) {
+    show("notifStep");
+    return;
+  }
+
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+
+  show("notifStep"); // continua sempre
 }
 
-// ================= FLOW INICIAL =================
+// ================= FLOW =================
 window.onload = () => {
-  const nome = localStorage.getItem("nome");
+  const nome = localStorage.getItem("nome");
   const push = localStorage.getItem("push_ativo");
 
-  if (nome) abrirApp();
+  if (nome) abrirApp();
   else if (push) show("nomeStep");
   else {
-      // Se o evento 'beforeinstallprompt' não disparar em 2 segundos, mostra o step de notif
-      setTimeout(() => {
-          if(!document.querySelector('.active')) show("notifStep");
-      }, 2000);
+    setTimeout(() => {
+      if(!document.querySelector('.active')) show("notifStep");
+    }, 2000);
   }
 };
 
 // ================= NOTIF =================
 async function ativarNotif(){
-  if (!OneSignalInstance) return alert("Cargando...");
-  
+  if (!OneSignalInstance) return alert("Cargando...");
+
   const perm = await OneSignalInstance.Notifications.requestPermission();
 
-  if (Notification.permission === "granted") {
+  if (Notification.permission === "granted") {
     localStorage.setItem("push_ativo", "true");
-    show("nomeStep");
-  } else {
-    alert("Para continuar, activa las notificaciones en el candado del navegador.");
-  }
+    show("nomeStep");
+  } else {
+    alert("Activa manualmente las notificaciones en el navegador.");
+  }
 }
 
 // ================= SALVAR =================
 async function salvar(){
-  const nomeVal = document.getElementById("nome").value;
-  if(!nomeVal) return alert("Escribe tu nombre");
+  const nomeVal = document.getElementById("nome").value;
+  if (!nomeVal) return alert("Escribe tu nombre");
 
-  await OneSignalInstance.login(userId);
+  // 🔥 LOGIN NO ONESIGNAL
+  await OneSignalInstance.login(userId);
 
-  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${userId}.json`,{
-    method:"PUT",
-    body:JSON.stringify({ nome: nomeVal, user_id: userId })
-  });
+  // 🔥 TAG PARA SEGMENTAÇÃO
+  await OneSignalInstance.User.addTag("nome", nomeVal);
 
-  localStorage.setItem("nome", nomeVal);
-  abrirApp();
+  // 🔥 SALVAR NO FIREBASE
+  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${userId}.json`,{
+    method:"PUT",
+    body:JSON.stringify({
+      nome: nomeVal,
+      user_id: userId,
+      created_at: Date.now()
+    })
+  });
+
+  localStorage.setItem("nome", nomeVal);
+
+  abrirApp();
 }
 
-// ================= APP & PROMOS =================
+// ================= APP =================
 function abrirApp(){
-  document.querySelectorAll(".step").forEach(e=>e.style.display="none");
-  document.getElementById("app").style.display="block";
-  document.getElementById("hello").innerText = "Hola " + localStorage.getItem("nome");
-  carregar();
+  document.querySelectorAll(".step").forEach(e=>e.style.display="none");
+  document.getElementById("app").style.display="block";
+
+  document.getElementById("hello").innerText =
+    "Hola " + localStorage.getItem("nome");
+
+  carregar();
 }
 
+// ================= PROMOS =================
 async function carregar(){
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-  const data = await res.json();
-  const box = document.getElementById("promos");
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+  const data = await res.json();
+
+  const box = document.getElementById("promos");
   const expBox = document.getElementById("expiredBox");
-  box.innerHTML="";
+
+  box.innerHTML="";
   expBox.innerHTML="";
 
-  if(!data) return;
+  if(!data) return;
 
   const agora = Date.now();
   const ativas = [];
@@ -178,32 +195,36 @@ async function carregar(){
     else expiradas.push(p);
   });
 
-  // Ordenar e Mostrar Ativas
+  // ATIVAS
   ativas.sort((a,b) => b.exp - a.exp);
   ativas.forEach(p => {
-    const div = document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<b>${p.titulo}</b><br>${p.desc}`;
-    box.appendChild(div);
-  });
+    const div = document.createElement("div");
+    div.className="card";
+    div.innerHTML=`<b>${p.titulo}</b><br>${p.desc}`;
+    box.appendChild(div);
+  });
 
-  // Ordenar e Mostrar apenas as 3 últimas Expiradas
-  if(expiradas.length > 0) {
-    document.getElementById("expiredSection").style.display = "block";
-    expiradas.sort((a,b) => b.exp - a.exp);
-    expiradas.slice(0, 3).forEach(p => {
+  // EXPIRADAS
+  if(expiradas.length > 0){
+    document.getElementById("expiredSection").style.display="block";
+
+    expiradas.sort((a,b)=>b.exp-a.exp)
+      .slice(0,3)
+      .forEach(p=>{
         const div = document.createElement("div");
         div.className="card-expired";
         div.innerHTML=`<b>${p.titulo}</b> (Finalizada)`;
         expBox.appendChild(div);
-    });
+      });
   }
 }
 
+// ================= UTILS =================
 function show(id){
-  document.querySelectorAll(".step").forEach(e=>e.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".step").forEach(e=>e.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 </script>
+
 </body>
 </html>
