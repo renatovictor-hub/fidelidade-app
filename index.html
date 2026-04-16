@@ -67,19 +67,21 @@ button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;
 <div class="container">
 
 <div id="step1" class="step-box">
-<h2>Instalar App</h2>
-<button onclick="instalarApp()" class="btn-next">INSTALAR</button>
+<h2 style="color:#6a0dad">Instalar App</h2>
+<p>Instala para acesso rápido</p>
+<button onclick="instalarApp()" class="btn-next"><i class="fas fa-mobile-alt"></i> INSTALAR APP</button>
 </div>
 
 <div id="step2" class="step-box">
-<h2>Ativar Notificações</h2>
-<button onclick="ativarNotif()" class="btn-notif">ATIVAR</button>
+<h2 style="color:#6a0dad">Ativar Notificações</h2>
+<p>Receba promoções primeiro</p>
+<button onclick="ativarNotif()" class="btn-notif"><i class="fas fa-bell"></i> ATIVAR ALERTAS</button>
 </div>
 
 <div id="step3" class="step-box">
-<h2>Seu Nome</h2>
-<input id="nomeInput" placeholder="Nome" style="width:100%;padding:12px;">
-<button onclick="salvarNome()" class="btn-next">CONTINUAR</button>
+<h2 style="color:#6a0dad">Seu Nome</h2>
+<input id="nomeInput" placeholder="Digite seu nome" style="width:100%;padding:14px;border-radius:10px;border:1px solid #ddd;">
+<button onclick="salvarNome()" class="btn-next">ENTRAR</button>
 </div>
 
 <div id="mainApp" style="display:none;">
@@ -90,6 +92,14 @@ button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;
 </div>
 
 <script>
+
+// ================= PWA INSTALL =================
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
 
 // ================= USER FIXO =================
 let userId = localStorage.getItem("user_id");
@@ -117,15 +127,30 @@ function show(id){
 }
 
 // ================= INSTALAR =================
-function instalarApp(){
-    show("step2");
+async function instalarApp(){
+
+    if (deferredPrompt) {
+
+        deferredPrompt.prompt();
+
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === "accepted") {
+            show("step2");
+        } else {
+            alert("Instalação cancelada");
+        }
+
+    } else {
+        alert("Use o menu do navegador → 'Adicionar à tela inicial'");
+    }
 }
 
 // ================= NOTIF =================
 async function ativarNotif(){
 
     if (!OneSignalInstance){
-        alert("Cargando...");
+        alert("Aguarde...");
         return;
     }
 
@@ -177,7 +202,7 @@ function showMainApp(){
     document.getElementById("mainApp").style.display="block";
 
     document.getElementById("userGreeting").innerText =
-        "Hola, " + localStorage.getItem("nome_usuario");
+        "👋 Hola, " + localStorage.getItem("nome_usuario");
 
     carregarPromos();
 }
@@ -196,7 +221,6 @@ async function carregarPromos(){
     Object.values(data).forEach(p=>{
 
         if(!p.exp) return;
-
         if(p.exp < Date.now()) return;
 
         const div = document.createElement("div");
