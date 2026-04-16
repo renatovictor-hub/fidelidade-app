@@ -14,223 +14,202 @@
                 document.body.innerHTML = `
                     <div style="padding:50px;text-align:center;font-family:sans-serif;background:white;height:100vh;">
                         <h2 style="color:#6a0dad">📲 Abrir en Navegador</h2>
-                        <p>Para usar la App, toca los tres puntos <b>(...)</b> e selecciona <b>"Abrir en Safari"</b> o <b>"Abrir en Chrome"</b>.</p>
+                        <p>Para usar la App, toca los tres puntos (...) y abre en Safari o Chrome.</p>
                     </div>`;
             });
         }
     </script>
 
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+    <!-- 🔥 ONESIGNAL CORRIGIDO -->
     <script>
+        let OneSignalInstance = null;
+
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function(OneSignal) {
-          await OneSignal.init({
-            appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-            safari_web_id: "web.onesignal.auto",
-            notifyButton: { enable: false }
-          });
+
+            OneSignalInstance = OneSignal;
+
+            await OneSignal.init({
+                appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+                safari_web_id: "web.onesignal.auto",
+                notifyButton: { enable: false }
+            });
+
         });
     </script>
 
     <style>
-        :root { --roxo: #6a0dad; --amarelo: #ffcc00; --gradiente: linear-gradient(135deg, #6a0dad, #9b30ff); }
-        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #fff; text-align: center; color: #333; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 400px; margin: auto; padding: 20px; position: relative; }
-        
-        .header-app { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
-        .logo { width: 80px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
-        .btn-refresh { background: none; border: none; color: var(--roxo); font-size: 20px; cursor: pointer; padding: 10px; }
+        :root { --roxo:#6a0dad; --amarelo:#ffcc00; --gradiente:linear-gradient(135deg,#6a0dad,#9b30ff);}
+        body { margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#fff;text-align:center;color:#333;}
+        .container { max-width:400px;margin:auto;padding:20px;}
 
-        .step-box { display: none; padding: 25px; border-radius: 20px; background: #fefefe; border: 2px solid #eee; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        button { width: 100%; padding: 16px; margin-top: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
-        .btn-next { background: var(--gradiente); color: white; box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3); }
-        .btn-notif { background: var(--amarelo); color: var(--roxo); box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3); }
-        
-        .contador { background: #f3e8ff; padding: 12px; border-radius: 12px; margin: 15px 0; color: var(--roxo); font-weight: bold; font-size: 14px; }
-        .promo-card { background: var(--gradiente); color: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; text-align: left; box-shadow: 0 6px 15px rgba(106, 13, 173, 0.2); }
-        .btn-wa-promo { background: #25d366; color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-weight: bold; font-size: 14px; }
+        .header-app { display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
+        .logo { width:80px;}
+        .btn-refresh { background:none;border:none;color:var(--roxo);font-size:20px;cursor:pointer;}
 
-        .expired-section { margin-top: 30px; opacity: 0.8; text-align: left; }
-        .expired-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .expired-card { background: #f8f8f8; color: #777; padding: 15px; border-radius: 15px; margin-bottom: 10px; font-size: 13px; border-left: 4px solid #ccc; }
-        
-        .footer-links { margin-top: 40px; border-top: 2px solid #f9f9f9; padding-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .footer-links a { padding: 12px; border-radius: 10px; background: #f8f8f8; color: var(--roxo); text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .link-full { grid-column: span 2; background: #f0f0f0 !important; }
+        .step-box { display:none;padding:25px;border-radius:20px;background:#fff;border:2px solid #eee;box-shadow:0 10px 25px rgba(0,0,0,0.05);}
+        .active { display:block;}
+
+        button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;font-weight:bold;}
+        .btn-next { background:var(--gradiente);color:#fff;}
+        .btn-notif { background:var(--amarelo);color:#000;}
+
+        .promo-card { background:var(--gradiente);color:white;padding:18px;border-radius:18px;margin-bottom:15px;text-align:left;}
     </style>
 </head>
 
 <body>
 <div class="container">
-    
-    <div class="header-app">
-        <img src="logo.png" class="logo">
-        <button onclick="location.reload()" class="btn-refresh" id="refreshBtn" style="display:none;"><i class="fas fa-sync-alt"></i></button>
-    </div>
 
-    <div id="step1" class="step-box">
-        <h2 style="color:var(--roxo)">¡Bienvenido! 🇧🇷</h2>
-        <p>Instala nuestra App oficial para acceder a las promociones exclusivas.</p>
-        <button onclick="instalarApp()" class="btn-next"><i class="fas fa-mobile-alt"></i> INSTALAR APP</button>
-    </div>
+<div class="header-app">
+    <img src="logo.png" class="logo">
+    <button onclick="location.reload()" class="btn-refresh" id="refreshBtn" style="display:none;">↻</button>
+</div>
 
-    <div id="step2" class="step-box">
-        <h2 style="color:var(--roxo)">Paso 2: Alertas 🔔</h2>
-        <p>Activa las notificaciones para recibir las ofertas antes que nadie.</p>
-        <button onclick="ativarNotif()" class="btn-notif"><i class="fas fa-bell"></i> ACTIVAR ALERTAS</button>
-    </div>
+<div id="step1" class="step-box">
+    <h2>Instalar App</h2>
+    <button onclick="instalarApp()" class="btn-next">INSTALAR</button>
+</div>
 
-    <div id="step3" class="step-box">
-        <h2 style="color:var(--roxo)">Paso 3: Tu Nombre 👤</h2>
-        <p>¿Cómo te llamamos, CapiLover?</p>
-        <input id="nomeInput" placeholder="Escribe tu nombre" style="width:100%;padding:14px;border-radius:10px;border:1px solid #ddd;box-sizing:border-box;font-size:16px; outline: none;">
-        <button onclick="salvarNome()" class="btn-next">EMPEZAR AHORA</button>
-    </div>
+<div id="step2" class="step-box">
+    <h2>Activar Notificaciones</h2>
+    <button onclick="ativarNotif()" class="btn-notif">ACTIVAR</button>
+</div>
 
-    <div id="mainApp" style="display:none;">
-        <h2 id="userGreeting" style="color:var(--roxo); margin-bottom:5px; text-align: left;">👋 Hola!</h2>
-        <div class="contador" id="countDiv"><i class="fas fa-users"></i> 🔥 +300 clientes conectados</div>
-        
-        <img src="banner.jpg" style="width:100%; border-radius:18px; margin:10px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-        
-        <h3 id="promoHeader" style="color:var(--roxo); display:none; text-align:left; margin-top:25px;">🔥 Promociones Activas</h3>
-        <div id="promoBox"></div>
+<div id="step3" class="step-box">
+    <h2>Tu Nombre</h2>
+    <input id="nomeInput" placeholder="Nombre" style="width:100%;padding:12px;">
+    <button onclick="salvarNome()" class="btn-next">CONTINUAR</button>
+</div>
 
-        <div id="expiredSection" class="expired-section" style="display:none;">
-            <div class="expired-title">⏳ Mira lo que te perdiste</div>
-            <div id="expiredBox"></div>
-        </div>
+<div id="mainApp" style="display:none;">
+    <h2 id="userGreeting"></h2>
+    <div id="promoBox"></div>
+</div>
 
-        <div class="footer-links">
-            <a href="https://api.whatsapp.com/send?phone=5219986023759" target="_blank"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-            <a href="https://www.instagram.com/fooduaiso" target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
-            <a href="https://uaisocancun.ola.click/products" target="_blank" class="link-full"><i class="fas fa-utensils"></i> Ver Menú Completo</a>
-        </div>
-    </div>
 </div>
 
 <script>
-    let deferredPrompt;
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
-    window.onload = () => {
-        if (localStorage.getItem("nome_usuario")) {
-            showMainApp();
-        } else if (isStandalone) {
-            localStorage.getItem("push_ativo") ? document.getElementById("step3").classList.add("active") : document.getElementById("step2").classList.add("active");
-        } else {
-            document.getElementById("step1").classList.add("active");
-        }
-    };
+// ================= USER ID FIXO =================
+let userId = localStorage.getItem("user_id");
 
-    window.addEventListener('beforeinstallprompt', (e) => { 
-        e.preventDefault(); 
-        deferredPrompt = e; 
+if (!userId) {
+    userId = "user_" + Math.floor(Math.random() * 1000000000);
+    localStorage.setItem("user_id", userId);
+}
+
+// ================= FLOW =================
+window.onload = () => {
+
+    const nome = localStorage.getItem("nome_usuario");
+    const push = localStorage.getItem("push_ativo");
+
+    if (nome) showMainApp();
+    else if (push) show("step3");
+    else show("step1");
+
+};
+
+function show(id){
+    document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+
+// ================= INSTALAR =================
+function instalarApp(){
+    show("step2");
+}
+
+// ================= NOTIF CORRIGIDO =================
+async function ativarNotif(){
+
+    if (!OneSignalInstance){
+        alert("Cargando...");
+        return;
+    }
+
+    const perm = await OneSignalInstance.Notifications.requestPermission();
+
+    if (perm === "granted"){
+        localStorage.setItem("push_ativo","true");
+        show("step3");
+    } else {
+        alert("Permiso denegado");
+    }
+}
+
+// ================= SALVAR NOME =================
+async function salvarNome(){
+
+    const nome = document.getElementById("nomeInput").value;
+    if (!nome) return alert("Digite seu nome");
+
+    if (OneSignalInstance){
+        await OneSignalInstance.login(userId);
+    }
+
+    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${userId}.json`,{
+        method:"PUT",
+        body:JSON.stringify({
+            user_id:userId,
+            nombre:nome,
+            created_at:Date.now()
+        })
     });
 
-    function instalarApp() {
-        if (isIOS) alert("Toca el botón 'Compartir' ⬆️ y luego 'Agregar a pantalla de inicio' 📲");
-        else if (deferredPrompt) deferredPrompt.prompt();
-        else alert("Usa el menú de tu navegador para 'Instalar App'.");
-    }
+    localStorage.setItem("nome_usuario",nome);
 
-    async function ativarNotif() {
-        OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.Notifications.requestPermission();
-            localStorage.setItem("push_ativo", "true");
-            document.getElementById("step2").classList.remove("active");
-            document.getElementById("step3").classList.add("active");
-        });
-    }
+    showMainApp();
+}
 
-    // AQUI ESTÁ A LÓGICA DE IDENTIFICAÇÃO QUE DISCUTIMOS
-    async function salvarNome() {
-        const nome = document.getElementById("nomeInput").value;
-        if (!nome) return alert("Dinos tu nombre");
+// ================= APP =================
+function showMainApp(){
 
-        // Geramos o user_id igual ao que você já tem no banco
-        const userId = "user_" + Math.floor(Math.random() * 1000000000);
+    document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
+    document.getElementById("mainApp").style.display="block";
+    document.getElementById("refreshBtn").style.display="block";
 
-        // Avisamos ao OneSignal quem é este usuário (FUNDAMENTAL para o push funcionar)
-        OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.login(userId);
-        });
+    document.getElementById("userGreeting").innerText =
+        "Hola, " + localStorage.getItem("nome_usuario");
 
-        // Salvamos no Firebase com o ID que o OneSignal agora conhece
-        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
-            method: "POST",
-            body: JSON.stringify({ 
-                nombre: nome, 
-                user_id: userId,
-                created_at: Date.now() 
-            })
-        });
+    carregarPromos();
+}
 
-        localStorage.setItem("nome_usuario", nome);
-        showMainApp();
-    }
+// ================= PROMOS =================
+async function carregarPromos(){
 
-    function showMainApp() {
-        document.querySelectorAll('.step-box').forEach(el => el.classList.remove('active'));
-        document.getElementById("mainApp").style.display = "block";
-        document.getElementById("refreshBtn").style.display = "block";
-        document.getElementById("userGreeting").innerText = "👋 Hola, " + localStorage.getItem("nome_usuario") + "!";
-        
-        carregarConteudo();
-        atualizarContador();
-        setInterval(carregarConteudo, 15000); // Atualiza as promos a cada 15s
-    }
+    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+    const data = await res.json();
 
-    async function carregarConteudo() {
-        try {
-            const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-            const promos = await res.json();
-            if (!promos) return;
+    const box = document.getElementById("promoBox");
+    box.innerHTML="";
 
-            const agora = Date.now();
-            const box = document.getElementById("promoBox");
-            const expBox = document.getElementById("expiredBox");
-            box.innerHTML = ""; expBox.innerHTML = "";
+    if(!data) return;
 
-            const ativas = []; const expiradas = [];
-            Object.values(promos).forEach(p => {
-                p.exp > agora ? ativas.push(p) : expiradas.push(p);
-            });
+    Object.values(data).forEach(p=>{
 
-            if (ativas.length > 0) {
-                document.getElementById("promoHeader").style.display = "block";
-                ativas.forEach(p => {
-                    const card = document.createElement("div");
-                    card.className = "promo-card";
-                    card.innerHTML = `<h3>${p.titulo}</h3><p>${p.desc}</p>
-                        <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Quiero:%20${p.titulo}" class="btn-wa-promo">
-                        <i class="fab fa-whatsapp"></i> YO QUIERO</a>`;
-                    box.appendChild(card);
-                });
-            }
+        if(!p.exp) return;
 
-            if (expiradas.length > 0) {
-                document.getElementById("expiredSection").style.display = "block";
-                expiradas.sort((a,b) => b.exp - a.exp).slice(0,3).forEach(p => {
-                    const card = document.createElement("div");
-                    card.className = "expired-card";
-                    card.innerHTML = `<b>${p.titulo}</b><br>${p.desc}`;
-                    expBox.appendChild(card);
-                });
-            }
-        } catch (e) { console.log(e); }
-    }
+        const restante = p.exp - Date.now();
+        if(restante <= 0) return;
 
-    async function atualizarContador() {
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
-        const data = await res.json();
-        const total = data ? Object.keys(data).length : 0;
-        document.getElementById("countDiv").innerHTML = `<i class="fas fa-users"></i> 🔥 +${300 + total} clientes conectados`;
-    }
+        const div = document.createElement("div");
+        div.className="promo-card";
+
+        div.innerHTML = `
+            <h3>${p.titulo}</h3>
+            <p>${p.desc}</p>
+        `;
+
+        box.appendChild(div);
+
+    });
+}
+
 </script>
+
 </body>
 </html>
