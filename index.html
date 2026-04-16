@@ -3,61 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <title>Uai Sô Fidelidad</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<!-- BLOQUEIO IN-APP -->
-<script>
-const isInApp = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
-if (isInApp) {
-    document.addEventListener("DOMContentLoaded", () => {
-        document.body.innerHTML = `
-        <div style="padding:50px;text-align:center;">
-        <h2 style="color:#6a0dad">📲 Abrir en Navegador</h2>
-        <p>Abre en Safari o Chrome.</p>
-        </div>`;
-    });
-}
-</script>
-
-<!-- ONESIGNAL -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 <script>
+// ================= SERVICE WORKER =================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
+// ================= ONESIGNAL =================
 let OneSignalInstance = null;
 
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
 
-    OneSignalInstance = OneSignal;
+  OneSignalInstance = OneSignal;
 
-    await OneSignal.init({
-        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-        safari_web_id: "web.onesignal.auto",
-        notifyButton: { enable: false },
-
-        serviceWorkerPath: "/OneSignalSDKWorker.js",
-        serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js"
-    });
+  await OneSignal.init({
+    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+    notifyButton: { enable: false },
+    serviceWorkerPath: "/OneSignalSDKWorker.js",
+    serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js"
+  });
 
 });
 </script>
 
 <style>
-:root { --roxo:#6a0dad; --amarelo:#ffcc00; --gradiente:linear-gradient(135deg,#6a0dad,#9b30ff);}
-body { margin:0;font-family:'Segoe UI',sans-serif;background:#fff;text-align:center;}
+:root { --roxo:#6a0dad; --amarelo:#ffcc00; }
+body { margin:0;font-family:sans-serif;text-align:center;}
 .container { max-width:400px;margin:auto;padding:20px;}
 
-.step-box { display:none;padding:25px;border-radius:20px;border:2px solid #eee;margin-bottom:20px;}
-.active { display:block;}
+.step { display:none; }
+.active { display:block; }
 
-button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;font-weight:bold;}
-.btn-next { background:var(--gradiente);color:white;}
-.btn-notif { background:var(--amarelo);color:black;}
+button { width:100%;padding:15px;margin-top:15px;border:none;border-radius:10px;font-weight:bold;}
+.btn1 { background:#6a0dad;color:#fff; }
+.btn2 { background:#ffcc00; }
 
-.promo-card { background:var(--gradiente);color:white;padding:18px;border-radius:18px;margin-bottom:15px;text-align:left;}
+.card { background:#6a0dad;color:#fff;padding:15px;border-radius:15px;margin-top:10px;text-align:left;}
 </style>
 
 </head>
@@ -66,174 +55,140 @@ button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;
 
 <div class="container">
 
-<div id="step1" class="step-box">
-<h2 style="color:#6a0dad">Instalar App</h2>
-<p>Instala para acesso rápido</p>
-<button onclick="instalarApp()" class="btn-next"><i class="fas fa-mobile-alt"></i> INSTALAR APP</button>
+<div id="installStep" class="step">
+<h2>Instalar App</h2>
+<button onclick="instalar()" class="btn1">INSTALAR</button>
 </div>
 
-<div id="step2" class="step-box">
-<h2 style="color:#6a0dad">Ativar Notificações</h2>
-<p>Receba promoções primeiro</p>
-<button onclick="ativarNotif()" class="btn-notif"><i class="fas fa-bell"></i> ATIVAR ALERTAS</button>
+<div id="notifStep" class="step">
+<h2>Ativar Notificações</h2>
+<button onclick="ativarNotif()" class="btn2">ATIVAR</button>
 </div>
 
-<div id="step3" class="step-box">
-<h2 style="color:#6a0dad">Seu Nome</h2>
-<input id="nomeInput" placeholder="Digite seu nome" style="width:100%;padding:14px;border-radius:10px;border:1px solid #ddd;">
-<button onclick="salvarNome()" class="btn-next">ENTRAR</button>
+<div id="nomeStep" class="step">
+<h2>Seu Nome</h2>
+<input id="nome" placeholder="Nome" style="width:100%;padding:10px;">
+<button onclick="salvar()" class="btn1">CONTINUAR</button>
 </div>
 
-<div id="mainApp" style="display:none;">
-<h2 id="userGreeting"></h2>
-<div id="promoBox"></div>
+<div id="app" style="display:none;">
+<h2 id="hello"></h2>
+<div id="promos"></div>
 </div>
 
 </div>
 
 <script>
 
-// ================= PWA INSTALL =================
-let deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-});
-
 // ================= USER FIXO =================
-let userId = localStorage.getItem("user_id");
+let userId = localStorage.getItem("uid");
 
 if (!userId) {
-    userId = "user_" + Math.floor(Math.random() * 1000000000);
-    localStorage.setItem("user_id", userId);
+  userId = "user_" + Math.floor(Math.random()*1e9);
+  localStorage.setItem("uid", userId);
+}
+
+// ================= INSTALL =================
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  show("installStep");
+});
+
+async function instalar(){
+  if (!deferredPrompt) {
+    alert("Use menu do navegador");
+    return;
+  }
+
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+
+  if (choice.outcome === "accepted") {
+    show("notifStep");
+  }
 }
 
 // ================= FLOW =================
 window.onload = () => {
 
-    const nome = localStorage.getItem("nome_usuario");
-    const push = localStorage.getItem("push_ativo");
+  const nome = localStorage.getItem("nome");
 
-    if (nome) showMainApp();
-    else if (push) show("step3");
-    else show("step1");
-
+  if (nome) abrirApp();
 };
-
-function show(id){
-    document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-}
-
-// ================= INSTALAR =================
-async function instalarApp(){
-
-    if (deferredPrompt) {
-
-        deferredPrompt.prompt();
-
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === "accepted") {
-            show("step2");
-        } else {
-            alert("Instalação cancelada");
-        }
-
-    } else {
-        alert("Use o menu do navegador → 'Adicionar à tela inicial'");
-    }
-}
 
 // ================= NOTIF =================
 async function ativarNotif(){
 
-    if (!OneSignalInstance){
-        alert("Aguarde...");
-        return;
-    }
+  const perm = await OneSignalInstance.Notifications.requestPermission();
 
-    try {
-
-        const perm = await OneSignalInstance.Notifications.requestPermission();
-
-        if (perm === "granted") {
-            localStorage.setItem("push_ativo","true");
-            show("step3");
-        } else {
-            alert("Permiso denegado");
-        }
-
-    } catch(e){
-        console.error(e);
-        alert("Erro ao ativar notificações");
-    }
+  if (perm === "granted") {
+    show("nomeStep");
+  } else {
+    alert("Permissão negada");
+  }
 }
 
 // ================= SALVAR =================
-async function salvarNome(){
+async function salvar(){
 
-    const nome = document.getElementById("nomeInput").value;
-    if (!nome) return alert("Digite seu nome");
+  const nome = document.getElementById("nome").value;
 
-    if (OneSignalInstance){
-        await OneSignalInstance.login(userId);
-    }
+  await OneSignalInstance.login(userId);
 
-    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${userId}.json`,{
-        method:"PUT",
-        body:JSON.stringify({
-            user_id:userId,
-            nombre:nome,
-            created_at:Date.now()
-        })
-    });
+  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${userId}.json`,{
+    method:"PUT",
+    body:JSON.stringify({
+      nome,
+      user_id:userId
+    })
+  });
 
-    localStorage.setItem("nome_usuario",nome);
+  localStorage.setItem("nome", nome);
 
-    showMainApp();
+  abrirApp();
 }
 
 // ================= APP =================
-function showMainApp(){
+function abrirApp(){
+  document.querySelectorAll(".step").forEach(e=>e.style.display="none");
+  document.getElementById("app").style.display="block";
 
-    document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
-    document.getElementById("mainApp").style.display="block";
+  document.getElementById("hello").innerText =
+    "Hola " + localStorage.getItem("nome");
 
-    document.getElementById("userGreeting").innerText =
-        "👋 Hola, " + localStorage.getItem("nome_usuario");
-
-    carregarPromos();
+  carregar();
 }
 
 // ================= PROMOS =================
-async function carregarPromos(){
+async function carregar(){
 
-    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-    const data = await res.json();
+  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+  const data = await res.json();
 
-    const box = document.getElementById("promoBox");
-    box.innerHTML="";
+  const box = document.getElementById("promos");
+  box.innerHTML="";
 
-    if(!data) return;
+  if(!data) return;
 
-    Object.values(data).forEach(p=>{
+  Object.values(data).forEach(p=>{
 
-        if(!p.exp) return;
-        if(p.exp < Date.now()) return;
+    if(p.exp < Date.now()) return;
 
-        const div = document.createElement("div");
-        div.className="promo-card";
+    const div = document.createElement("div");
+    div.className="card";
+    div.innerHTML=`<b>${p.titulo}</b><br>${p.desc}`;
+    box.appendChild(div);
 
-        div.innerHTML = `
-            <h3>${p.titulo}</h3>
-            <p>${p.desc}</p>
-        `;
+  });
+}
 
-        box.appendChild(div);
-
-    });
+// ================= UTILS =================
+function show(id){
+  document.querySelectorAll(".step").forEach(e=>e.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
 </script>
