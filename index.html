@@ -185,13 +185,11 @@
         setInterval(carregarConteudo, 15000); // Atualiza as promos a cada 15s
     }
 //PROMOS EXPIRADAS 
-   async function carregarConteudo() {
+  async function carregarConteudo() {
     try {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
         const promos = await res.json();
-        if (!promos) return;
-
-        const agora = Date.now();
+        
         const box = document.getElementById("promoBox");
         const expBox = document.getElementById("expiredBox");
         const header = document.getElementById("promoHeader");
@@ -200,19 +198,27 @@
         box.innerHTML = "";
         expBox.innerHTML = "";
 
+        if (!promos) {
+            header.style.display = "none";
+            expSection.style.display = "none";
+            return;
+        }
+
+        const agora = Date.now();
         const ativas = [];
         const expiradas = [];
 
-        // Separamos as promos
+        // Transforma o objeto do Firebase em Array para podermos ordenar
         Object.keys(promos).forEach(id => {
             const p = promos[id];
             p.exp > agora ? ativas.push(p) : expiradas.push(p);
         });
 
-        // 1. RENDERIZAR ATIVAS (Ordenadas da mais nova para a mais antiga)
+        // 1. PROMOS ATIVAS: Mostra todas, da que vence mais tarde para a que vence logo
         if (ativas.length > 0) {
             header.style.display = "block";
-            ativas.sort((a, b) => b.exp - a.exp).forEach(p => {
+            ativas.sort((a, b) => b.exp - a.exp);
+            ativas.forEach(p => {
                 const card = document.createElement("div");
                 card.className = "promo-card";
                 const msg = encodeURIComponent(`¡Hola! Soy Capilover y quiero la promo: ${p.titulo}`);
@@ -225,17 +231,17 @@
             header.style.display = "none";
         }
 
-        // 2. RENDERIZAR EXPIRADAS (CORREÇÃO AQUI: Ordenar e pegar as 3 mais recentes)
+        // 2. PROMOS EXPIRADAS: Pega as 3 que expiraram mais recentemente
         if (expiradas.length > 0) {
             expSection.style.display = "block";
             
-            // Ordenamos: a que expirou há menos tempo aparece primeiro
+            // ORDENAÇÃO CRUCIAL: b.exp - a.exp coloca a maior data (mais recente) no topo
             expiradas.sort((a, b) => b.exp - a.exp); 
             
-            // Pegamos apenas as 3 primeiras dessa lista ordenada
-            const ultimasExpiradas = expiradas.slice(0, 3);
+            // Agora pegamos as 3 primeiras da lista ordenada (as 3 mais novas que expiraram)
+            const as3Ultimas = expiradas.slice(0, 3);
 
-            ultimasExpiradas.forEach(p => {
+            as3Ultimas.forEach(p => {
                 const card = document.createElement("div");
                 card.className = "expired-card";
                 card.innerHTML = `<b>${p.titulo}</b><br>${p.desc}`;
@@ -244,7 +250,9 @@
         } else {
             expSection.style.display = "none";
         }
-    } catch (e) { console.error("Erro ao carregar conteúdo:", e); }
+    } catch (e) { 
+        console.error("Erro ao processar promos:", e); 
+    }
 }
     async function atualizarContador() {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
