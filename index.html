@@ -184,7 +184,7 @@
         atualizarContador();
         setInterval(carregarConteudo, 15000); // Atualiza as promos a cada 15s
     }
-
+//PROMOS EXPIRADAS 
    async function carregarConteudo() {
     try {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
@@ -252,6 +252,8 @@
         const total = data ? Object.keys(data).length : 0;
         document.getElementById("countDiv").innerHTML = `<i class="fas fa-users"></i> 🔥 +${300 + total} clientes conectados`;
     }
+    
 </script>
+    
 </body>
 </html>
