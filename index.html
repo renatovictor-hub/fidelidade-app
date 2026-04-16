@@ -1,99 +1,97 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Uai Sô Fidelidad</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="UTF-8">
+<title>Uai Sô Fidelidad</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <script>
-        const isInApp = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
-        if (isInApp) {
-            document.addEventListener("DOMContentLoaded", () => {
-                document.body.innerHTML = `
-                    <div style="padding:50px;text-align:center;font-family:sans-serif;background:white;height:100vh;">
-                        <h2 style="color:#6a0dad">📲 Abrir en Navegador</h2>
-                        <p>Para usar la App, toca los tres puntos (...) y abre en Safari o Chrome.</p>
-                    </div>`;
-            });
-        }
-    </script>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<!-- BLOQUEIO IN-APP -->
+<script>
+const isInApp = /FBAN|FBAV|Instagram|WhatsApp/i.test(navigator.userAgent);
+if (isInApp) {
+    document.addEventListener("DOMContentLoaded", () => {
+        document.body.innerHTML = `
+        <div style="padding:50px;text-align:center;">
+        <h2 style="color:#6a0dad">📲 Abrir en Navegador</h2>
+        <p>Abre en Safari o Chrome.</p>
+        </div>`;
+    });
+}
+</script>
 
-    <!-- 🔥 ONESIGNAL CORRIGIDO -->
-    <script>
-        let OneSignalInstance = null;
+<!-- ONESIGNAL -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
+<script>
+let OneSignalInstance = null;
 
-            OneSignalInstance = OneSignal;
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
 
-            await OneSignal.init({
-                appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-                safari_web_id: "web.onesignal.auto",
-                notifyButton: { enable: false }
-            });
+    OneSignalInstance = OneSignal;
 
-        });
-    </script>
+    await OneSignal.init({
+        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        safari_web_id: "web.onesignal.auto",
+        notifyButton: { enable: false },
 
-    <style>
-        :root { --roxo:#6a0dad; --amarelo:#ffcc00; --gradiente:linear-gradient(135deg,#6a0dad,#9b30ff);}
-        body { margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#fff;text-align:center;color:#333;}
-        .container { max-width:400px;margin:auto;padding:20px;}
+        serviceWorkerPath: "/OneSignalSDKWorker.js",
+        serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js"
+    });
 
-        .header-app { display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
-        .logo { width:80px;}
-        .btn-refresh { background:none;border:none;color:var(--roxo);font-size:20px;cursor:pointer;}
+});
+</script>
 
-        .step-box { display:none;padding:25px;border-radius:20px;background:#fff;border:2px solid #eee;box-shadow:0 10px 25px rgba(0,0,0,0.05);}
-        .active { display:block;}
+<style>
+:root { --roxo:#6a0dad; --amarelo:#ffcc00; --gradiente:linear-gradient(135deg,#6a0dad,#9b30ff);}
+body { margin:0;font-family:'Segoe UI',sans-serif;background:#fff;text-align:center;}
+.container { max-width:400px;margin:auto;padding:20px;}
 
-        button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;font-weight:bold;}
-        .btn-next { background:var(--gradiente);color:#fff;}
-        .btn-notif { background:var(--amarelo);color:#000;}
+.step-box { display:none;padding:25px;border-radius:20px;border:2px solid #eee;margin-bottom:20px;}
+.active { display:block;}
 
-        .promo-card { background:var(--gradiente);color:white;padding:18px;border-radius:18px;margin-bottom:15px;text-align:left;}
-    </style>
+button { width:100%;padding:16px;margin-top:15px;border-radius:12px;border:none;font-weight:bold;}
+.btn-next { background:var(--gradiente);color:white;}
+.btn-notif { background:var(--amarelo);color:black;}
+
+.promo-card { background:var(--gradiente);color:white;padding:18px;border-radius:18px;margin-bottom:15px;text-align:left;}
+</style>
+
 </head>
 
 <body>
+
 <div class="container">
 
-<div class="header-app">
-    <img src="logo.png" class="logo">
-    <button onclick="location.reload()" class="btn-refresh" id="refreshBtn" style="display:none;">↻</button>
-</div>
-
 <div id="step1" class="step-box">
-    <h2>Instalar App</h2>
-    <button onclick="instalarApp()" class="btn-next">INSTALAR</button>
+<h2>Instalar App</h2>
+<button onclick="instalarApp()" class="btn-next">INSTALAR</button>
 </div>
 
 <div id="step2" class="step-box">
-    <h2>Activar Notificaciones</h2>
-    <button onclick="ativarNotif()" class="btn-notif">ACTIVAR</button>
+<h2>Ativar Notificações</h2>
+<button onclick="ativarNotif()" class="btn-notif">ATIVAR</button>
 </div>
 
 <div id="step3" class="step-box">
-    <h2>Tu Nombre</h2>
-    <input id="nomeInput" placeholder="Nombre" style="width:100%;padding:12px;">
-    <button onclick="salvarNome()" class="btn-next">CONTINUAR</button>
+<h2>Seu Nome</h2>
+<input id="nomeInput" placeholder="Nome" style="width:100%;padding:12px;">
+<button onclick="salvarNome()" class="btn-next">CONTINUAR</button>
 </div>
 
 <div id="mainApp" style="display:none;">
-    <h2 id="userGreeting"></h2>
-    <div id="promoBox"></div>
+<h2 id="userGreeting"></h2>
+<div id="promoBox"></div>
 </div>
 
 </div>
 
 <script>
 
-// ================= USER ID FIXO =================
+// ================= USER FIXO =================
 let userId = localStorage.getItem("user_id");
 
 if (!userId) {
@@ -123,7 +121,7 @@ function instalarApp(){
     show("step2");
 }
 
-// ================= NOTIF CORRIGIDO =================
+// ================= NOTIF =================
 async function ativarNotif(){
 
     if (!OneSignalInstance){
@@ -131,17 +129,24 @@ async function ativarNotif(){
         return;
     }
 
-    const perm = await OneSignalInstance.Notifications.requestPermission();
+    try {
 
-    if (perm === "granted"){
-        localStorage.setItem("push_ativo","true");
-        show("step3");
-    } else {
-        alert("Permiso denegado");
+        const perm = await OneSignalInstance.Notifications.requestPermission();
+
+        if (perm === "granted") {
+            localStorage.setItem("push_ativo","true");
+            show("step3");
+        } else {
+            alert("Permiso denegado");
+        }
+
+    } catch(e){
+        console.error(e);
+        alert("Erro ao ativar notificações");
     }
 }
 
-// ================= SALVAR NOME =================
+// ================= SALVAR =================
 async function salvarNome(){
 
     const nome = document.getElementById("nomeInput").value;
@@ -170,7 +175,6 @@ function showMainApp(){
 
     document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
     document.getElementById("mainApp").style.display="block";
-    document.getElementById("refreshBtn").style.display="block";
 
     document.getElementById("userGreeting").innerText =
         "Hola, " + localStorage.getItem("nome_usuario");
@@ -193,8 +197,7 @@ async function carregarPromos(){
 
         if(!p.exp) return;
 
-        const restante = p.exp - Date.now();
-        if(restante <= 0) return;
+        if(p.exp < Date.now()) return;
 
         const div = document.createElement("div");
         div.className="promo-card";
