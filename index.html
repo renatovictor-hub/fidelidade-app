@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Uai Sô Fidelidad</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -34,10 +34,14 @@
 
     <style>
         :root { --roxo: #6a0dad; --amarelo: #ffcc00; --gradiente: linear-gradient(135deg, #6a0dad, #9b30ff); }
-        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #fff; text-align: center; color: #333; }
-        .container { max-width: 400px; margin: auto; padding: 20px; }
-        .logo { width: 110px; margin: 10px auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #fff; text-align: center; color: #333; -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 400px; margin: auto; padding: 20px; position: relative; }
         
+        /* Header Fix */
+        .header-app { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+        .logo { width: 80px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        .btn-refresh { background: none; border: none; color: var(--roxo); font-size: 20px; cursor: pointer; width: auto; padding: 10px; margin: 0; }
+
         /* Funil de Acesso */
         .step-box { display: none; padding: 25px; border-radius: 20px; background: #fefefe; border: 2px solid #eee; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .active { display: block; animation: fadeIn 0.5s; }
@@ -45,30 +49,33 @@
         
         /* Botões Modernos */
         button { width: 100%; padding: 16px; margin-top: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        button:active { transform: scale(0.98); }
         .btn-next { background: var(--gradiente); color: white; box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3); }
         .btn-notif { background: var(--amarelo); color: var(--roxo); box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3); }
         
         /* App Principal */
         .contador { background: #f3e8ff; padding: 12px; border-radius: 12px; margin: 15px 0; color: var(--roxo); font-weight: bold; font-size: 14px; }
-        .promo-card { background: var(--gradiente); color: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; text-align: left; box-shadow: 0 6px 15px rgba(106, 13, 173, 0.2); }
+        .promo-card { background: var(--gradiente); color: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; text-align: left; box-shadow: 0 6px 15px rgba(106, 13, 173, 0.2); position: relative; overflow: hidden; }
         .btn-wa-promo { background: #25d366; color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-weight: bold; font-size: 14px; }
 
         /* Promoções Expiradas */
-        .expired-section { margin-top: 30px; opacity: 0.7; text-align: left; }
+        .expired-section { margin-top: 30px; opacity: 0.8; text-align: left; }
         .expired-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .expired-card { background: #f5f5f5; color: #777; padding: 12px; border-radius: 12px; margin-bottom: 8px; font-size: 13px; filter: grayscale(1); }
+        .expired-card { background: #f8f8f8; color: #777; padding: 15px; border-radius: 15px; margin-bottom: 10px; font-size: 13px; border-left: 4px solid #ccc; }
         
         /* Footer/Redes */
         .footer-links { margin-top: 40px; border-top: 2px solid #f9f9f9; padding-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .footer-links a { padding: 12px; border-radius: 10px; background: #f8f8f8; color: var(--roxo); text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .footer-links a { padding: 12px; border-radius: 10px; background: #f8f8f8; color: var(--roxo); text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .link-full { grid-column: span 2; background: #f0f0f0 !important; }
     </style>
 </head>
 
 <body>
 <div class="container">
-    <img src="logo.png" class="logo">
+    
+    <div class="header-app">
+        <img src="logo.png" class="logo">
+        <button onclick="location.reload()" class="btn-refresh" id="refreshBtn" style="display:none;"><i class="fas fa-sync-alt"></i></button>
+    </div>
 
     <div id="step1" class="step-box">
         <h2 style="color:var(--roxo)">¡Bienvenido! 🇧🇷</h2>
@@ -78,134 +85,4 @@
 
     <div id="step2" class="step-box">
         <h2 style="color:var(--roxo)">Paso 2: Alertas 🔔</h2>
-        <p>Activa las notificaciones para que seas el primero en recibir las ofertas del día.</p>
-        <button onclick="ativarNotif()" class="btn-notif"><i class="fas fa-bell"></i> ACTIVAR ALERTAS</button>
-    </div>
-
-    <div id="step3" class="step-box">
-        <h2 style="color:var(--roxo)">Paso 3: Tu Nombre 👤</h2>
-        <p>¿Cómo te llamamos en la familia Uai Sô?</p>
-        <input id="nomeInput" placeholder="Escribe tu nombre" style="width:100%;padding:14px;border-radius:10px;border:1px solid #ddd;box-sizing:border-box;font-size:16px;">
-        <button onclick="salvarNome()" class="btn-next">EMPEZAR AHORA</button>
-    </div>
-
-    <div id="mainApp" style="display:none;">
-        <h2 id="userGreeting" style="color:var(--roxo); margin-bottom:5px;">👋 Hola!</h2>
-        <div class="contador" id="countDiv"><i class="fas fa-users"></i> 🔥 +300 clientes conectados</div>
-        
-        <img src="banner.jpg" style="width:100%; border-radius:18px; margin:10px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-        
-        <h3 id="promoHeader" style="color:var(--roxo); display:none; text-align:left; margin-top:25px;">🔥 Promociones Activas</h3>
-        <div id="promoBox"></div>
-
-        <div id="expiredSection" class="expired-section" style="display:none;">
-            <div class="expired-title">⏳ Mira lo que te perdiste esta semana</div>
-            <div id="expiredBox"></div>
-        </div>
-
-        <div class="footer-links">
-            <a href="https://api.whatsapp.com/send?phone=5219986023759" target="_blank"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-            <a href="https://www.instagram.com/fooduaiso" target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
-            <a href="https://uaisocancun.ola.click/products" target="_blank" class="link-full"><i class="fas fa-utensils"></i> Ver Menú Completo</a>
-        </div>
-    </div>
-</div>
-
-<script>
-    let deferredPrompt;
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-
-    window.onload = () => {
-        if (localStorage.getItem("nome_usuario")) {
-            showMainApp();
-        } else if (isStandalone) {
-            localStorage.getItem("push_ativo") ? document.getElementById("step3").classList.add("active") : document.getElementById("step2").classList.add("active");
-        } else {
-            document.getElementById("step1").classList.add("active");
-        }
-    };
-
-    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
-
-    function instalarApp() {
-        if (isIOS) alert("Toca el botón 'Compartir' ⬆️ y luego 'Agregar a pantalla de inicio' 📲");
-        else if (deferredPrompt) deferredPrompt.prompt();
-        else alert("Usa el menú de tu navegador para 'Instalar App'.");
-    }
-
-    async function ativarNotif() {
-        await window.OneSignal.Notifications.requestPermission();
-        localStorage.setItem("push_ativo", "true");
-        document.getElementById("step2").classList.remove("active");
-        document.getElementById("step3").classList.add("active");
-    }
-
-    async function salvarNome() {
-        const nome = document.getElementById("nomeInput").value;
-        if (!nome) return alert("Dinos tu nombre");
-        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json", {
-            method: "POST",
-            body: JSON.stringify({ nombre: nome, created_at: Date.now() })
-        });
-        localStorage.setItem("nome_usuario", nome);
-        showMainApp();
-    }
-
-    function showMainApp() {
-        document.querySelectorAll('.step-box').forEach(el => el.classList.remove('active'));
-        document.getElementById("mainApp").style.display = "block";
-        document.getElementById("userGreeting").innerText = "👋 Hola, " + localStorage.getItem("nome_usuario") + "!";
-        carregarConteudo();
-        atualizarContador();
-    }
-
-    async function carregarConteudo() {
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-        const promos = await res.json();
-        if (!promos) return;
-
-        const agora = Date.now();
-        const ativas = [];
-        const expiradas = [];
-
-        Object.keys(promos).forEach(id => {
-            const p = promos[id];
-            p.exp > agora ? ativas.push(p) : expiradas.push(p);
-        });
-
-        // Renderizar Ativas
-        const box = document.getElementById("promoBox");
-        if (ativas.length > 0) {
-            document.getElementById("promoHeader").style.display = "block";
-            ativas.forEach(p => {
-                const card = document.createElement("div");
-                card.className = "promo-card";
-                card.innerHTML = `<h3>${p.titulo}</h3><p>${p.desc}</p>
-                    <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Soy%20Capilover%20quiero:%20${p.titulo}" class="btn-wa-promo">
-                    <i class="fab fa-whatsapp"></i> YO QUIERO</a>`;
-                box.appendChild(card);
-            });
-        }
-
-        // Renderizar Expiradas (As 3 mais recentes)
-        if (expiradas.length > 0) {
-            document.getElementById("expiredSection").style.display = "block";
-            const expBox = document.getElementById("expiredBox");
-            expiradas.sort((a, b) => b.exp - a.exp).slice(0, 3).forEach(p => {
-                const card = document.createElement("div");
-                card.className = "expired-card";
-                card.innerHTML = `<b>${p.titulo}</b> - ${p.desc}`;
-                expBox.appendChild(card);
-            });
-        }
-    }
-
-    async function atualizarContador() {
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
-        const data = await res.json();
-        document.getElementById("countDiv").innerHTML = `<i class="fas fa-users"></i> 🔥 +${300 + (data ? Object.keys(data).length : 0)} clientes conectados`;
-    }
-</script>
-</body>
-</html>
+        <p>Activa
