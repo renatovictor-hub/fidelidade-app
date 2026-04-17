@@ -124,21 +124,45 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 let deferredPrompt;
-let uid = localStorage.getItem("uid") || "user_" + Math.floor(Math.random()*1e9);
-localStorage.setItem("uid", uid);
 
+// Gera UID apenas se não existir
+let uid = localStorage.getItem("uid");
+if (!uid) {
+    uid = "user_" + Math.floor(Math.random() * 1e9);
+    localStorage.setItem("uid", uid);
+}
+
+// Detecta quando virou app instalado (Android)
+window.addEventListener("appinstalled", () => {
+    localStorage.setItem("instalado", "true");
+});
 // FLOW INICIAL
 window.onload = () => {
     const nome = localStorage.getItem("nome");
     const push = localStorage.getItem("push");
 
-    if (nome) return abrirApp();
-    if (!isStandalone) {
-        show("stepInstall");
-        if (isIOS) document.getElementById("iosGuide").style.display = "block";
+    if (nome) {
+        abrirApp();
         return;
     }
-    if (!push) return show("stepNotif");
+
+    // NÃO está instalado
+    if (!isStandalone) {
+        show("stepInstall");
+
+        if (isIOS) {
+            document.getElementById("iosGuide").style.display = "block";
+        }
+
+        return;
+    }
+
+    // JÁ está instalado (AGORA SIM pode continuar)
+    if (!push) {
+        show("stepNotif");
+        return;
+    }
+
     show("stepNome");
 };
 
@@ -146,7 +170,11 @@ window.onload = () => {
 window.addEventListener("beforeinstallprompt", (e)=>{
     e.preventDefault();
     deferredPrompt = e;
-    if (!isIOS) document.getElementById("btnAndroid").style.display = "block";
+
+    // Só mostra botão no Android
+    if (!isIOS) {
+        document.getElementById("btnAndroid").style.display = "block";
+    }
 });
 
 async function instalar(){
@@ -158,13 +186,20 @@ async function instalar(){
 
 // NOTIFICAÇÕES
 async function ativarNotif(){
+    if (!isStandalone) {
+        alert("Primero instala la app y ábrela desde tu pantalla.");
+        return;
+    }
+
     if (!OneSignalInstance) return alert("Cargando OneSignal...");
+
     const perm = await OneSignalInstance.Notifications.requestPermission();
+
     if (Notification.permission === "granted") {
         localStorage.setItem("push","true");
         show("stepNome");
     } else {
-        alert("¡Aviso! Necesitas activar las notificaciones para ver las promos.");
+        alert("Necesitas activar las notificaciones.");
     }
 }
 
