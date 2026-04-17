@@ -172,9 +172,9 @@ window.addEventListener("beforeinstallprompt", (e)=>{
     deferredPrompt = e;
 
     // Só mostra botão no Android
-    if (!isIOS) {
-        document.getElementById("btnAndroid").style.display = "block";
-    }
+  if (isIOS) {
+    document.getElementById("iosGuide").style.display = "block";
+}
 });
 
 async function instalar(){
