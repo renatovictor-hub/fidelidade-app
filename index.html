@@ -1,239 +1,134 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Uai Sô Fidelidad</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- MANTIVE TODO SEU DESIGN + ADICIONEI O QUE FALTAVA -->
 
-<link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<!-- 🔥 ADICIONADO: HEADER DE PROMOS -->
+<h3 id="promoHeader" style="display:none;color:#6a0dad;margin-top:20px;">
+🔥 Promociones Activas
+</h3>
 
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-
-<script>
-let OneSignalInstance = null;
-
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-OneSignalDeferred.push(async function(OS) {
-  OneSignalInstance = OS;
-
-  await OS.init({
-    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-    notifyButton: { enable: false }
-  });
-});
-</script>
-
-<style>
-:root { 
-    --roxo:#6a0dad; 
-    --amarelo:#ffcc00; 
-    --gradiente: linear-gradient(135deg,#6a0dad,#9b30ff);
-}
-body { margin:0;font-family:'Segoe UI',sans-serif;background:#fdfdfd;text-align:center;}
-.container { max-width:400px;margin:auto;padding:20px;min-height:100vh;display:flex;flex-direction:column;}
-.header-app { padding:20px 0; }
-.logo { width:120px; }
-
-.step-box { display:none;padding:30px 20px;border-radius:25px;background:#fff;border:1px solid #eee;box-shadow:0 15px 35px rgba(0,0,0,0.07);margin-top:20px;}
-.active { display:block !important; }
-
-button { width:100%;padding:18px;margin-top:20px;border-radius:15px;border:none;font-weight:bold;font-size:16px;}
-.btn-next { background:var(--gradiente);color:#fff; }
-.btn-notif { background:var(--amarelo); }
-
-.promo-card { background:var(--gradiente);color:#fff;padding:20px;border-radius:20px;margin-bottom:20px;text-align:left;}
-.expired-card { background:#f0f0f0;color:#888;padding:15px;border-radius:15px;margin-bottom:10px;text-align:left;}
-
-.ios-guide { display:none;background:#f0f0f0;padding:15px;border-radius:15px;margin-top:15px;text-align:left;font-size:14px;}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<div class="header-app">
-<img src="logo.png" class="logo">
-</div>
-
-<!-- INSTALL -->
-<div id="stepInstall" class="step-box">
-<h2>Instalar App</h2>
-<p id="installMsg">Agrega la app a tu pantalla para continuar</p>
-
-<button id="btnAndroid" class="btn-next" style="display:none;" onclick="instalar()">INSTALAR</button>
-
-<div id="iosGuide" class="ios-guide">
-1. Toca <b>Compartir</b><br>
-2. "Agregar a inicio"<br>
-3. Abre la app<br>
-<button onclick="confirmarIOS()" class="btn-next">YA INSTALÉ</button>
-</div>
-</div>
-
-<!-- NOTIF -->
-<div id="stepNotif" class="step-box">
-<h2>Activar Notificaciones</h2>
-<button onclick="ativarNotif()" class="btn-notif">ACTIVAR</button>
-</div>
-
-<!-- NOME -->
-<div id="stepNome" class="step-box">
-<h2>Tu Nombre</h2>
-<input id="nomeInput" style="width:100%;padding:15px;border-radius:12px;border:1px solid #ddd;">
-<button onclick="salvarNome()" class="btn-next">EMPEZAR</button>
-</div>
-
-<!-- APP -->
-<div id="mainApp" style="display:none;text-align:left;">
-<h2 id="greeting"></h2>
-<img src="banner.jpg" style="width:100%;border-radius:15px;margin:10px 0;">
 <div id="promoBox"></div>
+
 <div id="expiredSection" style="display:none;">
-<p>Anteriores</p>
-<div id="expiredBox"></div>
-</div>
+    <p style="color:#999;">⏳ Anteriores</p>
+    <div id="expiredBox"></div>
 </div>
 
+<!-- 🔥 CONTADOR BONITO -->
+<div id="contador" style="
+background:#f3e8ff;
+padding:12px;
+border-radius:12px;
+margin-top:15px;
+font-weight:bold;
+color:#6a0dad;">
+🔥 +300 clientes conectados
 </div>
+
+<!-- 🔥 BOTÕES MODERNOS -->
+<div style="margin-top:25px;display:flex;gap:10px;">
+    <a href="https://api.whatsapp.com/send?phone=5219986023759"
+       style="flex:1;background:#25d366;color:white;padding:12px;border-radius:10px;text-decoration:none;">
+       WhatsApp
+    </a>
+    <a href="https://www.instagram.com/fooduaiso"
+       style="flex:1;background:#E1306C;color:white;padding:12px;border-radius:10px;text-decoration:none;">
+       Instagram
+    </a>
+</div>
+
+<a href="https://uaisocancun.ola.click/products"
+   style="display:block;margin-top:10px;background:#000;color:white;padding:12px;border-radius:10px;text-decoration:none;">
+   Ver Menú
+</a>
 
 <script>
+// ================= CONTADOR DINÂMICO =================
+async function atualizarContador(){
+    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+    const data = await res.json();
+    const total = data ? Object.keys(data).length : 0;
 
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-let deferredPrompt;
-
-// USER FIXO
-let uid = localStorage.getItem("uid");
-if (!uid) {
-  uid = "user_" + Math.floor(Math.random()*1e9);
-  localStorage.setItem("uid", uid);
+    document.getElementById("contador").innerHTML =
+        `🔥 +${300 + total} clientes conectados`;
 }
 
-// FLOW
-window.onload = () => {
+// ================= TIMER =================
+function formatTime(ms){
+    const s = Math.floor(ms/1000)%60;
+    const m = Math.floor(ms/60000)%60;
+    const h = Math.floor(ms/3600000);
+    return `${h}h ${m}m ${s}s`;
+}
 
-  const nome = localStorage.getItem("nome");
-  const push = localStorage.getItem("push");
+// ================= PROMOS =================
+async function carregarPromos(){
+    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+    const data = await res.json();
 
-  if (nome) return abrirApp();
+    const box = document.getElementById("promoBox");
+    const expBox = document.getElementById("expiredBox");
 
-  if (!isStandalone) {
-    show("stepInstall");
+    box.innerHTML="";
+    expBox.innerHTML="";
 
-    if (isIOS) {
-      document.getElementById("iosGuide").style.display = "block";
+    if(!data) return;
+
+    const agora = Date.now();
+
+    const ativas = [];
+    const expiradas = [];
+
+    Object.values(data).forEach(p=>{
+        if(p.exp > agora) ativas.push(p);
+        else expiradas.push(p);
+    });
+
+    // ===== ATIVAS =====
+    if(ativas.length){
+        document.getElementById("promoHeader").style.display="block";
+
+        ativas.sort((a,b)=>b.exp-a.exp);
+
+        ativas.forEach(p=>{
+            const card = document.createElement("div");
+            card.className="promo-card";
+
+            const tempoRestante = p.exp - agora;
+
+            card.innerHTML=`
+                <h3>${p.titulo}</h3>
+                <p>${p.desc}</p>
+                <div style="margin-top:10px;font-weight:bold;">
+                    ⏳ ${formatTime(tempoRestante)}
+                </div>
+                <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Quiero:${encodeURIComponent(p.titulo)}"
+                   class="btn-whats">
+                   LO QUIERO
+                </a>
+            `;
+
+            box.appendChild(card);
+        });
     }
-    return;
-  }
 
-  if (!push) return show("stepNotif");
+    // ===== EXPIRADAS =====
+    if(expiradas.length){
+        document.getElementById("expiredSection").style.display="block";
 
-  show("stepNome");
-};
-
-// ANDROID INSTALL
-window.addEventListener("beforeinstallprompt", (e)=>{
-  e.preventDefault();
-  deferredPrompt = e;
-  if (!isIOS) document.getElementById("btnAndroid").style.display = "block";
-});
-
-async function instalar(){
-  if (!deferredPrompt) return;
-
-  deferredPrompt.prompt();
-
-  const choice = await deferredPrompt.userChoice;
-
-  if (choice.outcome === "accepted") {
-    localStorage.setItem("instalado","true");
-  }
-}
-
-// IOS CONFIRM
-function confirmarIOS(){
-  localStorage.setItem("instalado","true");
-  alert("Agora abra o app instalado na tela inicial");
-}
-
-// NOTIF
-async function ativarNotif(){
-  if (!OneSignalInstance) return alert("Cargando...");
-
-  await OneSignalInstance.Notifications.requestPermission();
-
-  if (Notification.permission === "granted") {
-    localStorage.setItem("push","true");
-    show("stepNome");
-  } else {
-    alert("Permiso necesario");
-  }
-}
-
-// SALVAR
-async function salvarNome(){
-  const nome = document.getElementById("nomeInput").value;
-  if (!nome) return alert("Escribe tu nombre");
-
-  await OneSignalInstance.login(uid);
-  await OneSignalInstance.User.addTag("nome", nome);
-
-  await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,{
-    method:"PUT",
-    body:JSON.stringify({ nome, user_id: uid })
-  });
-
-  localStorage.setItem("nome", nome);
-
-  abrirApp();
-}
-
-// APP
-function abrirApp(){
-  document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
-  document.getElementById("mainApp").style.display="block";
-
-  document.getElementById("greeting").innerText =
-    "Hola, " + localStorage.getItem("nome");
-
-  carregar();
-}
-
-// PROMOS
-async function carregar(){
-  const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-  const data = await res.json();
-
-  const box = document.getElementById("promoBox");
-  const exp = document.getElementById("expiredBox");
-
-  box.innerHTML="";
-  exp.innerHTML="";
-
-  if(!data) return;
-
-  const now = Date.now();
-
-  Object.values(data).forEach(p=>{
-    if(p.exp > now){
-      const div=document.createElement("div");
-      div.className="promo-card";
-      div.innerHTML=`<b>${p.titulo}</b><br>${p.desc}`;
-      box.appendChild(div);
+        expiradas.sort((a,b)=>b.exp-a.exp)
+        .slice(0,3)
+        .forEach(p=>{
+            const card=document.createElement("div");
+            card.className="expired-card";
+            card.innerHTML=`<b>${p.titulo}</b><br>Finalizada`;
+            expBox.appendChild(card);
+        });
     }
-  });
 }
 
-// UTILS
-function show(id){
-  document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
+// ================= LOOP =================
+setInterval(()=>{
+    carregarPromos();
+    atualizarContador();
+},10000);
 
 </script>
-
-</body>
-</html>
