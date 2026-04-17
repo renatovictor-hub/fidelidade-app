@@ -179,6 +179,19 @@ async function ativarNotif(){
     if (Notification.permission === "granted") {
         localStorage.setItem("push","true");
         show("stepNome");
+
+      const perm = await OneSignalInstance.Notifications.requestPermission();
+
+console.log("Permissão:", Notification.permission);
+
+// 👇 BLOCO DE DEBUG
+const playerId = await OneSignalInstance.User.PushSubscription.id;
+const token = await OneSignalInstance.User.PushSubscription.token;
+const optedIn = await OneSignalInstance.User.PushSubscription.optedIn;
+
+console.log("Player ID:", playerId);
+console.log("Token:", token);
+console.log("Opted In:", optedIn);
     }
 }
 
