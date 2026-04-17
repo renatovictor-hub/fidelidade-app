@@ -220,9 +220,26 @@ function abrirApp(){
     document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
     document.getElementById("mainApp").style.display="block";
     document.getElementById("greeting").innerText = "Hola, " + localStorage.getItem("nome");
-    carregar();
-}
 
+    carregar();
+    atualizarContador(); // 👈 AQUI
+
+    // opcional (mais agressivo)
+    setInterval(atualizarContador, 20000);
+}
+  
+<div id="contadorUsers" style="
+    background:#f3e8ff;
+    padding:12px;
+    border-radius:12px;
+    margin:10px 0 20px 0;
+    color:#6a0dad;
+    font-weight:bold;
+    font-size:14px;
+">
+    🔥 Cargando clientes...
+</div>
+  
 async function carregar(){
     const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
     const data = await res.json();
@@ -261,6 +278,22 @@ async function carregar(){
             expCount++;
         }
     });
+}
+
+  async function atualizarContador(){
+    try {
+        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+        const data = await res.json();
+
+        const total = data ? Object.keys(data).length : 0;
+
+        const numeroFinal = 300 + total;
+
+        document.getElementById("contadorUsers").innerHTML =
+            `🔥 +${numeroFinal} clientes conectados`;
+    } catch(e){
+        console.log("Erro contador:", e);
+    }
 }
 
 function iniciarContador(timestamp, elementId) {
