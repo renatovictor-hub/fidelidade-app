@@ -141,15 +141,12 @@ window.onload = () => {
     const nome = localStorage.getItem("nome");
     const push = localStorage.getItem("push");
 
-    if (nome) {
-        abrirApp();
-        return;
-    }
+    if (nome) return abrirApp();
 
-    // NÃO está instalado
     if (!isStandalone) {
         show("stepInstall");
 
+        // 🔥 SOMENTE iPhone mostra instrução
         if (isIOS) {
             document.getElementById("iosGuide").style.display = "block";
         }
@@ -157,11 +154,7 @@ window.onload = () => {
         return;
     }
 
-    // JÁ está instalado (AGORA SIM pode continuar)
-    if (!push) {
-        show("stepNotif");
-        return;
-    }
+    if (!push) return show("stepNotif");
 
     show("stepNome");
 };
@@ -171,10 +164,10 @@ window.addEventListener("beforeinstallprompt", (e)=>{
     e.preventDefault();
     deferredPrompt = e;
 
-    // Só mostra botão no Android
-  if (isIOS) {
-    document.getElementById("iosGuide").style.display = "block";
-}
+    // 🔥 GARANTE botão só no Android
+    if (!isIOS) {
+        document.getElementById("btnAndroid").style.display = "block";
+    }
 });
 
 async function instalar(){
