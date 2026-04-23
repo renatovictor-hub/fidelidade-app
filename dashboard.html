@@ -128,7 +128,7 @@
             font-size: 12px;
             height: 200px;
             overflow-y: auto;
-            display: none;
+            display: block; /* Alterado para block para você ver o que acontece */
         }
 
         .stats {
@@ -154,7 +154,6 @@
 
         <div class="card">
             <h3>📄 Logs del Sistema</h3>
-            <button onclick="toggleLog()" style="background:#eee; color:#333; margin-bottom:10px;">Ver Logs</button>
             <div id="log" class="log-box"></div>
         </div>
     </aside>
@@ -165,12 +164,12 @@
             
             <div class="input-group">
                 <label>Título de la Notificación</label>
-                <input id="titulo" placeholder="Ej: ¡Promoción de Pastel!">
+                <input id="pushTitulo" placeholder="Ej: ¡Promoción de Pastel!">
             </div>
 
             <div class="input-group">
                 <label>Mensaje (Descripción)</label>
-                <textarea id="desc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
+                <textarea id="pushDesc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
             </div>
 
             <div class="input-group">
@@ -179,7 +178,7 @@
                 <small>3600 = 1 hora / 86400 = 24 horas</small>
             </div>
 
-            <button onclick="enviarPush()" class="btn-primary">ENVIAR PUSH AHORA</button>
+            <button onclick="enviarPushReal()" class="btn-primary">ENVIAR PUSH AHORA</button>
         </div>
 
         <div class="card">
@@ -199,11 +198,6 @@ function log(msg) {
     box.scrollTop = box.scrollHeight;
 }
 
-function toggleLog() {
-    const logBox = document.getElementById("log");
-    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
-}
-
 // CARGAR CLIENTES
 async function carregarClientes() {
     try {
@@ -217,54 +211,58 @@ async function carregarClientes() {
 }
 carregarClientes();
 
-// ENVIAR PUSH
-async function enviarPush() {
-    const titulo = document.getElementById("titulo").value;
-    const desc = document.getElementById("desc").value;
-    const duracion = document.getElementById("duracion").value;
+// ENVIAR PUSH (Função corrigida conforme documentação OneSignal v2)
+async function enviarPushReal() {
+    const titulo = document.getElementById("pushTitulo").value;
+    const desc = document.getElementById("pushDesc").value;
+    const duracao = document.getElementById("duracion").value;
 
-    if (!titulo || !desc) return alert("¡Por favor, completa los campos!");
+    if (!titulo || !desc) return alert("⚠️ Preencha os campos!");
 
-    const exp = Date.now() + (parseInt(duracion) * 1000);
-    const link = `https://fidelidade-app-akcn.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+    log("Intentando enviar push via OneSignal (Key Protocol)...");
 
-    log("Intentando enviar push...");
+    const APP_ID = "10fd0812-370f-408a-9ea5-cbb349f5d635";
+    const API_KEY = "os_v2_app_cd6qqerxb5aivhvfzozut5owgubi5l5pvkqutnnclrleqng4gl4y3od5babtsob4nqqggdpkrfpgtyp7cld73giruoufaflvp3rrwtq";
 
     try {
-        const res = await fetch("/api/sendpush", {
+        const response = await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ titulo, desc, link })
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": "Key " + API_KEY 
+            },
+            body: JSON.stringify({
+                app_id: APP_ID,
+                included_segments: ["Total Subscriptions"],
+                headings: { "en": titulo, "es": titulo },
+                contents: { "en": desc, "es": desc },
+                android_accent_color: "6A0DAD",
+                isAndroid: true
+            })
         });
 
-        const data = await res.json();
-        log("Respuesta API: " + JSON.stringify(data));
-
-        if (res.ok) {
-            await salvarPromoNoFirebase(titulo, desc, exp);
-            alert("¡Notificación enviada con éxito!");
-            document.getElementById("titulo").value = "";
-            document.getElementById("desc").value = "";
+        const data = await response.json();
+        
+        if (data.id) {
+            log("✅ Sucesso OneSignal! ID: " + data.id);
+            
+            // Salva no Firebase para aparecer no App
+            const expiraEm = Date.now() + (parseInt(duracao) * 1000);
+            await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+                method: "POST",
+                body: JSON.stringify({ 
+                    titulo: titulo, 
+                    desc: desc, 
+                    exp: expiraEm 
+                })
+            });
+            log("✅ Guardado en Firebase.");
+            carregarPromos();
         } else {
-            alert("Error al enviar: " + JSON.stringify(data));
+            log("❌ Erro OneSignal: " + JSON.stringify(data.errors));
         }
     } catch (e) {
-        log("Error Fatal: " + e.message);
-    }
-}
-
-// GUARDAR EN FIREBASE (Nombre corregido)
-async function salvarPromoNoFirebase(titulo, desc, exp) {
-    try {
-        log("Guardando en Firebase...");
-        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
-            method: "POST",
-            body: JSON.stringify({ titulo, desc, exp: Number(exp) })
-        });
-        log("✅ Éxito en Firebase.");
-        await carregarPromos();
-    } catch (e) {
-        log("Error Firebase: " + e.message);
+        log("❌ Falha crítica: " + e.message);
     }
 }
 
