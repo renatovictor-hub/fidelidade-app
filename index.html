@@ -189,15 +189,18 @@ async function ativarNotif(){
 }
 
 async function salvarNome(){
-    const nome = document.getElementById("nomeInput").value;
-    if (!nome) return;
+    const nome = document.getElementById("nomeInput").value;
+    if (!nome) return;
 
-    if(OneSignalInstance) {
-        await OneSignalInstance.login(uid);
-    }
+    if(OneSignalInstance) {
+        // Use await para garantir que o OneSignal registre o usuário antes de seguir
+        await OneSignalInstance.login(uid);
+        // Opcional: Adicione uma tag para facilitar o envio pelo Dashboard
+        await OneSignalInstance.User.addTag("nome", nome); 
+    }
 
-    localStorage.setItem("nome", nome);
-    abrirApp();
+    localStorage.setItem("nome", nome);
+    abrirApp();
 }
 
 function abrirApp(){
