@@ -189,18 +189,26 @@ async function ativarNotif(){
 }
 
 async function salvarNome(){
-    const nome = document.getElementById("nomeInput").value;
-    if (!nome) return;
+    const nome = document.getElementById("nomeInput").value;
+    if (!nome) return alert("Escribe tu nombre");
 
-    if(OneSignalInstance) {
-        // Use await para garantir que o OneSignal registre o usuário antes de seguir
-        await OneSignalInstance.login(uid);
-        // Opcional: Adicione uma tag para facilitar o envio pelo Dashboard
-        await OneSignalInstance.User.addTag("nome", nome); 
-    }
+    if(OneSignalInstance) {
+        // Força o login e a tag antes de avançar
+        await OneSignalInstance.login(uid);
+        await OneSignalInstance.User.addTag("nome", nome);
+        
+        // Garante que o push está habilitado internamente
+        await OneSignalInstance.User.pushSubscription.optIn(); 
+    }
 
-    localStorage.setItem("nome", nome);
-    abrirApp();
+    // Salva no seu Firebase para o contador de clientes
+    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,{
+        method: "PUT",
+        body: JSON.stringify({ nome: nome, id: uid })
+    });
+
+    localStorage.setItem("nome", nome);
+    abrirApp();
 }
 
 function abrirApp(){
