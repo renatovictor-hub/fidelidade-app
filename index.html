@@ -16,7 +16,13 @@ OneSignalDeferred.push(async function(OS) {
   OneSignalInstance = OS;
   await OS.init({
     appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-    notifyButton: { enable: false }
+    notifyButton: { enable: false },
+    // ADICIONE ESTAS LINHAS ABAIXO:
+    serviceWorkerPath: "OneSignalSDKWorker.js",
+    serviceWorkerUpdaterPath: "OneSignalSDKUpdaterWorker.js",
+    serviceWorkerParam: { scope: "/" }, // Garante que o Android ouça em todo o app
+    allowLocalhostAsSecureOrigin: true // Ajuda na sincronização inicial
+    
   });
 });
 </script>
