@@ -1,16 +1,7 @@
 {
-  "functions": {
-    "api/*.js": {
-      "memory": 128
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "*"
-      }
-    }
+  "version": 2,
+  "public": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }
