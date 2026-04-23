@@ -192,25 +192,36 @@ async function salvarNome(){
     const nome = document.getElementById("nomeInput").value;
     if (!nome) return alert("Escribe tu nombre");
 
-    if(OneSignalInstance) {
-        // Força o login e a tag antes de avançar
-        await OneSignalInstance.login(uid);
-        await OneSignalInstance.User.addTag("nome", nome);
-        
-        // Garante que o push está habilitado internamente
-        await OneSignalInstance.User.pushSubscription.optIn(); 
+    // Muda o botão para dar um feedback visual e evita cliques duplos
+    const btn = document.querySelector("#stepNome button");
+    btn.innerText = "Cargando...";
+    btn.disabled = true;
+
+    // TENTA SALVAR NO ONESIGNAL
+    try {
+        if(OneSignalInstance) {
+            await OneSignalInstance.login(uid);
+            await OneSignalInstance.User.addTag("nome", nome);
+            await OneSignalInstance.User.pushSubscription.optIn(); 
+        }
+    } catch (erro) {
+        console.warn("Aviso OneSignal (Ignorado):", erro);
     }
 
-    // Salva no seu Firebase para o contador de clientes
-    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,{
-        method: "PUT",
-        body: JSON.stringify({ nome: nome, id: uid })
-    });
+    // TENTA SALVAR NO FIREBASE
+    try {
+        await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,{
+            method: "PUT",
+            body: JSON.stringify({ nome: nome, id: uid })
+        });
+    } catch (erro) {
+        console.warn("Aviso Firebase (Ignorado):", erro);
+    }
 
+    // AVANÇA DE QUALQUER JEITO!
     localStorage.setItem("nome", nome);
     abrirApp();
 }
-
 function abrirApp(){
     document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
     document.getElementById("mainApp").style.display="block";
