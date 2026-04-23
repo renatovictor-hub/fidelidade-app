@@ -181,9 +181,21 @@ window.onload = () => {
 async function ativarNotif(){
     if (!isStandalone) return alert("Instala primero la app");
 
-    const perm = await OneSignalInstance.Notifications.requestPermission();
-    if (Notification.permission === "granted") {
-        localStorage.setItem("push","true");
+    try {
+        // Solicita a permissão
+        await OneSignalInstance.Notifications.requestPermission();
+        
+        // Verifica se foi aceito e força a ativação no OneSignal
+        if (Notification.permission === "granted") {
+            await OneSignalInstance.User.pushSubscription.optIn();
+            localStorage.setItem("push","true");
+            show("stepNome");
+        } else {
+            alert("Para recibir promociones, debes permitir as notificações.");
+        }
+    } catch (e) {
+        console.error("Erro ao ativar push:", e);
+        // Mesmo com erro, avançamos para não travar o usuário
         show("stepNome");
     }
 }
@@ -192,36 +204,27 @@ async function salvarNome(){
     const nome = document.getElementById("nomeInput").value;
     if (!nome) return alert("Escribe tu nombre");
 
-    // Muda o botão para dar um feedback visual e evita cliques duplos
-    const btn = document.querySelector("#stepNome button");
-    btn.innerText = "Cargando...";
-    btn.disabled = true;
-
-    // TENTA SALVAR NO ONESIGNAL
-    try {
-        if(OneSignalInstance) {
-            await OneSignalInstance.login(uid);
-            await OneSignalInstance.User.addTag("nome", nome);
-            await OneSignalInstance.User.pushSubscription.optIn(); 
-        }
-    } catch (erro) {
-        console.warn("Aviso OneSignal (Ignorado):", erro);
-    }
-
-    // TENTA SALVAR NO FIREBASE
-    try {
-        await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,{
-            method: "PUT",
-            body: JSON.stringify({ nome: nome, id: uid })
-        });
-    } catch (erro) {
-        console.warn("Aviso Firebase (Ignorado):", erro);
-    }
-
-    // AVANÇA DE QUALQUER JEITO!
     localStorage.setItem("nome", nome);
+
+    // EXECUTAR EM SEGUNDO PLANO
+    if(OneSignalInstance) {
+        // Vincula o ID personalizado e a tag de nome para o Dashboard
+        OneSignalInstance.login(uid);
+        OneSignalInstance.User.addTag("nome", nome);
+        // Garante que o estado de inscrição esteja ativo
+        OneSignalInstance.User.pushSubscription.optIn();
+    }
+
+    // Salva no Firebase
+    fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`, {
+        method: "PUT",
+        body: JSON.stringify({ nome: nome, id: uid })
+    }).catch(e => console.log("FB fail", e));
+
+    // ABRE O APP IMEDIATAMENTE
     abrirApp();
 }
+  
 function abrirApp(){
     document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
     document.getElementById("mainApp").style.display="block";
