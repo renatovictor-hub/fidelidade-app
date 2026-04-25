@@ -212,46 +212,31 @@ async function carregarClientes() {
 carregarClientes();
 
 // ENVIAR PUSH (Versão corrigida para evitar erro de CORS via Vercel)
-async function enviarPushReal() {
-    const titulo = document.getElementById("pushTitulo").value;
-    const desc = document.getElementById("pushDesc").value;
-    const duracao = document.getElementById("duracion").value;
+async function enviarPush() {
+    const titulo = document.getElementById("titulo").value;
+    const desc = document.getElementById("desc").value;
+    const duracion = document.getElementById("duracion").value;
 
-    if (!titulo || !desc) return alert("⚠️ Preencha os campos!");
+    if (!titulo || !desc) return alert("Preencha os campos!");
 
-    log("Enviando via Vercel Proxy...");
-
-    // CHAVES LIMPAS (Sem espaços ou comentários ao lado)
-    const APP_ID = "10fd0812-370f-408a-9ea5-cbb349f5d635";
-    const API_KEY = "os_v2_app_cd6qqerxb5aivhvfzozut5owgubi5l5pvkqutnnclrleqng4gl4y3od5babtsob4nqqggdpkrfpgtyp7cld73giruoufaflvp3rrwtq";
+    log("Iniciando envio...");
 
     try {
-        const response = await fetch("/api/send-push", {
+        const res = await fetch("/api/send-push", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                titulo: titulo,
-                desc: desc,
-                app_id: APP_ID,
-                api_key: API_KEY
-            })
+            body: JSON.stringify({ titulo, desc })
         });
 
-        const data = await response.json();
+        const data = await res.json();
         
-        if (response.ok && data.id) {
-            log("✅ Sucesso OneSignal! ID: " + data.id);
-            
-            const expiraEm = Date.now() + (parseInt(duracao) * 1000);
-            await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
-                method: "POST",
-                body: JSON.stringify({ titulo: titulo, desc: desc, exp: expiraEm })
-            });
-            log("✅ Guardado en Firebase.");
-            carregarPromos();
+        if (res.ok && data.id) {
+            log("✅ OneSignal OK!");
+            const exp = Date.now() + (parseInt(duracion) * 1000);
+            await salvarPromoNoFirebase(titulo, desc, exp);
+            alert("¡Enviado!");
         } else {
-            // Aqui ele vai mostrar o erro real vindo do OneSignal
-            log("❌ Erro: " + JSON.stringify(data.detalhes || data));
+            log("❌ Erro: " + JSON.stringify(data));
         }
     } catch (e) {
         log("❌ Falha crítica: " + e.message);
