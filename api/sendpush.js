@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // 1. Configuração de CORS
+  // Configuração de CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -9,21 +9,18 @@ export default async function handler(req, res) {
   try {
     const { titulo, desc, link } = req.body;
 
-    // LIMPEZA DA CHAVE: Remove espaços, quebras de linha e aspas extras
-    const rawKey = process.env.ONESIGNAL_REST_KEY || "";
-    const cleanKey = rawKey.replace(/\r?\n|\r/g, "").trim();
+    // Puxa a chave e limpa qualquer erro de espaço
+    const chave = (process.env.ONESIGNAL_REST_KEY || "").trim();
 
-    if (!cleanKey) {
-      return res.status(500).json({ error: "A chave ONESIGNAL_REST_KEY não foi encontrada na Vercel." });
+    if (!chave) {
+      return res.status(500).json({ error: "ERRO: A variável ONESIGNAL_REST_KEY não foi encontrada ou está vazia na Vercel." });
     }
 
-    // 2. Chamada ao OneSignal
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        // AUTH: Basic + Chave Limpa
-        "Authorization": `Basic ${cleanKey}`
+        "Authorization": `Basic ${chave}`
       },
       body: JSON.stringify({
         app_id: "10fd0812-370f-408a-9ea5-cbb349f5d635",
@@ -38,9 +35,9 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({
-        erro_onesignal: data,
-        debug_chave_comprimento: cleanKey.length // Ajuda a saber se a chave foi lida
+      return res.status(response.status).json({ 
+        msg: "O OneSignal recusou a chave. Verifique se a chave na Vercel é a 'REST API KEY' e não a 'User Auth Key'.",
+        detalhes: data 
       });
     }
 
