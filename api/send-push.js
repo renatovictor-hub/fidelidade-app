@@ -1,23 +1,25 @@
 export default async function handler(req, res) {
-    // 1. CORS - Permite que seu dashboard fale com a API
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { titulo, desc, app_id, api_key } = req.body;
+    const { titulo, desc } = req.body;
 
-    // 2. Validação da Chave (O OneSignal v2 exige 'Basic')
+    // AS CHAVES FICAM AQUI (PROTEGIDAS NO SERVIDOR)
+    const APP_ID = "10fd0812-370f-408a-9ea5-cbb349f5d635";
+    const API_KEY = "os_v2_app_cd6qqerxb5aivhvfzozut5owgubi5l5pvkqutnnclrleqng4gl4y3od5babtsob4nqqggdpkrfpgtyp7cld73giruoufaflvp3rrwtq";
+
     try {
         const response = await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Basic ${api_key.trim()}`
+                "Authorization": "Basic " + API_KEY.trim()
             },
             body: JSON.stringify({
-                app_id: app_id,
+                app_id: APP_ID,
                 included_segments: ["Total Subscriptions"],
                 headings: { "en": titulo, "es": titulo },
                 contents: { "en": desc, "es": desc },
