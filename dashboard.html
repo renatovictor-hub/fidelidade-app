@@ -128,7 +128,7 @@
             font-size: 12px;
             height: 200px;
             overflow-y: auto;
-            display: block; /* Alterado para block para você ver o que acontece */
+            display: none;
         }
 
         .stats {
@@ -154,6 +154,7 @@
 
         <div class="card">
             <h3>📄 Logs del Sistema</h3>
+            <button onclick="toggleLog()" style="background:#eee; color:#333; margin-bottom:10px;">Ver Logs</button>
             <div id="log" class="log-box"></div>
         </div>
     </aside>
@@ -164,12 +165,12 @@
             
             <div class="input-group">
                 <label>Título de la Notificación</label>
-                <input id="pushTitulo" placeholder="Ej: ¡Promoción de Pastel!">
+                <input id="titulo" placeholder="Ej: ¡Promoción de Pastel!">
             </div>
 
             <div class="input-group">
                 <label>Mensaje (Descripción)</label>
-                <textarea id="pushDesc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
+                <textarea id="desc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
             </div>
 
             <div class="input-group">
@@ -178,7 +179,7 @@
                 <small>3600 = 1 hora / 86400 = 24 horas</small>
             </div>
 
-            <button onclick="enviarPushReal()" class="btn-primary">ENVIAR PUSH AHORA</button>
+            <button onclick="enviarPush()" class="btn-primary">ENVIAR PUSH AHORA</button>
         </div>
 
         <div class="card">
@@ -198,6 +199,11 @@ function log(msg) {
     box.scrollTop = box.scrollHeight;
 }
 
+function toggleLog() {
+    const logBox = document.getElementById("log");
+    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
+}
+
 // CARGAR CLIENTES
 async function carregarClientes() {
     try {
@@ -211,97 +217,92 @@ async function carregarClientes() {
 }
 carregarClientes();
 
-// FUNÇÃO PARA SALVAR NO FIREBASE (Adicionada)
-async function salvarPromoNoFirebase(titulo, desc, exp) {
-    try {
-        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
-            method: "POST",
-            body: JSON.stringify({ titulo, desc, exp })
-        });
-        log("✅ Guardado en Firebase.");
-    } catch (e) {
-        log("❌ Erro ao salvar no Firebase: " + e.message);
-    }
-}
-
-// ENVIAR PUSH (NOME CORRIGIDO PARA BATER COM O BOTÃO)
-async function enviarPushReal() {
-    // IDs CORRIGIDOS para bater com o HTML (pushTitulo e pushDesc)
-    const titulo = document.getElementById("pushTitulo").value;
-    const desc = document.getElementById("pushDesc").value;
+// ENVIAR PUSH
+async function enviarPush() {
+    const titulo = document.getElementById("titulo").value;
+    const desc = document.getElementById("desc").value;
     const duracion = document.getElementById("duracion").value;
 
-    if (!titulo || !desc) return alert("⚠️ Preencha os campos!");
+    if (!titulo || !desc) return alert("¡Por favor, completa los campos!");
 
-    log("Iniciando envio para Vercel...");
+    const exp = Date.now() + (parseInt(duracion) * 1000);
+    const link = `https://fidelidade-app-akcn.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+
+    log("Intentando enviar push...");
 
     try {
-        const res = await fetch("/api/send-push", {
+        const res = await fetch("/api/sendpush", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ titulo, desc })
+            body: JSON.stringify({ titulo, desc, link })
         });
 
         const data = await res.json();
-        
-        if (res.ok && data.id) {
-            log("✅ OneSignal OK! ID: " + data.id);
-            
-            // Calcula expiração e salva
-            const exp = Date.now() + (parseInt(duracion) * 1000);
+        log("Respuesta API: " + JSON.stringify(data));
+
+        if (res.ok) {
             await salvarPromoNoFirebase(titulo, desc, exp);
-            
             alert("¡Notificación enviada con éxito!");
-            carregarPromos(); // Atualiza a lista abaixo
+            document.getElementById("titulo").value = "";
+            document.getElementById("desc").value = "";
         } else {
-            log("❌ Erro OneSignal: " + JSON.stringify(data));
+            alert("Error al enviar: " + JSON.stringify(data));
         }
     } catch (e) {
-        log("❌ Falha crítica: " + e.message);
+        log("Error Fatal: " + e.message);
+    }
+}
+
+// GUARDAR EN FIREBASE (Nombre corregido)
+async function salvarPromoNoFirebase(titulo, desc, exp) {
+    try {
+        log("Guardando en Firebase...");
+        await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
+            method: "POST",
+            body: JSON.stringify({ titulo, desc, exp: Number(exp) })
+        });
+        log("✅ Éxito en Firebase.");
+        await carregarPromos();
+    } catch (e) {
+        log("Error Firebase: " + e.message);
     }
 }
 
 // CARGAR PROMOS
 async function carregarPromos() {
-    try {
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-        const data = await res.json();
-        const lista = document.getElementById("listaPromos");
+    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
+    const data = await res.json();
+    const lista = document.getElementById("listaPromos");
 
-        Object.values(timersAtivos).forEach(clearInterval);
-        timersAtivos = {};
-        lista.innerHTML = "";
+    Object.values(timersAtivos).forEach(clearInterval);
+    timersAtivos = {};
+    lista.innerHTML = "";
 
-        if (!data) {
-            lista.innerHTML = "<i>No hay promociones activas.</i>";
-            return;
-        }
-
-        Object.entries(data).forEach(([id, promo]) => {
-            if (!promo || !promo.exp) return;
-            const expiraEm = Number(promo.exp);
-            if (expiraEm - Date.now() <= 0) return;
-
-            const div = document.createElement("div");
-            div.className = "promo-item";
-            div.innerHTML = `
-                <strong>${promo.titulo}</strong><br>
-                <small>${promo.desc}</small><br>
-                ⏳ <span class="timer" id="timer_${id}">--:--:--</span>
-                <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">Eliminar</button>
-            `;
-            lista.appendChild(div);
-            iniciarTimer(id, expiraEm);
-        });
-    } catch (e) {
-        log("Erro ao carregar promos: " + e.message);
+    if (!data) {
+        lista.innerHTML = "<i>No hay promociones activas.</i>";
+        return;
     }
+
+    Object.entries(data).forEach(([id, promo]) => {
+        if (!promo || !promo.exp) return;
+        const expiraEm = Number(promo.exp);
+        if (expiraEm - Date.now() <= 0) return;
+
+        const div = document.createElement("div");
+        div.className = "promo-item";
+        div.innerHTML = `
+            <strong>${promo.titulo}</strong><br>
+            <small>${promo.desc}</small><br>
+            ⏳ <span class="timer" id="timer_${id}">--:--:--</span>
+            <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">Eliminar</button>
+        `;
+        lista.appendChild(div);
+        iniciarTimer(id, expiraEm);
+    });
 }
 
 function iniciarTimer(id, exp) {
     const el = document.getElementById("timer_" + id);
-    if (!el) return;
-    
     const update = () => {
         const resto = exp - Date.now();
         if (resto <= 0) {
@@ -320,12 +321,8 @@ function iniciarTimer(id, exp) {
 
 async function eliminarPromo(id) {
     if(!confirm("¿Eliminar promoción?")) return;
-    try {
-        await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
-        carregarPromos();
-    } catch (e) {
-        log("Erro ao deletar: " + e.message);
-    }
+    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
+    carregarPromos();
 }
 
 carregarPromos();

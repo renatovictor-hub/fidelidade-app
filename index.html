@@ -16,13 +16,7 @@ OneSignalDeferred.push(async function(OS) {
   OneSignalInstance = OS;
   await OS.init({
     appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-    notifyButton: { enable: false },
-    // ADICIONE ESTAS LINHAS ABAIXO:
-    serviceWorkerPath: "OneSignalSDKWorker.js",
-    serviceWorkerUpdaterPath: "OneSignalSDKUpdaterWorker.js",
-    serviceWorkerParam: { scope: "/" }, // Garante que o Android ouça em todo o app
-    allowLocalhostAsSecureOrigin: true // Ajuda na sincronização inicial
-    
+    notifyButton: { enable: false }
   });
 });
 </script>
@@ -51,20 +45,25 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 .btn-next { background:var(--gradiente); color:var(--branco); box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3); }
 .btn-notif { background:var(--amarelo); color: #000; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3); }
 
-/* Menu Superior */
+/* Menu Superior de Ações */
 .action-menu { display: flex; gap: 10px; margin-bottom: 20px; }
 .btn-small { flex: 1; padding: 10px; border-radius: 10px; font-size: 12px; background: #eee; text-decoration: none; color: var(--roxo); font-weight: bold; border: 1px solid #ddd; }
 
-/* Promos */
+/* Promociones Activas */
 .section-title { text-align: left; font-size: 18px; font-weight: bold; color: var(--roxo); margin: 20px 0 10px 5px; display: flex; align-items: center; gap: 8px; }
 
-.promo-card { background:var(--gradiente); color:var(--branco); padding:20px; border-radius:22px; margin-bottom:20px; text-align:left; box-shadow: 0 8px 20px rgba(106, 13, 173, 0.2); }
+.promo-card { background:var(--gradiente); color:var(--branco); padding:20px; border-radius:22px; margin-bottom:20px; text-align:left; position: relative; overflow: hidden; box-shadow: 0 8px 20px rgba(106, 13, 173, 0.2); }
+.promo-card h3 { margin: 0 0 5px 0; font-size: 20px; }
+.promo-card p { margin: 0 0 15px 0; font-size: 14px; opacity: 0.9; }
 
-.timer-box { background: rgba(255, 255, 255, 0.2); display: inline-flex; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; margin-bottom: 15px; }
+/* Contador/Timer Dinâmico */
+.timer-box { background: rgba(255, 255, 255, 0.2); display: inline-flex; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; backdrop-filter: blur(5px); margin-bottom: 15px; }
 
-.btn-wa-card { background: #25d366; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; font-weight: bold; }
+/* Botão WhatsApp dentro do Card */
+.btn-wa-card { background: #25d366; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 14px; }
 
-.expired-card { background:#f0f0f0; color:#888; padding:15px; border-radius:15px; margin-bottom:10px; text-align:left; border-left: 4px solid #ccc; }
+/* Expiradas */
+.expired-card { background:#f0f0f0; color:#888; padding:15px; border-radius:15px; margin-bottom:10px; text-align:left; border-left: 4px solid #ccc; font-size: 13px; }
 
 .ios-guide { display:none; background:#f4f4f4; padding:20px; border-radius:20px; margin-top:15px; text-align:left; font-size:14px; border: 1px dashed var(--roxo); }
 </style>
@@ -82,59 +81,40 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
         <p id="installMsg">Instala nuestra App para acceder a promociones exclusivas.</p>
         <button id="btnAndroid" class="btn-next" style="display:none;" onclick="instalar()">INSTALAR APP</button>
         <div id="iosGuide" class="ios-guide">
-            1. Toca el botón Compartir<br>
-            2. "Agregar a inicio"<br>
-            3. Abre la App
+            1. Toca el botón <b>Compartir</b> (cuadrado con flecha)<br>
+            2. Busca <b>"Agregar a inicio"</b> ou <b>"A la pantalla de inicio"</b><br>
+            3. Abre la App desde tu pantalla principal.
         </div>
     </div>
 
     <div id="stepNotif" class="step-box">
         <h2 style="color:var(--roxo)">Alertas Activas</h2>
+        <p>Entérate antes que todos cuando salgan nuevas coxinhas y pasteles.</p>
         <button onclick="ativarNotif()" class="btn-notif">ACTIVAR NOTIFICACIONES</button>
     </div>
 
     <div id="stepNome" class="step-box">
         <h2 style="color:var(--roxo)">¿Cómo te llamas?</h2>
-        <input id="nomeInput" placeholder="Tu nombre aquí..." style="width:100%; padding:15px; border-radius:12px;">
-        <button onclick="salvarNome()" class="btn-next">EMPEZAR</button>
+        <input id="nomeInput" placeholder="Tu nombre aquí..." style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; box-sizing: border-box; font-size: 16px;">
+        <button onclick="salvarNome()" class="btn-next">EMPEZAR AHORA</button>
     </div>
 
     <div id="mainApp" style="display:none; text-align:left;">
         <div class="action-menu">
-            <a href="https://instagram.com/fooduaiso" target="_blank" class="btn-small">
-                <i class="fab fa-instagram"></i> Instagram
-            </a>
-            <a href="#" class="btn-small">
-                <i class="fas fa-utensils"></i> Menú
-            </a>
+            <a href="https://instagram.com/fooduaiso" target="_blank" class="btn-small"><i class="fab fa-instagram"></i> Instagram</a>
+            <a href="#" class="btn-small"><i class="fas fa-utensils"></i> Nuestro Menú</a>
         </div>
 
-        <h2 id="greeting" style="color: var(--roxo);"></h2>
-        <p style="color:#666;">¡Qué bueno verte de nuevo!</p>
+        <h2 id="greeting" style="color: var(--roxo); margin-bottom: 5px;"></h2>
+        <p style="margin: 0 0 20px 5px; color: #666; font-size: 14px;">¡Qué bueno verte de nuevo!</p>
+        
+        <img src="banner.jpg" style="width:100%; border-radius:20px; margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
 
-        <img src="banner.jpg" style="width:100%; border-radius:20px; margin-bottom:10px;">
-
-        <!-- CONTADOR -->
-        <div id="contadorUsers" style="
-            background:#f3e8ff;
-            padding:12px;
-            border-radius:12px;
-            margin:10px 0 20px 0;
-            color:#6a0dad;
-            font-weight:bold;
-            font-size:14px;
-        ">
-            🔥 Cargando clientes...
-        </div>
-
-        <div class="section-title">
-            🔥 Promociones Activas
-        </div>
-
+        <div class="section-title"><i class="fas fa-fire" style="color: #ff4500;"></i> Promociones Activas</div>
         <div id="promoBox"></div>
 
-        <div id="expiredSection" style="display:none;">
-            <div class="section-title" style="color:#999;">Anteriores</div>
+        <div id="expiredSection" style="display:none; margin-top: 30px;">
+            <div class="section-title" style="color: #999;"><i class="fas fa-history"></i> Anteriores</div>
             <div id="expiredBox"></div>
         </div>
     </div>
@@ -144,13 +124,25 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 let deferredPrompt;
+let uid = localStorage.getItem("uid") || "user_" + Math.floor(Math.random()*1e9);
+localStorage.setItem("uid", uid);
 
-let uid = localStorage.getItem("uid");
-if (!uid) {
-    uid = "user_" + Math.floor(Math.random() * 1e9);
-    localStorage.setItem("uid", uid);
-}
+// FLOW INICIAL
+window.onload = () => {
+    const nome = localStorage.getItem("nome");
+    const push = localStorage.getItem("push");
 
+    if (nome) return abrirApp();
+    if (!isStandalone) {
+        show("stepInstall");
+        if (isIOS) document.getElementById("iosGuide").style.display = "block";
+        return;
+    }
+    if (!push) return show("stepNotif");
+    show("stepNome");
+};
+
+// PWA ANDROID
 window.addEventListener("beforeinstallprompt", (e)=>{
     e.preventDefault();
     deferredPrompt = e;
@@ -160,97 +152,47 @@ window.addEventListener("beforeinstallprompt", (e)=>{
 async function instalar(){
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === "accepted") console.log("Instalado");
 }
 
-window.onload = () => {
-    const nome = localStorage.getItem("nome");
-    const push = localStorage.getItem("push");
-
-    if (nome) return abrirApp();
-
-    if (!isStandalone) {
-        show("stepInstall");
-        if (isIOS) document.getElementById("iosGuide").style.display = "block";
-        return;
-    }
-
-    if (!push) return show("stepNotif");
-    show("stepNome");
-};
-
+// NOTIFICAÇÕES
 async function ativarNotif(){
-    if (!isStandalone) return alert("Instala primero la app");
-
-    try {
-        // Solicita a permissão
-        await OneSignalInstance.Notifications.requestPermission();
-        
-        // Verifica se foi aceito e força a ativação no OneSignal
-        if (Notification.permission === "granted") {
-            await OneSignalInstance.User.pushSubscription.optIn();
-            localStorage.setItem("push","true");
-            show("stepNome");
-        } else {
-            alert("Para recibir promociones, debes permitir as notificações.");
-        }
-    } catch (e) {
-        console.error("Erro ao ativar push:", e);
-        // Mesmo com erro, avançamos para não travar o usuário
+    if (!OneSignalInstance) return alert("Cargando OneSignal...");
+    const perm = await OneSignalInstance.Notifications.requestPermission();
+    if (Notification.permission === "granted") {
+        localStorage.setItem("push","true");
         show("stepNome");
+    } else {
+        alert("¡Aviso! Necesitas activar las notificaciones para ver las promos.");
     }
 }
 
+// SALVAR DADOS
 async function salvarNome(){
     const nome = document.getElementById("nomeInput").value;
     if (!nome) return alert("Escribe tu nombre");
 
-    localStorage.setItem("nome", nome);
-
-    // EXECUTAR EM SEGUNDO PLANO
     if(OneSignalInstance) {
-        // Vincula o ID personalizado e a tag de nome para o Dashboard
-        OneSignalInstance.login(uid);
-        OneSignalInstance.User.addTag("nome", nome);
-        // Garante que o estado de inscrição esteja ativo
-        OneSignalInstance.User.pushSubscription.optIn();
+        await OneSignalInstance.login(uid);
+        await OneSignalInstance.User.addTag("user_name", nome);
     }
 
-    // Salva no Firebase
-    fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`, {
-        method: "PUT",
-        body: JSON.stringify({ nome: nome, id: uid })
-    }).catch(e => console.log("FB fail", e));
+    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,{
+        method:"PUT",
+        body:JSON.stringify({ nome, user_id: uid, date: new Date().toISOString() })
+    });
 
-    // ABRE O APP IMEDIATAMENTE
+    localStorage.setItem("nome", nome);
     abrirApp();
 }
-  
+
+// FEED E TIMERS
 function abrirApp(){
     document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
     document.getElementById("mainApp").style.display="block";
     document.getElementById("greeting").innerText = "Hola, " + localStorage.getItem("nome");
-
     carregar();
-    atualizarContador();
-}
-
-async function atualizarContador(){
-    const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
-    const data = await res.json();
-
-    const total = data ? Object.keys(data).length : 0;
-    animarContador(300 + total);
-}
-
-function animarContador(final){
-    let atual = 300;
-    const el = document.getElementById("contadorUsers");
-
-    const i = setInterval(()=>{
-        atual += Math.ceil((final - atual)/10);
-        el.innerHTML = `🔥 +${atual} clientes conectados`;
-        if(atual>=final) clearInterval(i);
-    },50);
 }
 
 async function carregar(){
@@ -270,35 +212,43 @@ async function carregar(){
         if(p.exp > now){
             const card = document.createElement("div");
             card.className = "promo-card";
-            const id = "t"+Math.random();
-
+            const timerId = `timer_${Math.random().toString(36).substr(2, 9)}`;
+            
             card.innerHTML = `
-                <div class="timer-box"><span id="${id}"></span></div>
+                <div class="timer-box"><i class="far fa-clock"></i>&nbsp;<span id="${timerId}">Calculando...</span></div>
                 <h3>${p.titulo}</h3>
                 <p>${p.desc}</p>
-                <a href="#" class="btn-wa-card">PEDIR AHORA</a>
+                <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Hola!%20Quiero%20la%20promo:%20${encodeURIComponent(p.titulo)}" class="btn-wa-card">
+                    <i class="fab fa-whatsapp"></i> PEDIR AHORA
+                </a>
             `;
             box.appendChild(card);
-            iniciarContador(p.exp, id);
+            iniciarContador(p.exp, timerId);
         } else if (expCount < 3) {
             document.getElementById("expiredSection").style.display = "block";
             const div = document.createElement("div");
             div.className = "expired-card";
-            div.innerHTML = `<b>${p.titulo}</b>`;
+            div.innerHTML = `<b>${p.titulo}</b><br><small>Finalizada hace poco</small>`;
             exp.appendChild(div);
             expCount++;
         }
     });
 }
 
-function iniciarContador(ts, id){
-    setInterval(()=>{
-        const diff = ts - Date.now();
-        if(diff <= 0) return document.getElementById(id).innerText="Expirada";
-        const m = Math.floor(diff/60000);
-        const s = Math.floor((diff%60000)/1000);
-        document.getElementById(id).innerText = `${m}m ${s}s`;
-    },1000);
+function iniciarContador(timestamp, elementId) {
+    function atualizar() {
+        const diff = timestamp - Date.now();
+        if (diff <= 0) {
+            document.getElementById(elementId).innerText = "Expirada";
+            return;
+        }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        document.getElementById(elementId).innerText = `Vence em: ${h}h ${m}m ${s}s`;
+    }
+    atualizar();
+    setInterval(atualizar, 1000);
 }
 
 function show(id){
