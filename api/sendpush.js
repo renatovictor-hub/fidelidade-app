@@ -1,14 +1,25 @@
 export default async function handler(req, res) {
 
   // ==============================
-  // PERMITIR APENAS POST
+  // 1. CABEÇALHOS CORS (Muito Importante)
+  // ==============================
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Se o navegador enviar uma requisição de verificação, respondemos com sucesso na hora
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // ==============================
+  // 2. PERMITIR APENAS POST
   // ==============================
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método não permitido" });
   }
 
   try {
-
     const { titulo, desc, link } = req.body;
 
     if (!titulo || !desc || !link) {
@@ -16,7 +27,7 @@ export default async function handler(req, res) {
     }
 
     // ==============================
-    // BUSCAR USUÁRIOS NO FIREBASE
+    // 3. BUSCAR USUÁRIOS NO FIREBASE
     // ==============================
     const usersRes = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
     const usersData = await usersRes.json();
@@ -25,9 +36,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Nenhum usuário encontrado" });
     }
 
-    // ==============================
-    // EXTRAIR IDS
-    // ==============================
     const userIds = Object.values(usersData)
       .map(u => u.user_id)
       .filter(id => id != null);
@@ -36,10 +44,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Nenhum ID válido" });
     }
 
-    console.log("Total usuários:", userIds.length);
-
     // ==============================
-    // ENVIAR EM LOTES (IMPORTANTE)
+    // 4. ENVIAR EM LOTES PARA ONESIGNAL
     // ==============================
     const chunkSize = 2000;
     const chunks = [];
@@ -52,32 +58,31 @@ export default async function handler(req, res) {
 
     for (const chunk of chunks) {
 
-      const response = await fetch("https://api.onesignal.com/notifications", {
+      const response = await fetch("https://onesignal.com/api/v1/notifications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          "Authorization": `Key ${process.env.ONESIGNAL_REST_KEY}`
+          // AQUI ESTAVA O ERRO! Trocado "Key" por "Basic"
+          "Authorization": `Basic ${process.env.ONESIGNAL_REST_KEY.trim()}`
         },
         body: JSON.stringify({
           app_id: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-
           target_channel: "push",
-
           include_aliases: {
             external_id: chunk
           },
-
           headings: {
             en: titulo,
-            pt: titulo
+            pt: titulo,
+            es: titulo
           },
-
           contents: {
             en: desc,
-            pt: desc
+            pt: desc,
+            es: desc
           },
-
-          web_url: link
+          web_url: link,
+          isAndroid: true
         })
       });
 
@@ -85,6 +90,7 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
         console.error("Erro OneSignal:", data);
+        // É esta linha que devolvia o 403 pro seu navegador!
         return res.status(response.status).json(data);
       }
 
@@ -92,7 +98,7 @@ export default async function handler(req, res) {
     }
 
     // ==============================
-    // SALVAR HISTÓRICO DE PROMO
+    // 5. SALVAR HISTÓRICO DE PROMO
     // ==============================
     await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
       method: "POST",
@@ -101,12 +107,14 @@ export default async function handler(req, res) {
         desc,
         link,
         total_users: userIds.length,
-        created_at: Date.now()
+        created_at: Date.now(),
+        // Define o tempo de expiração que você enviou ou um padrão
+        exp: Date.now() + (3600 * 1000) 
       })
     });
 
     // ==============================
-    // RESPOSTA FINAL
+    // 6. RESPOSTA FINAL
     // ==============================
     return res.status(200).json({
       success: true,
@@ -119,5 +127,4 @@ export default async function handler(req, res) {
     console.error("Erro no servidor:", err);
     return res.status(500).json({ error: "Erro interno no servidor" });
   }
-
 }
