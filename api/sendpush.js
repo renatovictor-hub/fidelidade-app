@@ -22,12 +22,12 @@ export default async function handler(req, res) {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": `Basic ${chave}`
       },
-    body: JSON.stringify({
-  app_id: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-  included_segments: ["All Users"],
-  headings: { en: titulo, pt: titulo, es: titulo },
-  contents: { en: desc, pt: desc, es: desc },
-  web_url: link
+      body: JSON.stringify({
+        app_id: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        included_segments: ["Subscribed Users"],
+        headings: { en: titulo, pt: titulo, es: titulo },
+        contents: { en: desc, pt: desc, es: desc },
+        url: link
       })
     });
 
