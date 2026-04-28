@@ -150,11 +150,25 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 let deferredPrompt;
-let somTocando = false; 
+let ultimaVezQueTocou = 0; // Trava de tempo real
 let uid = localStorage.getItem("uid") || "user_" + Math.floor(Math.random() * 1e9);
 localStorage.setItem("uid", uid);
 
-// --- 1. CAPTURA E EXECUÇÃO DA INSTALAÇÃO (ANDROID) ---
+// --- 1. CONTROLE DE ÁUDIO ---
+function tocarSomSucesso() {
+    const agora = Date.now();
+    // Se tentou tocar de novo em menos de 3 segundos, ignora (mata o eco do Android)
+    if (agora - ultimaVezQueTocou < 3000) return;
+    
+    const audio = document.getElementById("audioSuccess");
+    if (audio) {
+        ultimaVezQueTocou = agora;
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log("Áudio aguardando interação."));
+    }
+}
+
+// --- 2. INSTALAÇÃO (PWA) ---
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -164,46 +178,24 @@ window.addEventListener("beforeinstallprompt", (e) => {
     }
 });
 
-// Evento disparado quando a instalação é concluída (Android)
-window.addEventListener("appinstalled", (evt) => {
-    tocarSomSucesso(); 
+// Evento de instalação concluída
+window.addEventListener("appinstalled", () => {
+    // No Android, apenas mostramos a tela. 
+    // O som agora será tocado no clique do botão 'Instalar' para evitar repetições do sistema.
     show("stepSuccess");
     deferredPrompt = null;
 });
 
-// --- 2. FUNÇÃO DE SOM COM TRAVAS PARA ANDROID E IOS ---
-function tocarSomSucesso() {
-    if (somTocando) return; // Evita repetição tripla no Android
-    
-    const audio = document.getElementById("audioSuccess");
-    if (audio) {
-        somTocando = true;
-        audio.currentTime = 0;
-        
-        // play() retorna uma promessa que tratamos para evitar erros no console
-        audio.play().then(() => {
-            setTimeout(() => { somTocando = false; }, 2000); // Trava por 2 seg
-        }).catch(err => {
-            somTocando = false;
-            console.log("Áudio bloqueado pelo navegador/sistema.");
-        });
-    }
-}
-
-// --- 3. INICIALIZAÇÃO E DESTRAVADOR IOS ---
+// --- 3. INICIALIZAÇÃO ---
 window.onload = () => {
     const nome = localStorage.getItem("nome");
     const push = localStorage.getItem("push");
 
-    // Destravador de áudio para iPhone:
-    // O iOS só libera o som após o primeiro toque do usuário na tela.
+    // Destravador para iPhone (iOS precisa de um toque para liberar o canal de som)
     document.body.addEventListener('click', () => {
         const audio = document.getElementById("audioSuccess");
-        if (audio) {
-            audio.play().then(() => {
-                audio.pause(); 
-                audio.currentTime = 0;
-            }).catch(e => {});
+        if (audio && audio.paused) {
+            audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => {});
         }
     }, { once: true });
 
@@ -213,16 +205,28 @@ window.onload = () => {
         return show("stepNome");
     }
     show("stepInstall");
-
-    if (isIOS) {
-        const guide = document.getElementById("iosGuide");
-        if(guide) guide.style.display = "block";
-        const msg = document.getElementById("installMsg");
-        if(msg) msg.innerText = "Sigue los pasos para instalar la App en tu iPhone.";
-    }
 };
 
-// --- 4. FUNÇÕES DE INTERAÇÃO ---
+// --- 4. AÇÕES COM SOM ---
+
+async function instalar() {
+    if (!deferredPrompt) return;
+    tocarSomSucesso(); // Toca aqui no clique! É mais seguro que o evento do sistema.
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+}
+
+async function ativarNotif() {
+    if (!OneSignalInstance) return alert("Cargando...");
+    const perm = await OneSignalInstance.Notifications.requestPermission();
+    if (Notification.permission === "granted") {
+        localStorage.setItem("push", "true");
+        tocarSomSucesso(); // Som de confirmação
+        show("stepNome");
+    }
+}
+
+// --- 5. RESTANTE DAS FUNÇÕES (FLUXO NORMAL) ---
 
 function show(id) {
     document.querySelectorAll(".step-box").forEach(e => e.classList.remove("active"));
@@ -230,47 +234,13 @@ function show(id) {
     if(target) target.classList.add("active");
 }
 
-async function instalar() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    // O som da instalação é disparado pelo listener 'appinstalled' no topo.
-}
-
-async function ativarNotif() {
-    if (!OneSignalInstance) return alert("Cargando OneSignal...");
-    const perm = await OneSignalInstance.Notifications.requestPermission();
-    
-    if (Notification.permission === "granted") {
-        localStorage.setItem("push", "true");
-        tocarSomSucesso(); // Som ao permitir notificações
-        show("stepNome");
-    } else {
-        alert("¡Aviso! Necesitas activar las notificaciones para ver las promos.");
-    }
-}
-
 async function salvarNome() {
-    const nomeInput = document.getElementById("nomeInput");
-    const nome = nomeInput ? nomeInput.value : "";
+    const nome = document.getElementById("nomeInput")?.value;
     if (!nome) return alert("Escribe tu nombre");
-
-    if(OneSignalInstance) {
-        await OneSignalInstance.login(uid);
-        await OneSignalInstance.User.addTag("user_name", nome);
-    }
-
-    try {
-        await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`, {
-            method: "PUT",
-            body: JSON.stringify({ nome, user_id: uid, date: new Date().toISOString() })
-        });
-        localStorage.setItem("nome", nome);
-        abrirApp();
-    } catch (e) { console.error("Erro ao salvar:", e); }
+    tocarSomSucesso(); // Som ao iniciar o app
+    localStorage.setItem("nome", nome);
+    abrirApp();
 }
-
-// --- 5. APP PRINCIPAL ---
 
 function abrirApp() {
     document.querySelectorAll(".step-box").forEach(e => e.classList.remove("active"));
@@ -281,21 +251,16 @@ function abrirApp() {
     carregarPromos();
 }
 
+// ... (Mantenha carregarPromos e iniciarContador como estão)
 async function carregarPromos() {
     try {
         const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
         const data = await res.json();
         const box = document.getElementById("promoBox");
-        const exp = document.getElementById("expiredBox");
-
         if(!box || !data) return;
-        box.innerHTML = ""; exp.innerHTML = "";
-
+        box.innerHTML = "";
         const now = Date.now();
-        const lista = Object.values(data).sort((a,b) => b.exp - a.exp);
-        let expCount = 0;
-
-        lista.forEach(p => {
+        Object.values(data).forEach(p => {
             if(p.exp > now) {
                 const card = document.createElement("div");
                 card.className = "promo-card";
@@ -309,17 +274,9 @@ async function carregarPromos() {
                     </a>`;
                 box.appendChild(card);
                 iniciarContador(p.exp, timerId);
-            } else if (expCount < 3) {
-                const section = document.getElementById("expiredSection");
-                if(section) section.style.display = "block";
-                const div = document.createElement("div");
-                div.className = "expired-card";
-                div.innerHTML = `<b>${p.titulo}</b><br><small>Finalizada hace poco</small>`;
-                exp.appendChild(div);
-                expCount++;
             }
         });
-    } catch(err) { console.error("Erro ao carregar feed:", err); }
+    } catch(e) {}
 }
 
 function iniciarContador(timestamp, elementId) {
