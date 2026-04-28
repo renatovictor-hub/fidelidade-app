@@ -87,6 +87,16 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
         </div>
     </div>
 
+  <div id="stepSuccess" class="step-box">
+    <h2 style="color:#2ecc71"><i class="fas fa-check-circle"></i> ¡Instalado!</h2>
+    <p>La App <b>Uai Sô</b> já está en tu celular.</p>
+    <div style="margin:20px 0;">
+        <img src="logo.png" style="width:80px; border-radius:15px; filter: grayscale(0);">
+    </div>
+    <p style="font-size: 14px; color: #666;">Sal de aquí y busca nuestro ícono en tu pantalla de inicio para empezar a ganar puntos.</p>
+    <button onclick="window.close()" class="btn-next" style="background:#444;">CERRAR NAVEGADOR</button>
+</div>
+
     <div id="stepNotif" class="step-box">
         <h2 style="color:var(--roxo)">Alertas Activas</h2>
         <p>Entérate antes que todos cuando salgan nuevas coxinhas y pasteles.</p>
@@ -133,27 +143,46 @@ window.onload = () => {
     const push = localStorage.getItem("push");
 
     if (nome) return abrirApp();
-    if (!isStandalone) {
-        show("stepInstall");
-        if (isIOS) document.getElementById("iosGuide").style.display = "block";
-        return;
+    
+    // Se já estiver no App (Standalone), pula a instalação
+    if (isStandalone) {
+        if (!push) return show("stepNotif");
+        return show("stepNome");
     }
-    if (!push) return show("stepNotif");
-    show("stepNome");
+
+    // Se estiver no navegador, mostra a tela de instalação
+    show("stepInstall");
+    if (isIOS) document.getElementById("iosGuide").style.display = "block";
 };
 
-// PWA ANDROID
+// PWA ANDROID - Detecção e Automação
 window.addEventListener("beforeinstallprompt", (e)=>{
     e.preventDefault();
     deferredPrompt = e;
-    if (!isIOS) document.getElementById("btnAndroid").style.display = "block";
+    // Só mostra o botão se não for iOS e se não estiver no app
+    if (!isIOS && !isStandalone) {
+        document.getElementById("btnAndroid").style.display = "block";
+    }
+});
+
+// Detecta quando a instalação termina com sucesso
+window.addEventListener("appinstalled", (evt) => {
+    console.log("App instalado!");
+    // Esconde a tela de instalação e mostra a de sucesso
+    show("stepSuccess");
+    // Limpa o prompt
+    deferredPrompt = null;
 });
 
 async function instalar(){
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
-    if (choice.outcome === "accepted") console.log("Instalado");
+    
+    if (choice.outcome === "accepted") {
+        // O evento 'appinstalled' será disparado logo em seguida
+        console.log("Usuário aceitou a instalação");
+    }
 }
 
 // NOTIFICAÇÕES
