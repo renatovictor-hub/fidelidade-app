@@ -157,19 +157,24 @@ window.onload = () => {
     const nome = localStorage.getItem("nome");
     const push = localStorage.getItem("push");
 
+    // Se já tem nome, vai direto pro app
     if (nome) return abrirApp();
     
-    // Se já estiver no App (Standalone), pula a instalação
+    // Se já estiver "dentro" do App instalado
     if (isStandalone) {
         if (!push) return show("stepNotif");
         return show("stepNome");
     }
 
-    // Se estiver no navegador, mostra a tela de instalação
+    // Se estiver no navegador, mostra a tela de boas-vindas/instalação
     show("stepInstall");
-    if (isIOS) document.getElementById("iosGuide").style.display = "block";
-};
 
+    // Mostra o guia do iOS imediatamente se for iPhone
+    if (isIOS) {
+        document.getElementById("iosGuide").style.display = "block";
+        document.getElementById("installMsg").innerText = "Sigue los pasos para instalar la App en tu iPhone.";
+    }
+};
 // PWA ANDROID - Detecção e Automação
 window.addEventListener("appinstalled", (evt) => {
     console.log("App instalado!");
@@ -314,6 +319,19 @@ document.addEventListener("DOMContentLoaded", function() {
     if(elementoAudio) {
         elementoAudio.src = audioBase64;
     }
+  // Captura o evento de instalação (PWA)
+window.addEventListener("beforeinstallprompt", (e) => {
+    // Impede o Chrome de mostrar o banner automático
+    e.preventDefault();
+    // Salva o evento para ser disparado quando o usuário clicar no botão
+    deferredPrompt = e;
+    
+    // Mostra o botão de Android se não for iOS e não estiver no modo standalone
+    if (!isIOS && !isStandalone) {
+        const btn = document.getElementById("btnAndroid");
+        if(btn) btn.style.display = "block";
+    }
+
 });
   
 </script>
