@@ -70,6 +70,8 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 </head>
 
 <body>
+  
+  <audio id="audioSuccess"></audio>
 
 <div class="container">
     <div class="header-app">
@@ -301,6 +303,19 @@ function show(id){
     document.querySelectorAll(".step-box").forEach(e=>e.classList.remove("active"));
     document.getElementById(id).classList.add("active");
 }
+
+  // Espera a página carregar completamente primeiro
+document.addEventListener("DOMContentLoaded", function() {
+    // Cole sua string gigante inteira aqui dentro das aspas
+    const audioBase64 = "data:audio/wav;base64,UklGRl9vT19XQVZF..."; 
+    
+    // Injeta o som na tag de áudio
+    const elementoAudio = document.getElementById("audioSuccess");
+    if(elementoAudio) {
+        elementoAudio.src = audioBase64;
+    }
+});
+  
 </script>
 
 </body>
