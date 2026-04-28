@@ -169,13 +169,17 @@ window.onload = () => {
 };
 
 // PWA ANDROID - Detecção e Automação
-window.addEventListener("beforeinstallprompt", (e)=>{
-    e.preventDefault();
-    deferredPrompt = e;
-    // Só mostra o botão se não for iOS e se não estiver no app
-    if (!isIOS && !isStandalone) {
-        document.getElementById("btnAndroid").style.display = "block";
-    }
+window.addEventListener("appinstalled", (evt) => {
+    console.log("App instalado!");
+    
+    // 1. Mostra a tela de sucesso
+    show("stepSuccess");
+    
+    // 2. Limpa o localStorage de instalação para não dar conflito
+    deferredPrompt = null;
+
+    // 3. (Opcional) Bloqueia o scroll da página para dar sensação de 'fim de linha'
+    document.body.style.overflow = "hidden";
 });
 
 // Detecta quando a instalação termina com sucesso
