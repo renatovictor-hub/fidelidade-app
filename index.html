@@ -229,11 +229,20 @@ async function instalar() {
 
 async function ativarNotif() {
     if (!OneSignalInstance) return alert("Cargando...");
-    const perm = await OneSignalInstance.Notifications.requestPermission();
+    
+    // Pede permissão
+    await OneSignalInstance.Notifications.requestPermission();
+    
     if (Notification.permission === "granted") {
         localStorage.setItem("push", "true");
-        tocarSomSucesso();
-        show("stepNome");
+        
+        // Pequeno delay para dar tempo ao OneSignal de registar e enviar o Welcome Push
+        setTimeout(() => {
+            tocarSomSucesso();
+            show("stepNome");
+        }, 1000); 
+    } else {
+        alert("¡Aviso! Necesitas activar las notificaciones.");
     }
 }
 
