@@ -112,6 +112,12 @@
             border-left: 5px solid var(--amarelo);
             margin-bottom: 15px;
         }
+        
+        .expired-dashboard {
+    opacity: 0.65;
+    background: #f1f1f1;
+    border-left: 5px solid #999;
+}
 
         .timer {
             color: var(--roxo);
@@ -286,18 +292,34 @@ async function carregarPromos() {
     Object.entries(data).forEach(([id, promo]) => {
         if (!promo || !promo.exp) return;
         const expiraEm = Number(promo.exp);
-        if (expiraEm - Date.now() <= 0) return;
+      const expirou = expiraEm - Date.now() <= 0;
 
-        const div = document.createElement("div");
-        div.className = "promo-item";
-        div.innerHTML = `
-            <strong>${promo.titulo}</strong><br>
-            <small>${promo.desc}</small><br>
-            ⏳ <span class="timer" id="timer_${id}">--:--:--</span>
-            <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">Eliminar</button>
-        `;
-        lista.appendChild(div);
-        iniciarTimer(id, expiraEm);
+      const div = document.createElement("div");
+
+div.className = expirou
+    ? "promo-item expired-dashboard"
+    : "promo-item";
+
+div.innerHTML = `
+    <strong>${promo.titulo}</strong><br>
+    <small>${promo.desc}</small><br>
+
+    ${
+        expirou
+        ? `<span style="color:#999;font-weight:bold;">⚠️ Expirada</span>`
+        : `⏳ <span class="timer" id="timer_${id}">--:--:--</span>`
+    }
+
+    <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">
+        Eliminar
+    </button>
+`;
+
+lista.appendChild(div);
+
+if (!expirou) {
+    iniciarTimer(id, expiraEm);
+}
     });
 }
 
