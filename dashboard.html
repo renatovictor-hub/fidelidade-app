@@ -219,9 +219,11 @@ function toggleLog() {
 // CARGAR CLIENTES
 async function carregarClientes() {
     try {
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json");
+        cconst res = await fetch("/api/stats");
         const data = await res.json();
-        const total = data ? Object.keys(data).length : 0;
+
+        const total = data.total || 0;
+        
         document.getElementById("totalClientes").innerText = total + " clientes";
     } catch (e) {
         log("Error clientes: " + e.message);
