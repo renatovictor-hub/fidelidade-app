@@ -226,7 +226,7 @@ async function enviarPush() {
     if (!titulo || !desc) return alert("¡Por favor, completa los campos!");
 
     const exp = Date.now() + (parseInt(duracion) * 1000);
-    const link = `https://fidelidade-app-akcn.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+    const link = `https://fidelidad-uai-so.vercel.app//?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
 
     log("Intentando enviar push...");
 
