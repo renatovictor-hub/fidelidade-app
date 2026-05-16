@@ -331,11 +331,13 @@ async function carregarPromos() {
                     </a>`;
                 box.appendChild(card);
                 iniciarContador(p.exp, timerId);
-            } else {
+         
                 // PROMOÇÃO EXPIRADA (Mostra as últimas 5)
-              } else if (expCount < 5) {
+          } else if (expCount < 5) {
 
-    document.getElementById("expiredSection").style.display = "block";
+    if(expSection) {
+        expSection.style.display = "block";
+    }
 
     const div = document.createElement("div");
 
@@ -353,7 +355,9 @@ async function carregarPromos() {
         </div>
     `;
 
-    exp.appendChild(div);
+    if(expBox) {
+        expBox.appendChild(div);
+    }
 
     expCount++;
 }
