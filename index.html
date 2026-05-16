@@ -312,6 +312,7 @@ function abrirApp() {
     const greeting = document.getElementById("greeting");
     if(greeting) greeting.innerText = "Hola, " + (localStorage.getItem("nome") || "");
     carregarPromos();
+    atualizarContador();
 }
 
 async function carregarPromos() {
@@ -399,6 +400,46 @@ async function carregarPromos() {
 }
 
   let timers = {};
+
+  async function atualizarContador() {
+
+    try {
+
+        const res = await fetch(
+            "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json"
+        );
+
+        const data = await res.json();
+
+        const total = data ? Object.keys(data).length : 0;
+
+        animarContador(300 + total);
+
+    } catch (e) {
+        console.log("Erro contador:", e);
+    }
+}
+
+function animarContador(final) {
+
+    let atual = 300;
+
+    const el = document.getElementById("contadorUsers");
+
+    if (!el) return;
+
+    const interval = setInterval(() => {
+
+        atual += Math.ceil((final - atual) / 10);
+
+        el.innerHTML = `🔥 +${atual} clientes conectados`;
+
+        if (atual >= final) {
+            clearInterval(interval);
+        }
+
+    }, 50);
+}
   
 function iniciarContador(timestamp, elementId) {
 
