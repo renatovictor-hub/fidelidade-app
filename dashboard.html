@@ -192,6 +192,12 @@
             <h3>🔥 Promociones Activas en la App</h3>
             <div id="listaPromos"></div>
         </div>
+
+        <div class="card">
+    <h3 style="color:#999;">🕘 Promociones Expiradas</h3>
+    <div id="listaExpiradas"></div>
+</div>
+        
     </main>
 
 </div>
@@ -279,10 +285,12 @@ async function carregarPromos() {
     const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
     const data = await res.json();
     const lista = document.getElementById("listaPromos");
-
+    const expiradas = document.getElementById("listaExpiradas");
+    
     Object.values(timersAtivos).forEach(clearInterval);
     timersAtivos = {};
     lista.innerHTML = "";
+    expiradas.innerHTML = "";
 
     if (!data) {
         lista.innerHTML = "<i>No hay promociones activas.</i>";
@@ -315,7 +323,11 @@ div.innerHTML = `
     </button>
 `;
 
-lista.appendChild(div);
+if (expirou) {
+    expiradas.appendChild(div);
+} else {
+    lista.appendChild(div);
+}
 
 if (!expirou) {
     iniciarTimer(id, expiraEm);
