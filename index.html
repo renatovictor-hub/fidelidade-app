@@ -345,6 +345,8 @@ async function carregarPromos() {
 
         box.appendChild(card);
 
+      
+
         iniciarContador(p.exp, timerId);
 
     } else if (expCount < 5) {
@@ -382,25 +384,33 @@ async function carregarPromos() {
     } catch(e) { console.error("Erro ao carregar promos", e); }
 }
 
+  let timers = {};
+  
 function iniciarContador(timestamp, elementId) {
 
-    const interval = setInterval(() => {
+    // evita timers duplicados
+    if (timers[elementId]) {
+        clearInterval(timers[elementId]);
+    }
+
+    const atualizar = () => {
 
         const el = document.getElementById(elementId);
 
         if (!el) {
-            clearInterval(interval);
+            clearInterval(timers[elementId]);
+            delete timers[elementId];
             return;
         }
 
         const diff = timestamp - Date.now();
 
-        // EXPIROU
+        // expirou
         if (diff <= 0) {
 
-            clearInterval(interval);
+            clearInterval(timers[elementId]);
+            delete timers[elementId];
 
-            // recarrega as promos automaticamente
             carregarPromos();
 
             return;
@@ -411,9 +421,11 @@ function iniciarContador(timestamp, elementId) {
         const s = Math.floor((diff % 60000) / 1000);
 
         el.innerText = `Vence en: ${h}h ${m}m ${s}s`;
+    };
 
-    }, 1000);
+    atualizar();
 
+    timers[elementId] = setInterval(atualizar, 1000);
 }
   
 </script>
