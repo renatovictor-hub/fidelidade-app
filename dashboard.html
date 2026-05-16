@@ -393,16 +393,51 @@ async function eliminarPromo(id) {
     carregarPromos();
 }
 
-async function reativarPromo(id) {
+let promoReativarId = null;
 
-    const horas = prompt("Quantas horas deseja reativar?", "24");
+function reativarPromo(id) {
 
-    if (!horas) return;
+    promoReativarId = id;
 
-    const novaExp = Date.now() + (Number(horas) * 60 * 60 * 1000);
+    document.getElementById("modalReativar").style.display = "flex";
+}
+
+function fecharModal() {
+
+    document.getElementById("modalReativar").style.display = "none";
+}
+
+async function confirmarReativacao() {
+
+    const valor = Number(
+        document.getElementById("tempoValor").value
+    );
+
+    const tipo =
+        document.getElementById("tempoTipo").value;
+
+    if (!valor || valor <= 0) {
+        return alert("Valor inválido");
+    }
+
+    let ms = 0;
+
+    if (tipo === "min") {
+        ms = valor * 60 * 1000;
+    }
+
+    if (tipo === "hora") {
+        ms = valor * 60 * 60 * 1000;
+    }
+
+    if (tipo === "dia") {
+        ms = valor * 24 * 60 * 60 * 1000;
+    }
+
+    const novaExp = Date.now() + ms;
 
     await fetch(
-        `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`,
+        `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${promoReativarId}.json`,
         {
             method: "PATCH",
             body: JSON.stringify({
@@ -411,10 +446,96 @@ async function reativarPromo(id) {
         }
     );
 
+    fecharModal();
+
     carregarPromos();
 }
 
 carregarPromos();
 </script>
+    
+    <div id="modalReativar" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    z-index:999;
+    justify-content:center;
+    align-items:center;
+">
+
+    <div style="
+        background:white;
+        padding:25px;
+        border-radius:14px;
+        width:90%;
+        max-width:350px;
+    ">
+
+        <h3 style="margin-top:0;">Reativar Promoção</h3>
+
+        <input
+            id="tempoValor"
+            type="number"
+            value="1"
+            min="1"
+            style="
+                width:100%;
+                padding:12px;
+                margin-bottom:15px;
+                border-radius:8px;
+                border:1px solid #ccc;
+            "
+        >
+
+        <select
+            id="tempoTipo"
+            style="
+                width:100%;
+                padding:12px;
+                margin-bottom:20px;
+                border-radius:8px;
+            "
+        >
+            <option value="min">Minutos</option>
+            <option value="hora" selected>Horas</option>
+            <option value="dia">Dias</option>
+        </select>
+
+        <div style="display:flex; gap:10px;">
+
+            <button
+                onclick="confirmarReativacao()"
+                style="
+                    flex:1;
+                    background:#25d366;
+                    color:white;
+                    border:none;
+                    padding:12px;
+                    border-radius:8px;
+                    font-weight:bold;
+                "
+            >
+                Confirmar
+            </button>
+
+            <button
+                onclick="fecharModal()"
+                style="
+                    flex:1;
+                    background:#ddd;
+                    border:none;
+                    padding:12px;
+                    border-radius:8px;
+                "
+            >
+                Cancelar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 </body>
 </html>
