@@ -318,9 +318,36 @@ div.innerHTML = `
         : `⏳ <span class="timer" id="timer_${id}">--:--:--</span>`
     }
 
-    <button class="btn-danger" onclick="eliminarPromo('${id}')" style="margin-top:10px; width:auto;">
+   <div style="display:flex; gap:10px; margin-top:10px;">
+
+    ${
+        expirou
+        ? `
+        <button
+            onclick="reativarPromo('${id}')"
+            style="
+                background:#25d366;
+                color:white;
+                border:none;
+                padding:8px 12px;
+                border-radius:8px;
+                font-weight:bold;
+                cursor:pointer;
+            ">
+            Reativar
+        </button>
+        `
+        : ""
+    }
+
+    <button
+        class="btn-danger"
+        onclick="eliminarPromo('${id}')"
+        style="width:auto;">
         Eliminar
     </button>
+
+</div>
 `;
 
 if (expirou) {
@@ -355,7 +382,35 @@ function iniciarTimer(id, exp) {
 
 async function eliminarPromo(id) {
     if(!confirm("¿Eliminar promoción?")) return;
-    await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`, { method: "DELETE" });
+
+    await fetch(
+        `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`,
+        {
+            method: "DELETE"
+        }
+    );
+
+    carregarPromos();
+}
+
+async function reativarPromo(id) {
+
+    const horas = prompt("Quantas horas deseja reativar?", "24");
+
+    if (!horas) return;
+
+    const novaExp = Date.now() + (Number(horas) * 60 * 60 * 1000);
+
+    await fetch(
+        `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`,
+        {
+            method: "PATCH",
+            body: JSON.stringify({
+                exp: novaExp
+            })
+        }
+    );
+
     carregarPromos();
 }
 
