@@ -422,23 +422,27 @@ async function carregarPromos() {
 
 function animarContador(final) {
 
-    let atual = 300;
-
     const el = document.getElementById("contadorUsers");
 
     if (!el) return;
 
+    let atual = 0;
+
+    // velocidade inteligente
+    const incremento = Math.max(1, Math.ceil(final / 80));
+
     const interval = setInterval(() => {
 
-        atual += Math.ceil((final - atual) / 10);
-
-        el.innerHTML = `🔥 +${atual} clientes conectados`;
+        atual += incremento;
 
         if (atual >= final) {
+            atual = final;
             clearInterval(interval);
         }
 
-    }, 50);
+        el.innerHTML = `🔥 +${atual} clientes conectados`;
+
+    }, 30);
 }
   
 function iniciarContador(timestamp, elementId) {
