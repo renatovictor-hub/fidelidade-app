@@ -332,15 +332,31 @@ async function carregarPromos() {
                 box.appendChild(card);
                 iniciarContador(p.exp, timerId);
             } else {
-                // PROMOÇÃO EXPIRADA (Mostra as últimas 3)
-                if (expCount < 3 && expBox && expSection) {
-                    expSection.style.display = "block";
-                    const div = document.createElement("div");
-                    div.className = "expired-card";
-                    div.innerHTML = `<b>${p.titulo}</b><br><small>Finalizada hace poco</small>`;
-                    expBox.appendChild(div);
-                    expCount++;
-                }
+                // PROMOÇÃO EXPIRADA (Mostra as últimas 5)
+              } else if (expCount < 5) {
+
+    document.getElementById("expiredSection").style.display = "block";
+
+    const div = document.createElement("div");
+
+    div.className = "expired-card";
+
+    div.innerHTML = `
+        <b>${p.titulo}</b>
+
+        <small>
+            ${p.desc || "Promoción finalizada"}
+        </small>
+
+        <div class="expired-badge">
+            ⚠️ Expirada
+        </div>
+    `;
+
+    exp.appendChild(div);
+
+    expCount++;
+}
             }
         });
     } catch(e) { console.error("Erro ao carregar promos", e); }
