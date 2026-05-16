@@ -383,18 +383,37 @@ async function carregarPromos() {
 }
 
 function iniciarContador(timestamp, elementId) {
-    const atualizar = () => {
+
+    const interval = setInterval(() => {
+
         const el = document.getElementById(elementId);
-        if(!el) return;
+
+        if (!el) {
+            clearInterval(interval);
+            return;
+        }
+
         const diff = timestamp - Date.now();
-        if (diff <= 0) { el.innerText = "Expirada"; return; }
+
+        // EXPIROU
+        if (diff <= 0) {
+
+            clearInterval(interval);
+
+            // recarrega as promos automaticamente
+            carregarPromos();
+
+            return;
+        }
+
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
+
         el.innerText = `Vence en: ${h}h ${m}m ${s}s`;
-    };
-    atualizar();
-    setInterval(atualizar, 1000);
+
+    }, 1000);
+
 }
   
 </script>
