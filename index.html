@@ -63,8 +63,34 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 .btn-wa-card { background: #25d366; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 14px; }
 
 /* Expiradas */
-.expired-card { background:#f0f0f0; color:#888; padding:15px; border-radius:15px; margin-bottom:10px; text-align:left; border-left: 4px solid #ccc; font-size: 13px; }
+.expired-card {
+    background:#f3f3f3;
+    color:#777;
+    padding:16px;
+    border-radius:16px;
+    margin-bottom:12px;
+    text-align:left;
+    border-left:4px solid #ccc;
+    opacity:0.9;
+}
 
+.expired-card b {
+    display:block;
+    margin-bottom:6px;
+    color:#666;
+}
+
+.expired-badge {
+    display:inline-block;
+    margin-top:8px;
+    background:#ddd;
+    color:#666;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:bold;
+}
+  
 .ios-guide { display:none; background:#f4f4f4; padding:20px; border-radius:20px; margin-top:15px; text-align:left; font-size:14px; border: 1px dashed var(--roxo); }
 </style>
 </head>
@@ -138,7 +164,7 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
         <div class="section-title"><i class="fas fa-fire" style="color: #ff4500;"></i> Promociones Activas</div>
         <div id="promoBox"></div>
 
-        <div id="expiredSection" style="display:none; margin-top: 30px;">
+       <div id="expiredSection" style=" display:none; margin-top:30px;">
             <div class="section-title" style="color: #999;"><i class="fas fa-history"></i> Anteriores</div>
             <div id="expiredBox"></div>
         </div>
