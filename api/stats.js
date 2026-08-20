@@ -1,7 +1,5 @@
 export default async function handler(req, res) {
-
     try {
-
         const response = await fetch(
             "https://onesignal.com/api/v1/players?app_id=10fd0812-370f-408a-9ea5-cbb349f5d635&limit=300",
             {
@@ -13,20 +11,15 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        const ativos = data.players.filter(
-            p => p.invalid_identifier !== true &&
-                 p.notification_types > 0
-        );
-
-        res.status(200).json({
-            total: ativos.length
+        return res.status(200).json({
+            status: response.status,
+            ok: response.ok,
+            resposta: data
         });
 
     } catch (e) {
-
-        res.status(500).json({
+        return res.status(500).json({
             error: e.message
         });
-
     }
 }
