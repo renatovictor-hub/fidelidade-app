@@ -177,7 +177,34 @@
             <div class="input-group">
                 <label>Mensaje (Descripción)</label>
                 <textarea id="desc" placeholder="Ej: ¡Compra 1 y lleva 2 solo por hoy!"></textarea>
-            </div>
+            </div>ç
+            
+            <div class="input-group">
+    <label>Imagen de la Promoción (opcional)</label>
+    <input
+        id="imagem"
+        type="url"
+        placeholder="https://.../promocion.jpg"
+        oninput="previewImagem()"
+    >
+
+    <div id="previewImagemBox" style="display:none; margin-top:12px;">
+        <img
+            id="previewImagem"
+            style="
+                width:100%;
+                max-height:220px;
+                object-fit:cover;
+                border-radius:12px;
+                border:1px solid #ddd;
+            "
+        >
+    </div>
+
+    <small style="color:#777;">
+        Usa una imagen pública JPG, PNG o WebP.
+    </small>
+</div>
 
             <div class="input-group">
                 <label>Duración (Segundos)</label>
@@ -231,11 +258,35 @@ async function carregarClientes() {
 }
 carregarClientes();
 
+    function previewImagem() {
+    const url = document.getElementById("imagem").value.trim();
+    const box = document.getElementById("previewImagemBox");
+    const img = document.getElementById("previewImagem");
+
+    if (!url) {
+        box.style.display = "none";
+        img.removeAttribute("src");
+        return;
+    }
+
+    img.src = url;
+    box.style.display = "block";
+
+    img.onerror = () => {
+        box.style.display = "none";
+    };
+
+    img.onload = () => {
+        box.style.display = "block";
+    };
+}
+
 // ENVIAR PUSH
 async function enviarPush() {
     const titulo = document.getElementById("titulo").value;
     const desc = document.getElementById("desc").value;
     const duracion = document.getElementById("duracion").value;
+    const imagem = document.getElementById("imagem").value.trim();
 
     if (!titulo || !desc) return alert("¡Por favor, completa los campos!");
 
@@ -248,17 +299,19 @@ async function enviarPush() {
         const res = await fetch("/api/sendpush", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ titulo, desc, link })
+body: JSON.stringify({ titulo,desc,link,imagem})        
         });
 
         const data = await res.json();
         log("Respuesta API: " + JSON.stringify(data));
 
         if (res.ok) {
-            await salvarPromoNoFirebase(titulo, desc, exp);
+            await salvarPromoNoFirebase(titulo, desc, exp, imagem);
             alert("¡Notificación enviada con éxito!");
             document.getElementById("titulo").value = "";
             document.getElementById("desc").value = "";
+            document.getElementById("imagem").value = "";
+            document.getElementById("previewImagemBox").style.display = "none";
         } else {
             alert("Error al enviar: " + JSON.stringify(data));
         }
@@ -268,13 +321,15 @@ async function enviarPush() {
 }
 
 // GUARDAR EN FIREBASE (Nombre corregido)
-async function salvarPromoNoFirebase(titulo, desc, exp) {
+async function salvarPromoNoFirebase(titulo, desc, exp, imagem) {
     try {
         log("Guardando en Firebase...");
         await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json", {
             method: "POST",
-            body: JSON.stringify({ titulo, desc, exp: Number(exp) })
+body: JSON.stringify({titulo, desc,exp: Number(exp),imagem: imagem || ""})    
+            
         });
+        
         log("✅ Éxito en Firebase.");
         await carregarPromos();
     } catch (e) {
