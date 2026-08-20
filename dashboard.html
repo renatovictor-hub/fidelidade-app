@@ -219,7 +219,7 @@ function toggleLog() {
 // CARGAR CLIENTES
 async function carregarClientes() {
     try {
-        cconst res = await fetch("/api/stats");
+        const res = await fetch("/api/stats");
         const data = await res.json();
 
         const total = data.total || 0;
