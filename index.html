@@ -400,16 +400,38 @@ async function carregarPromos() {
         div.className = "expired-card";
 
         div.innerHTML = `
-            <b>${p.titulo}</b>
+    ${
+        p.imagem
+        ? `
+            <img
+                src="${p.imagem}"
+                alt="${p.titulo}"
+                style="
+                    width:100%;
+                    max-height:120px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    margin-bottom:10px;
+                    display:block;
+                    opacity:0.65;
+                    filter:grayscale(35%);
+                "
+                onerror="this.style.display='none'"
+            >
+        `
+        : ""
+    }
 
-            <small>
-                ${p.desc || "Promoción finalizada"}
-            </small>
+    <b>${p.titulo}</b>
 
-            <div class="expired-badge">
-                ⚠️ Expirada
-            </div>
-        `;
+    <small>
+        ${p.desc || "Promoción finalizada"}
+    </small>
+
+    <div class="expired-badge">
+        ⚠️ Expirada
+    </div>
+`;
 
         if (expBox) {
             expBox.appendChild(div);
