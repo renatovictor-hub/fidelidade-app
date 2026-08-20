@@ -342,21 +342,44 @@ async function carregarPromos() {
 
         const timerId = `timer_${Math.random().toString(36).substr(2, 9)}`;
 
-        card.innerHTML = `
-            <div class="timer-box">
-                <i class="far fa-clock"></i>&nbsp;
-                <span id="${timerId}">...</span>
-            </div>
+   card.innerHTML = `
+    ${
+        p.imagem
+        ? `
+            <img
+                src="${p.imagem}"
+                alt="${p.titulo}"
+                style="
+                    width:100%;
+                    max-height:220px;
+                    object-fit:cover;
+                    border-radius:14px;
+                    margin-bottom:15px;
+                    display:block;
+                "
+                onerror="this.style.display='none'"
+            >
+        `
+        : ""
+    }
 
-            <h3>${p.titulo}</h3>
+    <div class="timer-box">
+        <i class="far fa-clock"></i>&nbsp;
+        <span id="${timerId}">...</span>
+    </div>
 
-            <p>${p.desc}</p>
+    <h3>${p.titulo}</h3>
 
-            <a href="https://api.whatsapp.com/send?phone=5219986023759&text=Hola!%20Quiero%20la%20promo:%20${encodeURIComponent(p.titulo)}" class="btn-wa-card">
-                <i class="fab fa-whatsapp"></i>
-                PEDIR AHORA
-            </a>
-        `;
+    <p>${p.desc}</p>
+
+    <a
+        href="https://api.whatsapp.com/send?phone=5219986023759&text=Hola!%20Quiero%20la%20promo:%20${encodeURIComponent(p.titulo)}"
+        class="btn-wa-card"
+    >
+        <i class="fab fa-whatsapp"></i>
+        PEDIR AHORA
+    </a>
+`;
 
         box.appendChild(card);
 
