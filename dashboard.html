@@ -723,14 +723,13 @@ async function buscarCliente() {
 
     try {
 
-        const res =
-            await fetch(
-                `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${encodeURIComponent(uid)}.json`
-            );
+     const res =
+    await fetch(
+        `/api/cliente?uid=${encodeURIComponent(uid)}`
+    );
 
-
-        const cliente =
-            await res.json();
+const cliente =
+    await res.json();
 
 
         /*
@@ -772,10 +771,11 @@ async function buscarCliente() {
         }
 
 
-        clienteSelecionado = {
-            uid,
-            ...cliente
-        };
+     clienteSelecionado = {
+    uid: cliente.uid,
+    nome: cliente.nome,
+    pontos: cliente.pontos
+};
 
 
         document
