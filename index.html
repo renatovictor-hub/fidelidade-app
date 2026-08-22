@@ -810,7 +810,35 @@ async function carregarPontos() {
         );
     }
 }
+    
+// ==========================
+// ATUALIZAÇÃO AUTOMÁTICA DOS PONTOS
+// ==========================
 
+// Atualiza quando o app volta para a tela
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        carregarPontos();
+    }
+});
+
+// Atualiza quando o PWA/navegador ganha foco
+window.addEventListener("focus", () => {
+    carregarPontos();
+});
+
+// Importante principalmente no iPhone/Safari/PWA
+window.addEventListener("pageshow", () => {
+    carregarPontos();
+});
+
+// Atualização periódica enquanto o app estiver aberto
+setInterval(() => {
+    if (document.visibilityState === "visible") {
+        carregarPontos();
+    }
+}, 15000);
+    
 
 /* ==========================
    QR CODE
