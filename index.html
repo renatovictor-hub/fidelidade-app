@@ -7,22 +7,30 @@
 
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- QR CODE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+<!-- ONESIGNAL -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
 <script>
 let OneSignalInstance = null;
+
 window.OneSignalDeferred = window.OneSignalDeferred || [];
+
 OneSignalDeferred.push(async function(OS) {
-  OneSignalInstance = OS;
-  await OS.init({
-    appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-    notifyButton: { enable: false }
-  });
+    OneSignalInstance = OS;
+
+    await OS.init({
+        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        notifyButton: { enable: false }
+    });
 });
 </script>
 
 <style>
+
 :root { 
     --roxo: #6a0dad; 
     --amarelo: #ffcc00; 
@@ -30,40 +38,161 @@ OneSignalDeferred.push(async function(OS) {
     --branco: #ffffff;
 }
 
-body { margin:0; font-family:'Segoe UI', Roboto, sans-serif; background:#f9f9f9; text-align:center; color: #333; }
-.container { max-width:400px; margin:auto; padding:20px; min-height:100vh; }
+body {
+    margin:0;
+    font-family:'Segoe UI', Roboto, sans-serif;
+    background:#f9f9f9;
+    text-align:center;
+    color:#333;
+}
+
+.container {
+    max-width:400px;
+    margin:auto;
+    padding:20px;
+    min-height:100vh;
+}
 
 /* Header & Logo */
-.header-app { padding: 15px 0; }
-.logo { width: 100px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+
+.header-app {
+    padding:15px 0;
+}
+
+.logo {
+    width:100px;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
 
 /* Boxes de Passos */
-.step-box { display:none; padding:30px 20px; border-radius:25px; background:var(--branco); border:1px solid #eee; box-shadow:0 10px 25px rgba(0,0,0,0.05); margin-top:20px; }
-.active { display:block !important; }
 
-/* Botões Modernos */
-button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:none; font-weight:bold; font-size:16px; cursor:pointer; transition: 0.3s; }
-.btn-next { background:var(--gradiente); color:var(--branco); box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3); }
-.btn-notif { background:var(--amarelo); color: #000; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3); }
+.step-box {
+    display:none;
+    padding:30px 20px;
+    border-radius:25px;
+    background:var(--branco);
+    border:1px solid #eee;
+    box-shadow:0 10px 25px rgba(0,0,0,0.05);
+    margin-top:20px;
+}
 
-/* Menu Superior de Ações */
-.action-menu { display: flex; gap: 10px; margin-bottom: 20px; }
-.btn-small { flex: 1; padding: 10px; border-radius: 10px; font-size: 12px; background: #eee; text-decoration: none; color: var(--roxo); font-weight: bold; border: 1px solid #ddd; }
+.active {
+    display:block !important;
+}
 
-/* Promociones Activas */
-.section-title { text-align: left; font-size: 18px; font-weight: bold; color: var(--roxo); margin: 20px 0 10px 5px; display: flex; align-items: center; gap: 8px; }
+/* Botões */
 
-.promo-card { background:var(--gradiente); color:var(--branco); padding:20px; border-radius:22px; margin-bottom:20px; text-align:left; position: relative; overflow: hidden; box-shadow: 0 8px 20px rgba(106, 13, 173, 0.2); }
-.promo-card h3 { margin: 0 0 5px 0; font-size: 20px; }
-.promo-card p { margin: 0 0 15px 0; font-size: 14px; opacity: 0.9; }
+button {
+    width:100%;
+    padding:16px;
+    margin-top:15px;
+    border-radius:14px;
+    border:none;
+    font-weight:bold;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+}
 
-/* Contador/Timer Dinâmico */
-.timer-box { background: rgba(255, 255, 255, 0.2); display: inline-flex; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; backdrop-filter: blur(5px); margin-bottom: 15px; }
+.btn-next {
+    background:var(--gradiente);
+    color:var(--branco);
+    box-shadow:0 4px 15px rgba(106,13,173,0.3);
+}
 
-/* Botão WhatsApp dentro do Card */
-.btn-wa-card { background: #25d366; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 14px; }
+.btn-notif {
+    background:var(--amarelo);
+    color:#000;
+    box-shadow:0 4px 15px rgba(255,204,0,0.3);
+}
+
+/* Menu Superior */
+
+.action-menu {
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.btn-small {
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    font-size:12px;
+    background:#eee;
+    text-decoration:none;
+    color:var(--roxo);
+    font-weight:bold;
+    border:1px solid #ddd;
+}
+
+/* Promociones */
+
+.section-title {
+    text-align:left;
+    font-size:18px;
+    font-weight:bold;
+    color:var(--roxo);
+    margin:20px 0 10px 5px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.promo-card {
+    background:var(--gradiente);
+    color:var(--branco);
+    padding:20px;
+    border-radius:22px;
+    margin-bottom:20px;
+    text-align:left;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 8px 20px rgba(106,13,173,0.2);
+}
+
+.promo-card h3 {
+    margin:0 0 5px 0;
+    font-size:20px;
+}
+
+.promo-card p {
+    margin:0 0 15px 0;
+    font-size:14px;
+    opacity:0.9;
+}
+
+/* Timer */
+
+.timer-box {
+    background:rgba(255,255,255,0.2);
+    display:inline-flex;
+    padding:8px 12px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:bold;
+    backdrop-filter:blur(5px);
+    margin-bottom:15px;
+}
+
+/* WhatsApp */
+
+.btn-wa-card {
+    background:#25d366;
+    color:white;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:12px;
+    border-radius:12px;
+    font-weight:bold;
+    font-size:14px;
+}
 
 /* Expiradas */
+
 .expired-card {
     background:#f3f3f3;
     color:#777;
@@ -91,569 +220,1347 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
     font-size:12px;
     font-weight:bold;
 }
-  
-.ios-guide { display:none; background:#f4f4f4; padding:20px; border-radius:20px; margin-top:15px; text-align:left; font-size:14px; border: 1px dashed var(--roxo); }
+
+/* iPhone */
+
+.ios-guide {
+    display:none;
+    background:#f4f4f4;
+    padding:20px;
+    border-radius:20px;
+    margin-top:15px;
+    text-align:left;
+    font-size:14px;
+    border:1px dashed var(--roxo);
+}
+
 </style>
 </head>
 
 <body>
-  
-  <audio id="audioSuccess" src="installsound.mp3" preload="auto"></audio>
+
+<audio id="audioSuccess" src="installsound.mp3" preload="auto"></audio>
 
 <div class="container">
+
     <div class="header-app">
         <img src="logo.png" class="logo">
     </div>
 
+    <!-- INSTALAÇÃO -->
+
     <div id="stepInstall" class="step-box">
-        <h2 style="color:var(--roxo)">¡Bienvenido!</h2>
-        <p id="installMsg">Instala nuestra App para acceder a promociones exclusivas.</p>
-        <button id="btnAndroid" class="btn-next" style="display:none;" onclick="instalar()">INSTALAR APP</button>
-        <div id="iosGuide" class="ios-guide">
-            1. Toca el botón <b>Compartir</b> (cuadrado con flecha)<br>
-            2. Busca <b>"Agregar a inicio"</b> ou <b>"A la pantalla de inicio"</b><br>
-            3. Abre la App desde tu pantalla principal.
-        </div>
-    </div>
 
-<div id="stepSuccess" class="step-box">
-    <h2 style="color:#2ecc71"><i class="fas fa-check-circle"></i> ¡Instalado con éxito!</h2>
-    <p>Para empezar a usar <b>Uai Sô</b> y ganar puntos:</p>
-    
-    <div style="margin:20px 0; position: relative; display: inline-block;">
-        <img src="logo.png" style="width:80px; border-radius:18px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        <div style="position: absolute; bottom: -5px; right: -5px; background: #2ecc71; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
-            <i class="fas fa-check" style="font-size: 12px;"></i>
-        </div>
-    </div>
+        <h2 style="color:var(--roxo)">
+            ¡Bienvenido!
+        </h2>
 
-    <div style="background: #fff9e6; padding: 15px; border-radius: 15px; border: 1px solid #ffe680; margin-top: 10px;">
-        <p style="font-size: 15px; margin: 0; color: #856404;">
-            <b>1. Salga de esta página</b> (cierre el navegador).<br>
-            <b>2. Busque nuestro ícono</b> en su pantalla de inicio.
+        <p id="installMsg">
+            Instala nuestra App para acceder a promociones exclusivas.
         </p>
+
+        <button
+            id="btnAndroid"
+            class="btn-next"
+            style="display:none;"
+            onclick="instalar()"
+        >
+            INSTALAR APP
+        </button>
+
+        <div id="iosGuide" class="ios-guide">
+
+            1. Toca el botón <b>Compartir</b> (cuadrado con flecha)<br>
+
+            2. Busca <b>"Agregar a inicio"</b> ou
+            <b>"A la pantalla de inicio"</b><br>
+
+            3. Abre la App desde tu pantalla principal.
+
+        </div>
+
     </div>
 
-    <p style="font-size: 13px; color: #999; margin-top: 20px;">
-        Esta pestaña ya no es necesaria.
-    </p>
-</div>
+    <!-- INSTALADO -->
+
+    <div id="stepSuccess" class="step-box">
+
+        <h2 style="color:#2ecc71">
+            <i class="fas fa-check-circle"></i>
+            ¡Instalado con éxito!
+        </h2>
+
+        <p>
+            Para empezar a usar <b>Uai Sô</b> y ganar puntos:
+        </p>
+
+        <div style="
+            margin:20px 0;
+            position:relative;
+            display:inline-block;
+        ">
+
+            <img
+                src="logo.png"
+                style="
+                    width:80px;
+                    border-radius:18px;
+                    box-shadow:0 4px 15px rgba(0,0,0,0.2);
+                "
+            >
+
+            <div style="
+                position:absolute;
+                bottom:-5px;
+                right:-5px;
+                background:#2ecc71;
+                color:white;
+                border-radius:50%;
+                width:25px;
+                height:25px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                border:2px solid white;
+            ">
+
+                <i
+                    class="fas fa-check"
+                    style="font-size:12px;"
+                ></i>
+
+            </div>
+
+        </div>
+
+        <div style="
+            background:#fff9e6;
+            padding:15px;
+            border-radius:15px;
+            border:1px solid #ffe680;
+            margin-top:10px;
+        ">
+
+            <p style="
+                font-size:15px;
+                margin:0;
+                color:#856404;
+            ">
+
+                <b>1. Salga de esta página</b>
+                (cierre el navegador).<br>
+
+                <b>2. Busque nuestro ícono</b>
+                en su pantalla de inicio.
+
+            </p>
+
+        </div>
+
+        <p style="
+            font-size:13px;
+            color:#999;
+            margin-top:20px;
+        ">
+            Esta pestaña ya no es necesaria.
+        </p>
+
+    </div>
+
+    <!-- NOTIFICAÇÕES -->
 
     <div id="stepNotif" class="step-box">
-        <h2 style="color:var(--roxo)">Alertas Activas</h2>
-        <p>Entérate antes que todos cuando salgan nuevas coxinhas y pasteles.</p>
-        <button onclick="ativarNotif()" class="btn-notif">ACTIVAR NOTIFICACIONES</button>
+
+        <h2 style="color:var(--roxo)">
+            Alertas Activas
+        </h2>
+
+        <p>
+            Entérate antes que todos cuando salgan nuevas coxinhas y pasteles.
+        </p>
+
+        <button
+            onclick="ativarNotif()"
+            class="btn-notif"
+        >
+            ACTIVAR NOTIFICACIONES
+        </button>
+
     </div>
+
+    <!-- NOME -->
 
     <div id="stepNome" class="step-box">
-        <h2 style="color:var(--roxo)">¿Cómo te llamas?</h2>
-        <input id="nomeInput" placeholder="Tu nombre aquí..." style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; box-sizing: border-box; font-size: 16px;">
-        <button onclick="salvarNome()" class="btn-next">EMPEZAR AHORA</button>
+
+        <h2 style="color:var(--roxo)">
+            ¿Cómo te llamas?
+        </h2>
+
+        <input
+            id="nomeInput"
+            placeholder="Tu nombre aquí..."
+            style="
+                width:100%;
+                padding:15px;
+                border-radius:12px;
+                border:1px solid #ddd;
+                box-sizing:border-box;
+                font-size:16px;
+            "
+        >
+
+        <button
+            onclick="salvarNome()"
+            class="btn-next"
+        >
+            EMPEZAR AHORA
+        </button>
+
     </div>
 
-    <div id="mainApp" style="display:none; text-align:left;">
+    <!-- APP -->
+
+    <div
+        id="mainApp"
+        style="
+            display:none;
+            text-align:left;
+        "
+    >
+
         <div class="action-menu">
-            <a href="https://instagram.com/fooduaiso" target="_blank" class="btn-small"><i class="fab fa-instagram"></i> Instagram</a>
-            <a href="#" class="btn-small"><i class="fas fa-utensils"></i> Nuestro Menú</a>
+
+            <a
+                href="https://instagram.com/fooduaiso"
+                target="_blank"
+                class="btn-small"
+            >
+                <i class="fab fa-instagram"></i>
+                Instagram
+            </a>
+
+            <a
+                href="#"
+                class="btn-small"
+            >
+                <i class="fas fa-utensils"></i>
+                Nuestro Menú
+            </a>
+
         </div>
 
-        <h2 id="greeting" style="color: var(--roxo); margin-bottom: 5px;"></h2>
-        <p style="margin: 0 0 20px 5px; color: #666; font-size: 14px;">¡Qué bueno verte de nuevo!</p>
-      
-      <div id="cardPontos" style="
-    background: linear-gradient(135deg, #6a0dad, #9b30ff);
-    color: white;
-    padding: 18px;
-    border-radius: 18px;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 16px rgba(106, 13, 173, 0.22);
-">
-    <div style="
-        font-size: 13px;
-        opacity: 0.85;
-        margin-bottom: 6px;
-        font-weight: 600;
-    ">
-        ⭐ Tus puntos
-    </div>
+        <h2
+            id="greeting"
+            style="
+                color:var(--roxo);
+                margin-bottom:5px;
+            "
+        ></h2>
 
-    <div id="saldoPontos" style="
-        font-size: 32px;
-        font-weight: 800;
-        line-height: 1;
-    ">
-        0
-    </div>
+        <p style="
+            margin:0 0 20px 5px;
+            color:#666;
+            font-size:14px;
+        ">
+            ¡Qué bueno verte de nuevo!
+        </p>
 
-    <div style="
-        font-size: 13px;
-        margin-top: 6px;
-        opacity: 0.9;
-    ">
-        puntos disponibles
-    </div>
-</div>
-<div style="
-    background:white;
-    padding:18px;
-    border-radius:18px;
-    margin-bottom:18px;
-    box-shadow:0 4px 14px rgba(0,0,0,0.08);
-    text-align:center;
-">
-    <div style="
-        color:#6a0dad;
-        font-weight:800;
-        font-size:16px;
-        margin-bottom:6px;
-    ">
-        📱 Tu código de fidelidad
-    </div>
+        <!-- PONTOS -->
 
-    <div style="
-        color:#777;
-        font-size:13px;
-        margin-bottom:15px;
-    ">
-        Muéstralo al realizar tu compra
-    </div>
+        <div
+            id="cardPontos"
+            style="
+                background:linear-gradient(135deg,#6a0dad,#9b30ff);
+                color:white;
+                padding:18px;
+                border-radius:18px;
+                margin-bottom:10px;
+                box-shadow:0 6px 16px rgba(106,13,173,0.22);
+            "
+        >
 
-    <div id="qrCliente" style="
-        display:flex;
-        justify-content:center;
-        margin:10px 0;
-    "></div>
+            <div style="
+                font-size:13px;
+                opacity:0.85;
+                margin-bottom:6px;
+                font-weight:600;
+            ">
+                ⭐ Tus puntos
+            </div>
 
-    <div id="clienteCodigo" style="
-        color:#999;
-        font-size:11px;
-        margin-top:10px;
-        word-break:break-all;
-    "></div>
-</div>
-      <div id="contadorUsers" style="
-    background:#f3e8ff;
-    padding:12px;
-    border-radius:12px;
-    margin:10px 0 20px 0;
-    color:#6a0dad;
-    font-weight:bold;
-    font-size:14px;
-    text-align:center;
-">
-    🔥 Cargando clientes...
-</div>
-        
-        <img src="banner.jpg" style="width:100%; border-radius:20px; margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-      
+            <div
+                id="saldoPontos"
+                style="
+                    font-size:32px;
+                    font-weight:800;
+                    line-height:1;
+                "
+            >
+                0
+            </div>
 
-        <div class="section-title"><i class="fas fa-fire" style="color: #ff4500;"></i> Promociones Activas</div>
+            <div style="
+                font-size:13px;
+                margin-top:6px;
+                opacity:0.9;
+            ">
+                puntos disponibles
+            </div>
+
+        </div>
+
+        <!-- BOTÃO QR -->
+
+        <button
+            onclick="abrirQrPopup()"
+            style="
+                width:auto;
+                padding:10px 14px;
+                border-radius:10px;
+                border:none;
+                background:#f3e8ff;
+                color:#6a0dad;
+                font-weight:bold;
+                font-size:13px;
+                cursor:pointer;
+                margin:0 0 18px 0;
+            "
+        >
+            <i class="fas fa-qrcode"></i>
+            MOSTRAR MI QR
+        </button>
+
+        <!-- CONTADOR -->
+
+        <div
+            id="contadorUsers"
+            style="
+                background:#f3e8ff;
+                padding:12px;
+                border-radius:12px;
+                margin:10px 0 20px 0;
+                color:#6a0dad;
+                font-weight:bold;
+                font-size:14px;
+                text-align:center;
+            "
+        >
+            🔥 Cargando clientes...
+        </div>
+
+        <!-- BANNER -->
+
+        <img
+            src="banner.jpg"
+            style="
+                width:100%;
+                border-radius:20px;
+                margin-bottom:10px;
+                box-shadow:0 4px 10px rgba(0,0,0,0.1);
+            "
+        >
+
+        <!-- PROMOS -->
+
+        <div class="section-title">
+
+            <i
+                class="fas fa-fire"
+                style="color:#ff4500;"
+            ></i>
+
+            Promociones Activas
+
+        </div>
+
         <div id="promoBox"></div>
 
-       <div id="expiredSection" style=" display:none; margin-top:30px;">
-            <div class="section-title" style="color: #999;"><i class="fas fa-history"></i> Anteriores</div>
+        <!-- EXPIRADAS -->
+
+        <div
+            id="expiredSection"
+            style="
+                display:none;
+                margin-top:30px;
+            "
+        >
+
+            <div
+                class="section-title"
+                style="color:#999;"
+            >
+
+                <i class="fas fa-history"></i>
+
+                Anteriores
+
+            </div>
+
             <div id="expiredBox"></div>
+
         </div>
+
     </div>
+
+</div>
+
+<!-- POPUP QR -->
+
+<div
+    id="qrPopup"
+    style="
+        display:none;
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,0.65);
+        z-index:9999;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+    "
+>
+
+    <div style="
+        width:100%;
+        max-width:320px;
+        background:white;
+        border-radius:22px;
+        padding:24px;
+        text-align:center;
+        box-shadow:0 15px 40px rgba(0,0,0,0.3);
+    ">
+
+        <div style="
+            font-size:19px;
+            font-weight:800;
+            color:#6a0dad;
+            margin-bottom:6px;
+        ">
+            Mi código de fidelidad
+        </div>
+
+        <div style="
+            color:#777;
+            font-size:13px;
+            margin-bottom:18px;
+        ">
+            Muéstralo al personal para acumular puntos
+        </div>
+
+        <div
+            id="qrCliente"
+            style="
+                display:flex;
+                justify-content:center;
+                margin:10px 0 15px;
+            "
+        ></div>
+
+        <div
+            id="clienteCodigo"
+            style="
+                color:#999;
+                font-size:11px;
+                margin-bottom:15px;
+                word-break:break-all;
+            "
+        ></div>
+
+        <button
+            onclick="fecharQrPopup()"
+            style="
+                width:100%;
+                background:#6a0dad;
+                color:white;
+                padding:12px;
+                border-radius:10px;
+                border:none;
+                font-weight:bold;
+            "
+        >
+            CERRAR
+        </button>
+
+    </div>
+
 </div>
 
 <script>
-// --- CONFIGURAÇÕES GLOBAIS ---
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+/* ==========================
+   CONFIGURAÇÕES GLOBAIS
+========================== */
+
+const isIOS =
+    /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone;
+
 let deferredPrompt;
-let somJaTocouInstalacao = false; 
-let uid = localStorage.getItem("uid") || "user_" + Math.floor(Math.random() * 1e9);
+
+let somJaTocouInstalacao = false;
+
+let uid =
+    localStorage.getItem("uid") ||
+    "user_" + Math.floor(Math.random() * 1e9);
+
 localStorage.setItem("uid", uid);
 
-// --- 1. CONTROLE DE ÁUDIO ---
+
+/* ==========================
+   ÁUDIO
+========================== */
+
 function tocarSomSucesso() {
-    const audio = document.getElementById("audioSuccess");
+
+    const audio =
+        document.getElementById("audioSuccess");
+
     if (audio) {
+
         audio.currentTime = 0;
-        audio.play().catch(e => console.log("Áudio aguardando interação."));
+
+        audio.play()
+            .catch(() => {
+                console.log(
+                    "Áudio aguardando interação."
+                );
+            });
     }
 }
 
-// --- 2. INSTALAÇÃO PWA (ANDROID) ---
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (!isIOS && !isStandalone) {
-        const btn = document.getElementById("btnAndroid");
-        if(btn) btn.style.display = "block";
-    }
-});
 
-window.addEventListener("appinstalled", () => {
-    if (!somJaTocouInstalacao) {
-        tocarSomSucesso();
-        somJaTocouInstalacao = true;
-    }
-    show("stepSuccess");
-    deferredPrompt = null;
-});
+/* ==========================
+   INSTALAÇÃO PWA
+========================== */
 
-// --- 3. INICIALIZAÇÃO E REPARO IPHONE ---
-window.onload = () => {
-    const nome = localStorage.getItem("nome");
-    const push = localStorage.getItem("push");
+window.addEventListener(
+    "beforeinstallprompt",
+    (e) => {
 
-    // Destravador de som para iOS
-    document.body.addEventListener('click', () => {
-        const audio = document.getElementById("audioSuccess");
-        if (audio && audio.paused) {
-            audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => {});
+        e.preventDefault();
+
+        deferredPrompt = e;
+
+        if (!isIOS && !isStandalone) {
+
+            const btn =
+                document.getElementById("btnAndroid");
+
+            if (btn) {
+                btn.style.display = "block";
+            }
         }
-    }, { once: true });
+    }
+);
 
-  async function carregarPontos() {
+
+window.addEventListener(
+    "appinstalled",
+    () => {
+
+        if (!somJaTocouInstalacao) {
+
+            tocarSomSucesso();
+
+            somJaTocouInstalacao = true;
+        }
+
+        show("stepSuccess");
+
+        deferredPrompt = null;
+    }
+);
+
+
+/* ==========================
+   PONTOS
+========================== */
+
+async function carregarPontos() {
+
     try {
+
         const res = await fetch(
             `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`
         );
 
-        const data = await res.json();
+        const data =
+            await res.json();
 
-        const pontos = data && data.pontos != null
-            ? Number(data.pontos)
-            : 0;
+        const pontos =
+            data && data.pontos != null
+                ? Number(data.pontos)
+                : 0;
 
-        const el = document.getElementById("saldoPontos");
+        const el =
+            document.getElementById("saldoPontos");
 
         if (el) {
             el.innerText = pontos;
         }
 
     } catch (e) {
-        console.error("Erro ao carregar pontos:", e);
+
+        console.error(
+            "Erro ao carregar pontos:",
+            e
+        );
     }
 }
-  function gerarQrCliente() {
 
-    const qrContainer = document.getElementById("qrCliente");
-    const codigoEl = document.getElementById("clienteCodigo");
+
+/* ==========================
+   QR CODE
+========================== */
+
+function abrirQrPopup() {
+
+    const popup =
+        document.getElementById("qrPopup");
+
+    if (!popup) return;
+
+    popup.style.display = "flex";
+
+    gerarQrCliente();
+}
+
+
+function fecharQrPopup() {
+
+    const popup =
+        document.getElementById("qrPopup");
+
+    if (popup) {
+        popup.style.display = "none";
+    }
+}
+
+
+function gerarQrCliente() {
+
+    const qrContainer =
+        document.getElementById("qrCliente");
+
+    const codigoEl =
+        document.getElementById("clienteCodigo");
 
     if (!qrContainer || !uid) return;
 
+    if (typeof QRCode === "undefined") {
+
+        qrContainer.innerHTML = `
+            <div style="color:red;font-size:13px;">
+                Error al cargar el QR
+            </div>
+        `;
+
+        return;
+    }
+
     qrContainer.innerHTML = "";
 
-    new QRCode(qrContainer, {
-        text: uid,
-        width: 160,
-        height: 160,
-        correctLevel: QRCode.CorrectLevel.H
-    });
+    new QRCode(
+        qrContainer,
+        {
+            text: uid,
+            width:190,
+            height:190,
+            correctLevel:
+                QRCode.CorrectLevel.H
+        }
+    );
 
     if (codigoEl) {
         codigoEl.innerText = uid;
     }
 }
 
-    if (nome) return abrirApp();
+
+/* ==========================
+   INICIALIZAÇÃO
+========================== */
+
+window.onload = () => {
+
+    const nome =
+        localStorage.getItem("nome");
+
+    const push =
+        localStorage.getItem("push");
+
+
+    document.body.addEventListener(
+        'click',
+        () => {
+
+            const audio =
+                document.getElementById(
+                    "audioSuccess"
+                );
+
+            if (
+                audio &&
+                audio.paused
+            ) {
+
+                audio.play()
+                    .then(() => {
+
+                        audio.pause();
+
+                        audio.currentTime = 0;
+                    })
+                    .catch(() => {});
+            }
+
+        },
+        { once:true }
+    );
+
+
+    if (nome) {
+        return abrirApp();
+    }
+
+
     if (isStandalone) {
-        if (!push) return show("stepNotif");
+
+        if (!push) {
+            return show("stepNotif");
+        }
+
         return show("stepNome");
     }
 
+
     show("stepInstall");
 
-    // FORÇAR instruções no iPhone
+
     if (isIOS) {
-        const guide = document.getElementById("iosGuide");
-        const msg = document.getElementById("installMsg");
-        if(guide) guide.style.display = "block";
-        if(msg) msg.innerText = "Sigue los pasos para instalar la App en tu iPhone.";
-        const btnAnd = document.getElementById("btnAndroid");
-        if(btnAnd) btnAnd.style.display = "none";
+
+        const guide =
+            document.getElementById(
+                "iosGuide"
+            );
+
+        const msg =
+            document.getElementById(
+                "installMsg"
+            );
+
+        if (guide) {
+            guide.style.display =
+                "block";
+        }
+
+        if (msg) {
+            msg.innerText =
+                "Sigue los pasos para instalar la App en tu iPhone.";
+        }
+
+        const btnAnd =
+            document.getElementById(
+                "btnAndroid"
+            );
+
+        if (btnAnd) {
+            btnAnd.style.display =
+                "none";
+        }
     }
 };
 
-// --- 4. FUNÇÕES DE INTERAÇÃO ---
+
+/* ==========================
+   FUNÇÕES DE INTERAÇÃO
+========================== */
 
 function show(id) {
-    document.querySelectorAll(".step-box").forEach(e => e.classList.remove("active"));
-    const target = document.getElementById(id);
-    if(target) target.classList.add("active");
+
+    document
+        .querySelectorAll(".step-box")
+        .forEach(e =>
+            e.classList.remove("active")
+        );
+
+    const target =
+        document.getElementById(id);
+
+    if (target) {
+        target.classList.add("active");
+    }
 }
 
+
 async function instalar() {
+
     if (!deferredPrompt) return;
+
     deferredPrompt.prompt();
 }
 
+
 async function ativarNotif() {
-    if (!OneSignalInstance) return alert("Cargando...");
-    
-    // Pede permissão
-    await OneSignalInstance.Notifications.requestPermission();
-    
-    if (Notification.permission === "granted") {
-        localStorage.setItem("push", "true");
-        
-        // Pequeno delay para dar tempo ao OneSignal de registar e enviar o Welcome Push
-        setTimeout(() => {
-            tocarSomSucesso();
-            show("stepNome");
-        }, 1000); 
+
+    if (!OneSignalInstance) {
+        return alert("Cargando...");
+    }
+
+    await OneSignalInstance
+        .Notifications
+        .requestPermission();
+
+    if (
+        Notification.permission ===
+        "granted"
+    ) {
+
+        localStorage.setItem(
+            "push",
+            "true"
+        );
+
+        setTimeout(
+            () => {
+
+                tocarSomSucesso();
+
+                show("stepNome");
+
+            },
+            1000
+        );
+
     } else {
-        alert("¡Aviso! Necesitas activar las notificaciones.");
+
+        alert(
+            "¡Aviso! Necesitas activar las notificaciones."
+        );
     }
 }
 
+
+/* ==========================
+   SALVAR NOME
+========================== */
+
 async function salvarNome() {
-    const nome = document.getElementById("nomeInput")?.value;
-    if (!nome) return alert("Escribe tu nombre");
-    localStorage.setItem("nome", nome);
-    if(OneSignalInstance) {
-        await OneSignalInstance.login(uid);
-        await OneSignalInstance.User.addTag("user_name", nome);
+
+    const nome =
+        document.getElementById(
+            "nomeInput"
+        )?.value;
+
+    if (!nome) {
+        return alert(
+            "Escribe tu nombre"
+        );
     }
+
+    localStorage.setItem(
+        "nome",
+        nome
+    );
+
+
+    if (OneSignalInstance) {
+
+        await OneSignalInstance
+            .login(uid);
+
+        await OneSignalInstance
+            .User
+            .addTag(
+                "user_name",
+                nome
+            );
+    }
+
+
     try {
-       await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`, {
-    method: "PUT",
-    body: JSON.stringify({
-        nome,
-        user_id: uid,
-        pontos: 0,
-        date: new Date().toISOString()
-    })
-});
+
+        await fetch(
+            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
+            {
+                method:"PUT",
+
+                body:JSON.stringify({
+                    nome,
+                    user_id:uid,
+                    pontos:0,
+                    date:
+                        new Date()
+                        .toISOString()
+                })
+            }
+        );
+
     } catch (e) {}
+
+
     abrirApp();
 }
 
-// --- 5. APP PRINCIPAL E RESTAURAÇÃO DAS EXPIRADAS ---
+
+/* ==========================
+   APP PRINCIPAL
+========================== */
 
 function abrirApp() {
-    document.querySelectorAll(".step-box").forEach(e => e.classList.remove("active"));
-    const main = document.getElementById("mainApp");
-    if(main) main.style.display = "block";
-    const greeting = document.getElementById("greeting");
-    if(greeting) greeting.innerText = "Hola, " + (localStorage.getItem("nome") || "");
-    carregarPromos();
-    atualizarContador();
-    carregarPontos();
-    gerarQrCliente();
-}
 
-async function carregarPromos() {
-    try {
-        const res = await fetch("https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json");
-        const data = await res.json();
-        const box = document.getElementById("promoBox");
-        const expBox = document.getElementById("expiredBox");
-        const expSection = document.getElementById("expiredSection");
-
-        if(!box || !data) return;
-        box.innerHTML = ""; 
-        if(expBox) expBox.innerHTML = "";
-
-        const now = Date.now();
-        const lista = Object.values(data).sort((a,b) => b.exp - a.exp);
-        let expCount = 0;
-
-       lista.forEach(p => {
-
-    if (p.exp > now) {
-
-        // PROMOÇÃO ATIVA
-        const card = document.createElement("div");
-
-        card.className = "promo-card";
-
-        const timerId = `timer_${Math.random().toString(36).substr(2, 9)}`;
-
-   card.innerHTML = `
-    ${
-        p.imagem
-        ? `
-            <img
-                src="${p.imagem}"
-                alt="${p.titulo}"
-                style="
-                    width:100%;
-                    max-height:220px;
-                    object-fit:cover;
-                    border-radius:14px;
-                    margin-bottom:15px;
-                    display:block;
-                "
-                onerror="this.style.display='none'"
-            >
-        `
-        : ""
-    }
-
-    <div class="timer-box">
-        <i class="far fa-clock"></i>&nbsp;
-        <span id="${timerId}">...</span>
-    </div>
-
-    <h3>${p.titulo}</h3>
-
-    <p>${p.desc}</p>
-
-    <a
-        href="https://api.whatsapp.com/send?phone=5219986023759&text=Hola!%20Quiero%20la%20promo:%20${encodeURIComponent(p.titulo)}"
-        class="btn-wa-card"
-    >
-        <i class="fab fa-whatsapp"></i>
-        PEDIR AHORA
-    </a>
-`;
-
-        box.appendChild(card);
-
-      
-
-        iniciarContador(p.exp, timerId);
-
-    } else if (expCount < 5) {
-
-        // PROMOÇÃO EXPIRADA
-
-        if (expSection) {
-            expSection.style.display = "block";
-        }
-
-        const div = document.createElement("div");
-
-        div.className = "expired-card";
-
-      div.innerHTML = `
-    ${
-        p.imagem
-        ? `
-            <img
-                src="${p.imagem}"
-                alt="${p.titulo}"
-                style="
-                    width:100%;
-                    max-height:120px;
-                    object-fit:cover;
-                    border-radius:10px;
-                    margin-bottom:10px;
-                    display:block;
-                    opacity:0.65;
-                    filter:grayscale(35%);
-                "
-                onerror="this.style.display='none'"
-            >
-        `
-        : ""
-    }
-
-    <b>${p.titulo}</b>
-
-    <small>
-        ${p.desc || "Promoción finalizada"}
-    </small>
-
-    <div class="expired-badge">
-        ⚠️ Expirada
-    </div>
-`;
-
-        if (expBox) {
-            expBox.appendChild(div);
-        }
-
-        expCount++;
-    }
-
-});
-    } catch(e) { console.error("Erro ao carregar promos", e); }
-}
-
-  let timers = {};
-
-  async function atualizarContador() {
-
-    try {
-
-        const res = await fetch(
-            "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json"
+    document
+        .querySelectorAll(".step-box")
+        .forEach(e =>
+            e.classList.remove("active")
         );
 
-        const data = await res.json();
 
-        const total = data ? Object.keys(data).length : 0;
+    const main =
+        document.getElementById(
+            "mainApp"
+        );
 
-        animarContador(300 + total);
+    if (main) {
+        main.style.display =
+            "block";
+    }
+
+
+    const greeting =
+        document.getElementById(
+            "greeting"
+        );
+
+    if (greeting) {
+
+        greeting.innerText =
+            "Hola, " +
+            (
+                localStorage.getItem(
+                    "nome"
+                ) || ""
+            );
+    }
+
+
+    carregarPromos();
+
+    atualizarContador();
+
+    carregarPontos();
+}
+
+
+/* ==========================
+   PROMOÇÕES
+========================== */
+
+async function carregarPromos() {
+
+    try {
+
+        const res =
+            await fetch(
+                "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json"
+            );
+
+        const data =
+            await res.json();
+
+
+        const box =
+            document.getElementById(
+                "promoBox"
+            );
+
+        const expBox =
+            document.getElementById(
+                "expiredBox"
+            );
+
+        const expSection =
+            document.getElementById(
+                "expiredSection"
+            );
+
+
+        if (!box || !data) return;
+
+
+        box.innerHTML = "";
+
+
+        if (expBox) {
+            expBox.innerHTML = "";
+        }
+
+
+        const now =
+            Date.now();
+
+
+        const lista =
+            Object.values(data)
+                .sort(
+                    (a,b) =>
+                        b.exp - a.exp
+                );
+
+
+        let expCount = 0;
+
+
+        lista.forEach(p => {
+
+            if (p.exp > now) {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+                card.className =
+                    "promo-card";
+
+
+                const timerId =
+                    `timer_${
+                        Math.random()
+                            .toString(36)
+                            .substr(2,9)
+                    }`;
+
+
+                card.innerHTML = `
+
+                    ${
+                        p.imagem
+                        ? `
+                            <img
+                                src="${p.imagem}"
+                                alt="${p.titulo}"
+                                style="
+                                    width:100%;
+                                    max-height:220px;
+                                    object-fit:cover;
+                                    border-radius:14px;
+                                    margin-bottom:15px;
+                                    display:block;
+                                "
+                                onerror="this.style.display='none'"
+                            >
+                        `
+                        : ""
+                    }
+
+                    <div class="timer-box">
+
+                        <i class="far fa-clock"></i>
+                        &nbsp;
+
+                        <span id="${timerId}">
+                            ...
+                        </span>
+
+                    </div>
+
+                    <h3>
+                        ${p.titulo}
+                    </h3>
+
+                    <p>
+                        ${p.desc}
+                    </p>
+
+                    <a
+                        href="https://api.whatsapp.com/send?phone=5219986023759&text=Hola!%20Quiero%20la%20promo:%20${encodeURIComponent(p.titulo)}"
+                        class="btn-wa-card"
+                    >
+
+                        <i class="fab fa-whatsapp"></i>
+
+                        PEDIR AHORA
+
+                    </a>
+                `;
+
+
+                box.appendChild(card);
+
+
+                iniciarContador(
+                    p.exp,
+                    timerId
+                );
+
+            }
+
+            else if (
+                expCount < 5
+            ) {
+
+                if (expSection) {
+                    expSection.style.display =
+                        "block";
+                }
+
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+                div.className =
+                    "expired-card";
+
+
+                div.innerHTML = `
+
+                    ${
+                        p.imagem
+                        ? `
+                            <img
+                                src="${p.imagem}"
+                                alt="${p.titulo}"
+                                style="
+                                    width:100%;
+                                    max-height:120px;
+                                    object-fit:cover;
+                                    border-radius:10px;
+                                    margin-bottom:10px;
+                                    display:block;
+                                    opacity:0.65;
+                                    filter:grayscale(35%);
+                                "
+                                onerror="this.style.display='none'"
+                            >
+                        `
+                        : ""
+                    }
+
+                    <b>
+                        ${p.titulo}
+                    </b>
+
+                    <small>
+                        ${
+                            p.desc ||
+                            "Promoción finalizada"
+                        }
+                    </small>
+
+                    <div class="expired-badge">
+                        ⚠️ Expirada
+                    </div>
+                `;
+
+
+                if (expBox) {
+                    expBox.appendChild(div);
+                }
+
+
+                expCount++;
+            }
+        });
+
 
     } catch (e) {
-        console.log("Erro contador:", e);
+
+        console.error(
+            "Erro ao carregar promos",
+            e
+        );
     }
 }
+
+
+/* ==========================
+   CONTADOR USUÁRIOS
+========================== */
+
+async function atualizarContador() {
+
+    try {
+
+        const res =
+            await fetch(
+                "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users.json"
+            );
+
+        const data =
+            await res.json();
+
+
+        const total =
+            data
+                ? Object.keys(data).length
+                : 0;
+
+
+        animarContador(
+            300 + total
+        );
+
+
+    } catch (e) {
+
+        console.log(
+            "Erro contador:",
+            e
+        );
+    }
+}
+
 
 function animarContador(final) {
 
-    const el = document.getElementById("contadorUsers");
+    const el =
+        document.getElementById(
+            "contadorUsers"
+        );
+
 
     if (!el) return;
 
+
     let atual = 0;
 
-    // velocidade inteligente
-    const incremento = Math.max(1, Math.ceil(final / 80));
 
-    const interval = setInterval(() => {
+    const incremento =
+        Math.max(
+            1,
+            Math.ceil(final / 80)
+        );
 
-        atual += incremento;
 
-        if (atual >= final) {
-            atual = final;
-            clearInterval(interval);
-        }
+    const interval =
+        setInterval(
+            () => {
 
-        el.innerHTML = `🔥 +${atual} clientes conectados`;
+                atual += incremento;
 
-    }, 30);
+
+                if (
+                    atual >= final
+                ) {
+
+                    atual = final;
+
+                    clearInterval(interval);
+                }
+
+
+                el.innerHTML =
+                    `🔥 +${atual} clientes conectados`;
+
+            },
+            30
+        );
 }
-  
-function iniciarContador(timestamp, elementId) {
 
-    // evita timers duplicados
-    if (timers[elementId]) {
-        clearInterval(timers[elementId]);
+
+/* ==========================
+   TIMERS
+========================== */
+
+let timers = {};
+
+
+function iniciarContador(
+    timestamp,
+    elementId
+) {
+
+    if (
+        timers[elementId]
+    ) {
+
+        clearInterval(
+            timers[elementId]
+        );
     }
+
 
     const atualizar = () => {
 
-        const el = document.getElementById(elementId);
+        const el =
+            document.getElementById(
+                elementId
+            );
+
 
         if (!el) {
-            clearInterval(timers[elementId]);
+
+            clearInterval(
+                timers[elementId]
+            );
+
             delete timers[elementId];
+
             return;
         }
 
-        const diff = timestamp - Date.now();
 
-        // expirou
+        const diff =
+            timestamp -
+            Date.now();
+
+
         if (diff <= 0) {
 
-            clearInterval(timers[elementId]);
+            clearInterval(
+                timers[elementId]
+            );
+
             delete timers[elementId];
+
 
             carregarPromos();
 
             return;
         }
 
-        const h = Math.floor(diff / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
 
-        el.innerText = `Vence en: ${h}h ${m}m ${s}s`;
+        const h =
+            Math.floor(
+                diff / 3600000
+            );
+
+
+        const m =
+            Math.floor(
+                (diff % 3600000) /
+                60000
+            );
+
+
+        const s =
+            Math.floor(
+                (diff % 60000) /
+                1000
+            );
+
+
+        el.innerText =
+            `Vence en: ${h}h ${m}m ${s}s`;
     };
+
 
     atualizar();
 
-    timers[elementId] = setInterval(atualizar, 1000);
+
+    timers[elementId] =
+        setInterval(
+            atualizar,
+            1000
+        );
 }
-  
+
 </script>
 
 </body>
