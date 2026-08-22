@@ -1,4 +1,18 @@
+import admin from "firebase-admin";
+
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+        }),
+        databaseURL: "https://fidelidade-app-9671c-default-rtdb.firebaseio.com"
+    });
+}
+
 export default async function handler(req, res) {
+
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -14,6 +28,7 @@ export default async function handler(req, res) {
     }
 
     try {
+
         const uid = String(req.query.uid || "").trim();
 
         if (!uid) {
@@ -22,45 +37,32 @@ export default async function handler(req, res) {
             });
         }
 
-        const url =
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${encodeURIComponent(uid)}.json`;
+        const snapshot = await admin
+            .database()
+            .ref(`users/${uid}`)
+            .once("value");
 
-        const response = await fetch(url, {
-            headers: {
-                Authorization:
-                    `Bearer ${process.env.FIREBASE_DATABASE_SECRET}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            return res.status(response.status).json({
-                error: "Firebase error",
-                details: data
-            });
-        }
-
-        if (!data) {
+        if (!snapshot.exists()) {
             return res.status(404).json({
                 error: "Cliente no encontrado"
             });
         }
 
+        const cliente = snapshot.val();
+
         return res.status(200).json({
-            uid,
-            nome:
-                data.nome ||
-                data.nombre ||
-                "",
-            pontos:
-                Number(data.pontos || 0),
-            data
+            uid: uid,
+            nome: cliente.nome || cliente.nombre || "",
+            pontos: Number(cliente.pontos || 0)
         });
 
     } catch (error) {
+
+        console.error("Erro API cliente:", error);
+
         return res.status(500).json({
-            error: error.message
+            error: "Error interno",
+            details: error.message
         });
     }
 }
