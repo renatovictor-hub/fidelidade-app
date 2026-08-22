@@ -7,6 +7,7 @@
 
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
@@ -192,7 +193,44 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
         puntos disponibles
     </div>
 </div>
+<div style="
+    background:white;
+    padding:18px;
+    border-radius:18px;
+    margin-bottom:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+    text-align:center;
+">
+    <div style="
+        color:#6a0dad;
+        font-weight:800;
+        font-size:16px;
+        margin-bottom:6px;
+    ">
+        📱 Tu código de fidelidad
+    </div>
 
+    <div style="
+        color:#777;
+        font-size:13px;
+        margin-bottom:15px;
+    ">
+        Muéstralo al realizar tu compra
+    </div>
+
+    <div id="qrCliente" style="
+        display:flex;
+        justify-content:center;
+        margin:10px 0;
+    "></div>
+
+    <div id="clienteCodigo" style="
+        color:#999;
+        font-size:11px;
+        margin-top:10px;
+        word-break:break-all;
+    "></div>
+</div>
       <div id="contadorUsers" style="
     background:#f3e8ff;
     padding:12px;
@@ -291,6 +329,26 @@ window.onload = () => {
         console.error("Erro ao carregar pontos:", e);
     }
 }
+  function gerarQrCliente() {
+
+    const qrContainer = document.getElementById("qrCliente");
+    const codigoEl = document.getElementById("clienteCodigo");
+
+    if (!qrContainer || !uid) return;
+
+    qrContainer.innerHTML = "";
+
+    new QRCode(qrContainer, {
+        text: uid,
+        width: 160,
+        height: 160,
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    if (codigoEl) {
+        codigoEl.innerText = uid;
+    }
+}
 
     if (nome) return abrirApp();
     if (isStandalone) {
@@ -376,6 +434,7 @@ function abrirApp() {
     carregarPromos();
     atualizarContador();
     carregarPontos();
+    gerarQrCliente();
 }
 
 async function carregarPromos() {
