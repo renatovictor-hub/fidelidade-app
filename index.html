@@ -823,32 +823,37 @@ async function carregarPontos() {
         );
     }
 }
-// ==========================
-// ATUALIZAÇÃO AUTOMÁTICA DOS PONTOS
-// ==========================
+// ==========================================
+// ATUALIZAÇÃO AUTOMÁTICA DO SALDO DE PONTOS
+// ==========================================
 
-// Atualiza quando o app volta para a tela
+// Quando o app volta do segundo plano
 document.addEventListener("visibilitychange", () => {
+
     if (document.visibilityState === "visible") {
         carregarPontos();
     }
+
 });
 
-// Atualiza quando o PWA/navegador ganha foco
+// Quando o app recupera o foco
 window.addEventListener("focus", () => {
     carregarPontos();
 });
 
-// Importante principalmente no iPhone/Safari/PWA
+// Especialmente útil no Safari / PWA do iPhone
 window.addEventListener("pageshow", () => {
     carregarPontos();
 });
 
-// Atualização periódica enquanto o app estiver aberto
+// Enquanto o app estiver aberto,
+// consulta o saldo novamente a cada 15 segundos
 setInterval(() => {
+
     if (document.visibilityState === "visible") {
         carregarPontos();
     }
+
 }, 15000);
     
 
