@@ -182,7 +182,11 @@
             color: #856404;
         }
     </style>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
 </head>
+    
 
 <body>
 
@@ -245,7 +249,18 @@
             >
                 BUSCAR CLIENTE
             </button>
-
+            
+<button
+    onclick="abrirScannerQr()"
+    style="
+        background:#6a0dad;
+        color:white;
+        margin-bottom:15px;
+    "
+>
+    📷 ESCANEAR QR
+</button>
+            
             <div
                 id="clienteEncontrado"
                 class="cliente-box"
@@ -544,6 +559,8 @@
 ================================= */
 
 let timersAtivos = {};
+let html5QrCode = null;
+let scannerAtivo = false;
 
 const PESOS_POR_PONTO = 10;
 
@@ -684,6 +701,95 @@ function previewImagem() {
     };
 }
 
+/* =================================
+   ABRIR SCANER
+================================= */
+
+    async function abrirScannerQr() {
+
+    const popup = document.getElementById("scannerQrPopup");
+
+    if (!popup) return;
+
+    popup.style.display = "flex";
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qrReader");
+    }
+
+    if (scannerAtivo) {
+        return;
+    }
+
+    try {
+
+        await html5QrCode.start(
+            {
+                facingMode: "environment"
+            },
+            {
+                fps: 10,
+                qrbox: {
+                    width: 250,
+                    height: 250
+                }
+            },
+
+            async (decodedText) => {
+
+                const uid = String(decodedText || "").trim();
+
+                if (!uid) return;
+
+                scannerAtivo = false;
+
+                try {
+                    await html5QrCode.stop();
+                } catch (e) {}
+
+                document.getElementById("scannerQrPopup").style.display = "none";
+
+                document.getElementById("clienteUid").value = uid;
+
+                buscarCliente();
+            },
+
+            () => {
+                // erros de leitura durante o scan são normais
+            }
+        );
+
+        scannerAtivo = true;
+
+    } catch (e) {
+
+        console.error("Erro ao abrir câmera:", e);
+
+        alert(
+            "No se pudo abrir la cámara.\n\n" +
+            "Verifica el permiso de cámara del navegador."
+        );
+    }
+}
+
+
+async function fecharScannerQr() {
+
+    if (html5QrCode && scannerAtivo) {
+
+        try {
+            await html5QrCode.stop();
+        } catch (e) {}
+
+        scannerAtivo = false;
+    }
+
+    const popup = document.getElementById("scannerQrPopup");
+
+    if (popup) {
+        popup.style.display = "none";
+    }
+}
 
 /* =================================
    BUSCAR CLIENTE
@@ -1750,5 +1856,48 @@ carregarPromos();
 
 </script>
 
+<div id="scannerQrPopup" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.75);
+    z-index:9999;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+">
+
+    <div style="
+        width:100%;
+        max-width:420px;
+        background:white;
+        border-radius:16px;
+        padding:20px;
+        text-align:center;
+    ">
+
+        <h3 style="margin-top:0;">
+            Escanear QR del cliente
+        </h3>
+
+        <div id="qrReader" style="
+            width:100%;
+            margin-bottom:15px;
+        "></div>
+
+        <button
+            onclick="fecharScannerQr()"
+            style="
+                background:#ddd;
+                color:#333;
+            "
+        >
+            CERRAR
+        </button>
+
+    </div>
+
+</div>
+    
 </body>
 </html>
