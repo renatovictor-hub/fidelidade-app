@@ -158,6 +158,40 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
 
         <h2 id="greeting" style="color: var(--roxo); margin-bottom: 5px;"></h2>
         <p style="margin: 0 0 20px 5px; color: #666; font-size: 14px;">¡Qué bueno verte de nuevo!</p>
+      
+      <div id="cardPontos" style="
+    background: linear-gradient(135deg, #6a0dad, #9b30ff);
+    color: white;
+    padding: 18px;
+    border-radius: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 16px rgba(106, 13, 173, 0.22);
+">
+    <div style="
+        font-size: 13px;
+        opacity: 0.85;
+        margin-bottom: 6px;
+        font-weight: 600;
+    ">
+        ⭐ Tus puntos
+    </div>
+
+    <div id="saldoPontos" style="
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1;
+    ">
+        0
+    </div>
+
+    <div style="
+        font-size: 13px;
+        margin-top: 6px;
+        opacity: 0.9;
+    ">
+        puntos disponibles
+    </div>
+</div>
 
       <div id="contadorUsers" style="
     background:#f3e8ff;
@@ -234,6 +268,29 @@ window.onload = () => {
             audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => {});
         }
     }, { once: true });
+
+  async function carregarPontos() {
+    try {
+        const res = await fetch(
+            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`
+        );
+
+        const data = await res.json();
+
+        const pontos = data && data.pontos != null
+            ? Number(data.pontos)
+            : 0;
+
+        const el = document.getElementById("saldoPontos");
+
+        if (el) {
+            el.innerText = pontos;
+        }
+
+    } catch (e) {
+        console.error("Erro ao carregar pontos:", e);
+    }
+}
 
     if (nome) return abrirApp();
     if (isStandalone) {
@@ -318,6 +375,7 @@ function abrirApp() {
     if(greeting) greeting.innerText = "Hola, " + (localStorage.getItem("nome") || "");
     carregarPromos();
     atualizarContador();
+    carregarPontos();
 }
 
 async function carregarPromos() {
