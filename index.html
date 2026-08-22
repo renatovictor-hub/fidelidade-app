@@ -784,23 +784,36 @@ async function carregarPontos() {
     try {
 
         const res = await fetch(
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`
+            `/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,
+            {
+                cache: "no-store"
+            }
         );
 
-        const data =
-            await res.json();
+        const data = await res.json();
 
-        const pontos =
-            data && data.pontos != null
-                ? Number(data.pontos)
-                : 0;
+        if (!res.ok) {
+            throw new Error(
+                data.error ||
+                data.details ||
+                "Error al consultar puntos"
+            );
+        }
 
-        const el =
-            document.getElementById("saldoPontos");
+        const pontos = Number(data.pontos || 0);
+
+        const el = document.getElementById("saldoPontos");
 
         if (el) {
             el.innerText = pontos;
         }
+
+        console.log(
+            "Puntos actualizados:",
+            pontos,
+            "UID:",
+            uid
+        );
 
     } catch (e) {
 
@@ -810,7 +823,6 @@ async function carregarPontos() {
         );
     }
 }
-    
 // ==========================
 // ATUALIZAÇÃO AUTOMÁTICA DOS PONTOS
 // ==========================
