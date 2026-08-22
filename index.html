@@ -1051,55 +1051,82 @@ async function ativarNotif() {
 async function salvarNome() {
 
     const nome =
-        document.getElementById(
-            "nomeInput"
-        )?.value;
+        document.getElementById("nomeInput")?.value;
 
     if (!nome) {
-        return alert(
-            "Escribe tu nombre"
-        );
+        return alert("Escribe tu nombre");
     }
 
-    localStorage.setItem(
-        "nome",
-        nome
-    );
+    localStorage.setItem("nome", nome);
 
 
     if (OneSignalInstance) {
 
-        await OneSignalInstance
-            .login(uid);
+        await OneSignalInstance.login(uid);
 
-        await OneSignalInstance
-            .User
-            .addTag(
-                "user_name",
-                nome
-            );
+        await OneSignalInstance.User.addTag(
+            "user_name",
+            nome
+        );
     }
 
 
     try {
 
-        await fetch(
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
-            {
-                method:"PUT",
+        const userUrl =
+            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`;
 
-                body:JSON.stringify({
-                    nome,
-                    user_id:uid,
-                    pontos:0,
-                    date:
-                        new Date()
-                        .toISOString()
+        // Busca usuário atual
+        const atualRes =
+            await fetch(userUrl);
+
+        const atual =
+            await atualRes.json();
+
+
+        // Preserva pontos existentes
+        const pontosAtuais =
+            atual && atual.pontos != null
+                ? Number(atual.pontos)
+                : 0;
+
+
+        // PATCH altera apenas estes campos
+        await fetch(
+            userUrl,
+            {
+                method: "PATCH",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    nome: nome,
+                    user_id: uid,
+                    pontos: pontosAtuais,
+                    updated_at:
+                        new Date().toISOString(),
+
+                    // só cria created_at se ainda não existir
+                    ...(atual && atual.created_at
+                        ? {}
+                        : {
+                            created_at:
+                                new Date().toISOString()
+                        })
                 })
             }
         );
 
-    } catch (e) {}
+    } catch (e) {
+
+        console.error(
+            "Erro ao salvar usuário:",
+            e
+        );
+    }
 
 
     abrirApp();
