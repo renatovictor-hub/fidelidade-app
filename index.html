@@ -295,10 +295,15 @@ async function salvarNome() {
         await OneSignalInstance.User.addTag("user_name", nome);
     }
     try {
-        await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`, {
-            method: "PUT",
-            body: JSON.stringify({ nome, user_id: uid, date: new Date().toISOString() })
-        });
+       await fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`, {
+    method: "PUT",
+    body: JSON.stringify({
+        nome,
+        user_id: uid,
+        pontos: 0,
+        date: new Date().toISOString()
+    })
+});
     } catch (e) {}
     abrirApp();
 }
