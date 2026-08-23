@@ -336,7 +336,71 @@
             <h3>
                 ⭐ Agregar Puntos
             </h3>
+            
+<!-- =================================================
+     RECOMPENSAS
+================================================== -->
 
+<div class="card">
+
+    <h3>
+        🎁 Recompensas
+    </h3>
+
+    <div class="input-group">
+
+        <label>
+            Nombre de la recompensa
+        </label>
+
+        <input
+            id="recompensaNome"
+            placeholder="Ej: 1 Coxinha gratis"
+        >
+
+    </div>
+
+    <div class="input-group">
+
+        <label>
+            Puntos necesarios
+        </label>
+
+        <input
+            id="recompensaPontos"
+            type="number"
+            min="1"
+            placeholder="Ej: 100"
+        >
+
+    </div>
+
+    <div class="input-group">
+
+        <label>
+            Descripción
+        </label>
+
+        <textarea
+            id="recompensaDesc"
+            placeholder="Ej: Canjea 100 puntos por una Coxinha tradicional."
+        ></textarea>
+
+    </div>
+
+    <button
+        class="btn-primary"
+        onclick="salvarRecompensa()"
+    >
+        CREAR RECOMPENSA
+    </button>
+
+    <div
+        id="listaRecompensas"
+        style="margin-top:20px;"
+    ></div>
+
+</div>
 
             <!-- BUSCA -->
 
