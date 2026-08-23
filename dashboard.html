@@ -276,9 +276,11 @@
                         font-size:20px;
                         font-weight:bold;
                         color:#6a0dad;
-                        margin:4px 0 10px;
-                    "
-                ></div>
+                        margin:4px 0 10px;> </div>
+
+                <div style="font-size:14px; color:#666; margin-bottom:8px;">
+    📞 <span id="clienteTelefone">Sin teléfono</span>
+</div>
 
                 <div style="font-size:14px;">
                     Saldo actual:
@@ -877,9 +879,10 @@ const cliente =
         }
 
 
-     clienteSelecionado = {
+  clienteSelecionado = {
     uid: cliente.uid,
     nome: cliente.nome,
+    telefone: cliente.telefone || "",
     pontos: cliente.pontos
 };
 
@@ -890,6 +893,11 @@ const cliente =
             cliente.nome ||
             cliente.nombre ||
             "Sin nombre";
+
+        document
+        .getElementById("clienteTelefone")
+        .innerText =
+        cliente.telefone || "Sin teléfono";
 
 
         document
