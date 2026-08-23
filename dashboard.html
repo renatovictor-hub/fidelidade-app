@@ -248,7 +248,7 @@
                     margin-bottom:15px;
                 "
             >
-                BUSCAR CLIENTE
+                BUSCAR POR TELÉFONO / ID
             </button>
             
 <button
@@ -800,126 +800,105 @@ async function fecharScannerQr() {
 
 async function buscarCliente() {
 
-    const uid =
+    const valor =
         document
             .getElementById("clienteUid")
             .value
             .trim();
 
-
     clienteSelecionado = null;
-
 
     document
         .getElementById("clienteEncontrado")
-        .style.display =
-        "none";
-
+        .style.display = "none";
 
     document
         .getElementById("creditoBox")
-        .style.display =
-        "none";
+        .style.display = "none";
 
-
-    if (!uid) {
-
+    if (!valor) {
         return alert(
-            "Ingresa el ID del cliente."
+            "Ingresa el teléfono o ID del cliente."
         );
     }
 
-
     try {
 
-     const res =
-    await fetch(
-        `/api/cliente?uid=${encodeURIComponent(uid)}`
-    );
+        const somenteNumeros =
+            valor.replace(/\D/g, "");
 
-const cliente =
-    await res.json();
+        let url = "";
 
+        // Se tiver exatamente 10 dígitos,
+        // considera telefone mexicano
+        if (somenteNumeros.length === 10) {
 
-        /*
-        IMPORTANTE:
-        Firebase retorna:
-        {"error":"Permission denied"}
+            url =
+                `/api/buscar-telefone?telefone=${encodeURIComponent(somenteNumeros)}&t=${Date.now()}`;
 
-        Isso NÃO é cliente.
-        */
+        } else {
 
-        if (
-            !res.ok ||
-            !cliente ||
-            cliente.error
-        ) {
+            // Caso contrário, trata como UID
+            url =
+                `/api/cliente?uid=${encodeURIComponent(valor)}&t=${Date.now()}`;
+        }
+
+        const res = await fetch(
+            url,
+            {
+                cache: "no-store"
+            }
+        );
+
+        const cliente =
+            await res.json();
+
+        if (!res.ok || !cliente || cliente.error) {
 
             console.error(
                 "Erro ao buscar cliente:",
                 cliente
             );
 
-
-            if (
-                cliente &&
-                cliente.error ===
-                "Permission denied"
-            ) {
-
-                return alert(
-                    "El dashboard no tiene permiso para leer la base de clientes.\n\n" +
-                    "El siguiente paso será conectar esta función mediante la API administrativa."
-                );
-            }
-
-
             return alert(
+                cliente.error ||
                 "Cliente no encontrado."
             );
         }
 
-
-  clienteSelecionado = {
-    uid: cliente.uid,
-    nome: cliente.nome,
-    telefone: cliente.telefone || "",
-    pontos: cliente.pontos
-};
-
+        clienteSelecionado = {
+            uid: cliente.uid,
+            nome: cliente.nome || "",
+            telefone: cliente.telefone || "",
+            pontos: Number(cliente.pontos || 0)
+        };
 
         document
             .getElementById("clienteNome")
             .innerText =
-            cliente.nome ||
-            cliente.nombre ||
+            clienteSelecionado.nome ||
             "Sin nombre";
 
         document
-        .getElementById("clienteTelefone")
-        .innerText =
-        cliente.telefone || "Sin teléfono";
-
+            .getElementById("clienteTelefone")
+            .innerText =
+            clienteSelecionado.telefone ||
+            "Sin teléfono";
 
         document
             .getElementById("clientePontos")
             .innerText =
-            Number(
-                cliente.pontos || 0
-            );
-
+            clienteSelecionado.pontos;
 
         document
             .getElementById("clienteEncontrado")
             .style.display =
             "block";
 
-
         document
             .getElementById("creditoBox")
             .style.display =
             "block";
-
 
     } catch (e) {
 
@@ -927,7 +906,6 @@ const cliente =
             "Erro buscar cliente:",
             e
         );
-
 
         alert(
             "Error al buscar el cliente.\n\n" +
