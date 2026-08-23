@@ -390,33 +390,49 @@ button {
 
     <!-- NOME -->
 
-    <div id="stepNome" class="step-box">
+   <div id="stepNome" class="step-box">
 
-        <h2 style="color:var(--roxo)">
-            ¿Cómo te llamas?
-        </h2>
+    <h2 style="color:var(--roxo)">
+        ¿Cómo te llamas?
+    </h2>
 
-        <input
-            id="nomeInput"
-            placeholder="Tu nombre aquí..."
-            style="
-                width:100%;
-                padding:15px;
-                border-radius:12px;
-                border:1px solid #ddd;
-                box-sizing:border-box;
-                font-size:16px;
-            "
-        >
+    <input
+        id="nomeInput"
+        placeholder="Tu nombre aquí..."
+        style="
+            width:100%;
+            padding:15px;
+            border-radius:12px;
+            border:1px solid #ddd;
+            box-sizing:border-box;
+            font-size:16px;
+            margin-bottom:12px;
+        "
+    >
 
-        <button
-            onclick="salvarNome()"
-            class="btn-next"
-        >
-            EMPEZAR AHORA
-        </button>
+    <input
+        id="telefoneInput"
+        type="tel"
+        inputmode="tel"
+        placeholder="Tu teléfono (ej. 9981234567)"
+        style="
+            width:100%;
+            padding:15px;
+            border-radius:12px;
+            border:1px solid #ddd;
+            box-sizing:border-box;
+            font-size:16px;
+        "
+    >
 
-    </div>
+    <button
+        onclick="salvarNome()"
+        class="btn-next"
+    >
+        EMPEZAR AHORA
+    </button>
+
+</div>
 
     <!-- APP -->
 
@@ -1096,13 +1112,30 @@ async function ativarNotif() {
 async function salvarNome() {
 
     const nome =
-        document.getElementById("nomeInput")?.value;
+        document.getElementById("nomeInput")?.value.trim();
+
+    const telefone =
+        document.getElementById("telefoneInput")?.value.trim();
 
     if (!nome) {
         return alert("Escribe tu nombre");
     }
 
+    if (!telefone) {
+        return alert("Escribe tu teléfono");
+    }
+
+    // Mantém somente números
+    const telefoneLimpo =
+        telefone.replace(/\D/g, "");
+
+    // México: normalmente 10 dígitos
+    if (telefoneLimpo.length !== 10) {
+        return alert("Ingresa un teléfono válido de 10 dígitos.");
+    }
+
     localStorage.setItem("nome", nome);
+    localStorage.setItem("telefone", telefoneLimpo);
 
 
     if (OneSignalInstance) {
@@ -1113,6 +1146,11 @@ async function salvarNome() {
             "user_name",
             nome
         );
+
+        await OneSignalInstance.User.addTag(
+            "telefone",
+            telefoneLimpo
+        );
     }
 
 
@@ -1121,46 +1159,42 @@ async function salvarNome() {
         const userUrl =
             `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`;
 
-        // Busca usuário atual
+        // Busca dados atuais para não apagar saldo existente
         const atualRes =
-            await fetch(userUrl);
+            await fetch(
+                `/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,
+                {
+                    cache: "no-store"
+                }
+            );
 
-        const atual =
-            await atualRes.json();
+        let pontosAtuais = 0;
+
+        if (atualRes.ok) {
+
+            const atual =
+                await atualRes.json();
+
+            pontosAtuais =
+                Number(atual.pontos || 0);
+        }
 
 
-        // Preserva pontos existentes
-        const pontosAtuais =
-            atual && atual.pontos != null
-                ? Number(atual.pontos)
-                : 0;
-
-
-        // PATCH altera apenas estes campos
         await fetch(
             userUrl,
             {
                 method: "PATCH",
 
                 headers: {
-                    "Content-Type":
-                        "application/json"
+                    "Content-Type": "application/json"
                 },
 
                 body: JSON.stringify({
                     nome: nome,
+                    telefone: telefoneLimpo,
                     user_id: uid,
                     pontos: pontosAtuais,
-                    updated_at:
-                        new Date().toISOString(),
-
-                    // só cria created_at se ainda não existir
-                    ...(atual && atual.created_at
-                        ? {}
-                        : {
-                            created_at:
-                                new Date().toISOString()
-                        })
+                    updated_at: new Date().toISOString()
                 })
             }
         );
