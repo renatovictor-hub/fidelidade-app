@@ -62,18 +62,12 @@ export default async function handler(req, res) {
         // retornamos o primeiro resultado encontrado.
         const [uid, cliente] = entradas[0];
 
-        return res.status(200).json({
-            uid,
-            nome:
-                cliente.nome ||
-                cliente.nombre ||
-                "",
-            telefone:
-                cliente.telefone ||
-                telefone,
-            pontos:
-                Number(cliente.pontos || 0)
-        });
+    return res.status(200).json({
+    uid: uid,
+    nome: cliente.nome || cliente.nombre || "",
+    telefone: cliente.telefone || "",
+    pontos: Number(cliente.pontos || 0)
+});
 
     } catch (error) {
 
