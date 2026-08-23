@@ -263,58 +263,42 @@
 </button>
             
             <div
-                id="clienteEncontrado"
-                class="cliente-box"
-            >
+    id="clienteEncontrado"
+    class="cliente-box"
+>
 
-                <div style="font-size:13px; color:#777;">
-                    Cliente
-                </div>
+    <div style="font-size:13px; color:#777;">
+        Cliente
+    </div>
 
-                <div
-                    id="clienteNome"
-                    style="
-                        font-size:20px;
-                        font-weight:bold;
-                        color:#6a0dad;
-                        margin:4px 0 10px;> </div>
+    <div
+        id="clienteNome"
+        style="
+            font-size:20px;
+            font-weight:bold;
+            color:#6a0dad;
+            margin:4px 0 10px;
+        "
+    >
+    </div>
 
-                <div style="font-size:14px; color:#666; margin-bottom:8px;">
-    📞 <span id="clienteTelefone">Sin teléfono</span>
+    <div
+        style="
+            font-size:14px;
+            color:#666;
+            margin-bottom:8px;
+        "
+    >
+        📞 <span id="clienteTelefone">Sin teléfono</span>
+    </div>
+
+    <div style="font-size:14px;">
+        Saldo actual:
+        <strong id="clientePontos">0</strong>
+        puntos
+    </div>
+
 </div>
-
-                <div style="font-size:14px;">
-                    Saldo actual:
-                    <strong id="clientePontos">0</strong>
-                    puntos
-                </div>
-
-            </div>
-
-            <div id="creditoBox" style="display:none;">
-
-                <div class="input-group">
-
-                    <label>Valor de la compra (MXN)</label>
-
-                    <input
-                        id="valorCompra"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="Ej: 350"
-                        oninput="calcularPontosCompra()"
-                    >
-
-                </div>
-
-                <div
-                    id="previewPontos"
-                    class="preview-pontos"
-                >
-                    ⭐ 0 puntos
-                </div>
-
                 <button
                     id="btnCreditar"
                     onclick="creditarPontos()"
