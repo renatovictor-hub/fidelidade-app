@@ -1125,79 +1125,140 @@ async function salvarNome() {
         return alert("Escribe tu teléfono");
     }
 
-    // Mantém somente números
     const telefoneLimpo =
         telefone.replace(/\D/g, "");
 
-    // México: normalmente 10 dígitos
     if (telefoneLimpo.length !== 10) {
-        return alert("Ingresa un teléfono válido de 10 dígitos.");
-    }
-
-    localStorage.setItem("nome", nome);
-    localStorage.setItem("telefone", telefoneLimpo);
-
-
-    if (OneSignalInstance) {
-
-        await OneSignalInstance.login(uid);
-
-        await OneSignalInstance.User.addTag(
-            "user_name",
-            nome
-        );
-
-        await OneSignalInstance.User.addTag(
-            "telefone",
-            telefoneLimpo
+        return alert(
+            "Ingresa un teléfono válido de 10 dígitos."
         );
     }
-
 
     try {
 
-        const userUrl =
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`;
+        // 1. Verifica se o telefone já existe
+        const verificarRes = await fetch(
+            `/api/verificar-telefone?telefone=${encodeURIComponent(telefoneLimpo)}&t=${Date.now()}`,
+            {
+                cache: "no-store"
+            }
+        );
 
-        // Busca dados atuais para não apagar saldo existente
-        const atualRes =
-            await fetch(
-                `/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,
-                {
-                    cache: "no-store"
-                }
+        const verificarData =
+            await verificarRes.json();
+
+        if (!verificarRes.ok) {
+            throw new Error(
+                verificarData.error ||
+                verificarData.details ||
+                "Error al verificar teléfono"
             );
-
-        let pontosAtuais = 0;
-
-        if (atualRes.ok) {
-
-            const atual =
-                await atualRes.json();
-
-            pontosAtuais =
-                Number(atual.pontos || 0);
         }
 
 
+        // 2. TELEFONE JÁ EXISTE
+        if (verificarData.existe) {
+
+            uid = verificarData.uid;
+
+            localStorage.setItem(
+                "uid",
+                uid
+            );
+
+            localStorage.setItem(
+                "nome",
+                verificarData.nome || nome
+            );
+
+            localStorage.setItem(
+                "telefone",
+                telefoneLimpo
+            );
+
+
+            if (OneSignalInstance) {
+
+                await OneSignalInstance.login(uid);
+
+                await OneSignalInstance.User.addTag(
+                    "user_name",
+                    verificarData.nome || nome
+                );
+
+                await OneSignalInstance.User.addTag(
+                    "telefone",
+                    telefoneLimpo
+                );
+            }
+
+
+            alert(
+                "✅ Encontramos tu cuenta existente.\n\n" +
+                "Tus puntos y datos fueron recuperados."
+            );
+
+            abrirApp();
+
+            return;
+        }
+
+
+        // 3. TELEFONE NOVO
+        localStorage.setItem(
+            "nome",
+            nome
+        );
+
+        localStorage.setItem(
+            "telefone",
+            telefoneLimpo
+        );
+
+
+        if (OneSignalInstance) {
+
+            await OneSignalInstance.login(uid);
+
+            await OneSignalInstance.User.addTag(
+                "user_name",
+                nome
+            );
+
+            await OneSignalInstance.User.addTag(
+                "telefone",
+                telefoneLimpo
+            );
+        }
+
+
+        // 4. Cria usuário novo
         await fetch(
-            userUrl,
+            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
             {
                 method: "PATCH",
 
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type":
+                        "application/json"
                 },
 
                 body: JSON.stringify({
                     nome: nome,
                     telefone: telefoneLimpo,
                     user_id: uid,
-                    pontos: pontosAtuais,
-                    updated_at: new Date().toISOString()
+                    pontos: 0,
+                    created_at:
+                        new Date().toISOString(),
+                    updated_at:
+                        new Date().toISOString()
                 })
             }
         );
+
+
+        abrirApp();
+
 
     } catch (e) {
 
@@ -1205,12 +1266,13 @@ async function salvarNome() {
             "Erro ao salvar usuário:",
             e
         );
+
+        alert(
+            "No se pudo completar el registro.\n\n" +
+            e.message
+        );
     }
-
-
-    abrirApp();
 }
-
 
 /* ==========================
    APP PRINCIPAL
