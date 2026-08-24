@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uai Sô - Acceso Administrativo</title>
+    <style>
+        :root {
+            --roxo:#6a0dad;
+            --amarelo:#ffcc00;
+        }
+        * { box-sizing:border-box; }
+        body {
+            margin:0;
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+            background:#f0f2f5;
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            color:#333;
+        }
+        .login-card {
+            width:100%;
+            max-width:390px;
+            background:white;
+            border-radius:18px;
+            padding:30px;
+            box-shadow:0 12px 35px rgba(0,0,0,.12);
+            border-top:5px solid var(--amarelo);
+        }
+        h1 { color:var(--roxo); margin:0 0 6px; font-size:25px; }
+        p { color:#777; margin:0 0 22px; }
+        label { display:block; font-size:14px; font-weight:700; margin-bottom:7px; }
+        input {
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:10px;
+            font-size:16px;
+            outline-color:var(--roxo);
+        }
+        button {
+            width:100%;
+            margin-top:15px;
+            padding:14px;
+            border:0;
+            border-radius:10px;
+            background:var(--roxo);
+            color:white;
+            font-size:16px;
+            font-weight:800;
+            cursor:pointer;
+        }
+        button:disabled { opacity:.6; cursor:not-allowed; }
+        #erro { min-height:20px; margin-top:12px; color:#c0392b; font-size:13px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>Uai Sô</h1>
+        <p>Acceso seguro al panel administrativo</p>
+
+        <form id="loginForm">
+            <label for="password">Contraseña</label>
+            <input id="password" type="password" autocomplete="current-password" required autofocus>
+            <button id="btnLogin" type="submit">ENTRAR AL DASHBOARD</button>
+            <div id="erro"></div>
+        </form>
+    </div>
+
+    <script>
+        async function verificarSessao() {
+            try {
+                const res = await fetch('/api/admin-auth', { cache:'no-store' });
+                const data = await res.json();
+                if (data.authenticated) {
+                    location.replace('/dashboard.html');
+                }
+            } catch (_) {}
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const btn = document.getElementById('btnLogin');
+            const erro = document.getElementById('erro');
+            const password = document.getElementById('password').value;
+
+            btn.disabled = true;
+            btn.textContent = 'VERIFICANDO...';
+            erro.textContent = '';
+
+            try {
+                const res = await fetch('/api/admin-auth', {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json' },
+                    body:JSON.stringify({ password })
+                });
+                const data = await res.json();
+
+                if (!res.ok || !data.authenticated) {
+                    throw new Error(data.error || 'No se pudo iniciar sesión');
+                }
+
+                location.replace('/dashboard.html');
+            } catch (e) {
+                erro.textContent = e.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'ENTRAR AL DASHBOARD';
+            }
+        });
+
+        verificarSessao();
+    </script>
+</body>
+</html>
