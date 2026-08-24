@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { requireAdmin } from "./_admin-auth.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -15,15 +16,13 @@ const PESOS_POR_PONTO = 10;
 const VALOR_MAXIMO_COMPRA = 100000;
 
 export default async function handler(req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-    if (req.method === "OPTIONS") return res.status(200).end();
+    res.setHeader("Cache-Control", "no-store");
 
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
+
+    if (!requireAdmin(req, res)) return;
 
     try {
         const { uid, valorCompra } = req.body || {};
