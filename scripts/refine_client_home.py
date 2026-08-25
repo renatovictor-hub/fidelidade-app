@@ -1,0 +1,161 @@
+from pathlib import Path
+
+p = Path('index.html')
+s = p.read_text()
+
+css = '''
+
+/* Home do cliente - layout refinado */
+.client-counter {
+    background:#f3e8ff;
+    padding:12px 14px;
+    border-radius:14px;
+    margin:0 0 12px 0;
+    color:#6a0dad;
+    font-weight:700;
+    font-size:14px;
+    text-align:center;
+    box-shadow:0 3px 10px rgba(106,13,173,0.06);
+}
+.client-greeting-card {
+    background:#fff;
+    border:1px solid #eee;
+    border-radius:18px;
+    padding:14px 16px;
+    margin:0 0 12px 0;
+    text-align:center;
+    box-shadow:0 5px 16px rgba(0,0,0,0.05);
+}
+.client-greeting-card #greeting {
+    color:var(--roxo);
+    margin:0 0 4px 0;
+    font-size:24px;
+    line-height:1.15;
+    text-align:center;
+}
+.client-greeting-card p {
+    margin:0;
+    color:#666;
+    font-size:14px;
+    text-align:center;
+}
+.client-points-card {
+    background:linear-gradient(135deg,#6a0dad,#9b30ff);
+    color:white;
+    padding:16px 14px 16px 18px;
+    border-radius:18px;
+    margin-bottom:16px;
+    box-shadow:0 6px 16px rgba(106,13,173,0.22);
+    display:flex;
+    align-items:stretch;
+    justify-content:space-between;
+    gap:14px;
+    min-height:112px;
+}
+.client-points-info {
+    min-width:0;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    text-align:left;
+}
+.client-points-label {
+    font-size:13px;
+    opacity:.9;
+    margin-bottom:7px;
+    font-weight:700;
+}
+.client-points-value {
+    font-size:34px;
+    font-weight:800;
+    line-height:1;
+}
+.client-points-caption {
+    font-size:13px;
+    margin-top:7px;
+    opacity:.92;
+}
+.client-qr-button {
+    width:132px;
+    min-width:132px;
+    margin:0;
+    padding:10px 8px;
+    border-radius:15px;
+    border:none;
+    background:rgba(255,255,255,.96);
+    color:#6a0dad;
+    font-weight:800;
+    font-size:12px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    box-shadow:0 4px 12px rgba(56,0,96,.16);
+}
+.client-qr-button i { font-size:30px; }
+@media (max-width:370px) {
+    .action-menu { gap:6px; }
+    .btn-small { padding:9px 5px; font-size:11px; }
+    .client-points-card { gap:9px; padding-left:14px; }
+    .client-qr-button { width:112px; min-width:112px; font-size:11px; }
+}
+'''
+
+if '/* Home do cliente - layout refinado */' not in s:
+    s = s.replace('\n</style>', css + '\n</style>', 1)
+
+start_marker = '        <div class="action-menu">'
+end_marker = '        <!-- BANNER -->'
+start = s.find(start_marker)
+end = s.find(end_marker, start)
+if start == -1 or end == -1:
+    raise SystemExit('Home markers not found')
+
+new_home = '''        <!-- CONTADOR -->
+
+        <div id="contadorUsers" class="client-counter">
+            🔥 Cargando clientes...
+        </div>
+
+        <!-- MENU SUPERIOR -->
+
+        <div class="action-menu">
+            <a href="https://instagram.com/fooduaiso" target="_blank" class="btn-small">
+                <i class="fab fa-instagram"></i> Instagram
+            </a>
+            <a href="#" class="btn-small">
+                <i class="fas fa-utensils"></i> Nuestro Menú
+            </a>
+            <a href="/recompensas.html" class="btn-small">
+                <i class="fas fa-gift"></i> Recompensas
+            </a>
+        </div>
+
+        <!-- SAUDAÇÃO -->
+
+        <div class="client-greeting-card">
+            <h2 id="greeting"></h2>
+            <p>¡Qué bueno verte de nuevo!</p>
+        </div>
+
+        <!-- PONTOS + QR -->
+
+        <div id="cardPontos" class="client-points-card">
+            <div class="client-points-info">
+                <div class="client-points-label">⭐ Tus puntos</div>
+                <div id="saldoPontos" class="client-points-value">0</div>
+                <div class="client-points-caption">puntos disponibles</div>
+            </div>
+            <button onclick="abrirQrPopup()" class="client-qr-button" aria-label="Mostrar mi QR">
+                <i class="fas fa-qrcode"></i>
+                <span>MOSTRAR MI QR</span>
+            </button>
+        </div>
+
+'''
+
+s = s[:start] + new_home + s[end:]
+p.write_text(s)
