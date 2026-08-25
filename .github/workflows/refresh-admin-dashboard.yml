@@ -1,0 +1,40 @@
+name: Refresh admin dashboard
+
+on:
+  push:
+    branches:
+      - chore/refresh-admin-dashboard
+    paths:
+      - .github/workflows/refresh-admin-dashboard.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/refresh-admin-dashboard
+
+      - name: Refresh dashboard asset versions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('admin.html')
+          s = p.read_text()
+          s = s.replace("script.src = '/recompensas-admin.js?v=1';", "script.src = '/recompensas-admin.js?v=20260825-2';")
+          s = s.replace("dashboardFrame.src = '/dashboard.html';", "dashboardFrame.src = '/dashboard.html?v=20260825-2';")
+          p.write_text(s)
+          PY
+
+      - name: Commit dashboard refresh
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin.html
+          git commit -m "Refresh admin dashboard assets"
+          git push origin HEAD:chore/refresh-admin-dashboard
