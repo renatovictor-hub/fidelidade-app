@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Recompensas - Uai Sô</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--roxo:#6a0dad;--roxo2:#9b30ff;--verde:#198754;--cinza:#6b7280;--bg:#f6f7fb}
+*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:var(--bg);color:#222}.wrap{max-width:430px;margin:auto;min-height:100vh;padding:18px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.back{width:42px;height:42px;border:0;border-radius:12px;background:white;color:var(--roxo);font-size:18px;box-shadow:0 4px 14px rgba(0,0,0,.08);margin:0;padding:0}.logo{width:72px}.saldo{background:linear-gradient(135deg,var(--roxo),var(--roxo2));color:#fff;border-radius:20px;padding:18px;margin-bottom:20px;box-shadow:0 8px 22px rgba(106,13,173,.23)}.saldo small{opacity:.85;font-weight:600}.saldo strong{display:block;font-size:34px;line-height:1;margin-top:5px}.title{font-size:21px;font-weight:800;color:var(--roxo);margin:4px 0}.sub{font-size:13px;color:var(--cinza);margin:0 0 15px}.grid{display:grid;gap:12px}.card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 5px 16px rgba(0,0,0,.07);border:1px solid #eee}.row{display:flex;gap:12px;align-items:flex-start}.icon{width:46px;height:46px;flex:0 0 46px;border-radius:14px;background:#f2e7ff;color:var(--roxo);display:flex;align-items:center;justify-content:center;font-size:21px}.name{font-size:17px;font-weight:800;margin:0 0 4px}.desc{font-size:13px;color:#666;margin:0 0 12px;line-height:1.4}.bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}.cost{font-size:15px;font-weight:800;color:var(--roxo)}.badge{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}.ok{background:#e8f7ee;color:var(--verde)}.no{background:#f3f4f6;color:#707070}.empty{background:#fff;border-radius:18px;padding:25px;text-align:center;color:#777;border:1px dashed #ccc}.hint{margin-top:18px;background:#fff8df;border:1px solid #ffe59a;color:#705700;padding:13px;border-radius:14px;font-size:12px;line-height:1.45}.loading{text-align:center;padding:28px;color:#777}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <button class="back" onclick="location.href='/'" aria-label="Volver"><i class="fas fa-arrow-left"></i></button>
+    <img src="logo.png" class="logo" alt="Uai Sô">
+    <div style="width:42px"></div>
+  </div>
+  <div class="saldo"><small>⭐ Tus puntos</small><strong id="saldo">0</strong><small>puntos disponibles</small></div>
+  <div class="title">🎁 Tus recompensas</div>
+  <p class="sub">Mira qué premios ya puedes canjear con tus puntos.</p>
+  <div id="lista" class="grid"><div class="loading">Cargando recompensas...</div></div>
+  <div class="hint"><b>¿Cómo canjear?</b><br>Muestra tu QR al personal. El canje se confirma en caja para proteger tus puntos.</div>
+</div>
+<script>
+const uid=localStorage.getItem('uid')||'';
+let saldoActual=0;
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+async function cargarSaldo(){if(!uid)return;const r=await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'});const d=await r.json();if(r.ok){saldoActual=Number(d.pontos||0);document.getElementById('saldo').textContent=saldoActual;}}
+async function cargarRecompensas(){const box=document.getElementById('lista');try{await cargarSaldo();const r=await fetch(`/api/recompensas-publicas?t=${Date.now()}`,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Error al cargar recompensas');const lista=Array.isArray(d.recompensas)?d.recompensas:[];if(!lista.length){box.innerHTML='<div class="empty">Todavía no hay recompensas disponibles.</div>';return;}box.innerHTML=lista.map(x=>{const costo=Number(x.pontos||0);const falta=Math.max(0,costo-saldoActual);return `<div class="card"><div class="row"><div class="icon"><i class="fas fa-gift"></i></div><div style="flex:1"><div class="name">${esc(x.nome)}</div><div class="desc">${esc(x.descricao||'Recompensa Uai Sô')}</div><div class="bottom"><div class="cost">${costo} puntos</div>${falta===0?'<div class="badge ok">✓ Disponible</div>':`<div class="badge no">Faltan ${falta}</div>`}</div></div></div></div>`}).join('');}catch(e){console.error(e);box.innerHTML='<div class="empty">No se pudieron cargar las recompensas ahora.</div>';}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cargarRecompensas();});window.addEventListener('focus',cargarRecompensas);window.addEventListener('pageshow',cargarRecompensas);cargarRecompensas();
+</script>
+</body>
+</html>
