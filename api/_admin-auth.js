@@ -79,7 +79,7 @@ export function requireAdmin(req, res) {
 export function setSessionCookie(res, token) {
     res.setHeader(
         "Set-Cookie",
-        `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_SECONDS}`
+        `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict`
     );
 }
 
