@@ -62,30 +62,18 @@ export default async function handler(req, res) {
         const saldoAntes = Number(clienteInicial.pontos || 0);
 
         if (saldoAntes < custo) {
-            return res.status(400).json({
-                error: "Puntos insuficientes",
-                saldo: saldoAntes,
-                necesarios: custo
-            });
+            return res.status(400).json({ error: "Puntos insuficientes", saldo: saldoAntes, necesarios: custo });
         }
 
-        let saldoAnteriorConfirmado = null;
-        let saldoNovoConfirmado = null;
-
-        const transactionResult = await userRef.child("pontos").transaction(current => {
+        const pontosRef = userRef.child("pontos");
+        const transactionResult = await pontosRef.transaction(current => {
             const saldoAtual = Number(current || 0);
-
-            if (!Number.isFinite(saldoAtual) || saldoAtual < custo) {
-                return;
-            }
-
-            saldoAnteriorConfirmado = saldoAtual;
-            saldoNovoConfirmado = saldoAtual - custo;
-            return saldoNovoConfirmado;
-        }, undefined, false);
+            if (!Number.isFinite(saldoAtual) || saldoAtual < custo) return;
+            return saldoAtual - custo;
+        });
 
         if (!transactionResult.committed) {
-            const saldoAtualSnap = await userRef.child("pontos").once("value");
+            const saldoAtualSnap = await pontosRef.once("value");
             return res.status(409).json({
                 error: "Puntos insuficientes o saldo actualizado por otra operación",
                 saldo: Number(saldoAtualSnap.val() || 0),
@@ -93,6 +81,8 @@ export default async function handler(req, res) {
             });
         }
 
+        const saldoNovoConfirmado = Number(transactionResult.snapshot.val());
+        const saldoAnteriorConfirmado = saldoNovoConfirmado + custo;
         const agora = new Date().toISOString();
         const transacaoRef = admin.database().ref("transacoes").push();
 
@@ -113,13 +103,11 @@ export default async function handler(req, res) {
             });
         } catch (logError) {
             console.error("Falha ao registrar resgate, tentando estornar:", logError);
-
-            await userRef.child("pontos").transaction(current => {
+            await pontosRef.transaction(current => {
                 const saldoAtual = Number(current || 0);
                 if (saldoAtual !== saldoNovoConfirmado) return;
                 return saldoAnteriorConfirmado;
-            }, undefined, false);
-
+            });
             throw new Error("No se pudo registrar el canje. El saldo fue restaurado.");
         }
 
@@ -135,9 +123,6 @@ export default async function handler(req, res) {
         });
     } catch (error) {
         console.error("Erro ao resgatar recompensa:", error);
-        return res.status(500).json({
-            error: "Error interno",
-            details: error.message
-        });
+        return res.status(500).json({ error: "Error interno", details: error.message });
     }
 }
