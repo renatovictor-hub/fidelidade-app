@@ -1,0 +1,41 @@
+name: Integrate client rewards link
+
+on:
+  push:
+    branches:
+      - feat/client-rewards
+    paths:
+      - .github/workflows/integrate-client-rewards.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/client-rewards
+      - name: Add rewards button to client home
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          if 'href="/recompensas.html"' not in s:
+              needle = '''            <a\n                href="#"\n                class="btn-small"\n            >\n                <i class="fas fa-utensils"></i>\n                Nuestro Menú\n            </a>'''
+              insert = needle + '''\n\n            <a\n                href="/recompensas.html"\n                class="btn-small"\n            >\n                <i class="fas fa-gift"></i>\n                Recompensas\n            </a>'''
+              if needle not in s:
+                  raise SystemExit('Menu anchor pattern not found')
+              s = s.replace(needle, insert, 1)
+              p.write_text(s)
+          PY
+      - name: Commit integration
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add rewards access to client home"
+          git push origin HEAD:feat/client-rewards
