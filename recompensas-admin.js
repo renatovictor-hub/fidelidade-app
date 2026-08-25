@@ -1,5 +1,6 @@
 (() => {
     const API = '/api/recompensas';
+    const REDEEM_API = '/api/resgatar-recompensa';
 
     function criarEstilos() {
         if (document.getElementById('recompensasAdminStyles')) return;
@@ -13,8 +14,9 @@
             .reward-points{white-space:nowrap;background:#fff4bf;color:#6b5700;border-radius:999px;padding:5px 9px;font-weight:800;font-size:12px;}
             .reward-desc{color:#666;font-size:13px;margin-top:6px;line-height:1.4;}
             .reward-status{font-size:12px;margin-top:7px;color:#777;}
-            .reward-actions{display:flex;gap:8px;margin-top:10px;}
-            .reward-actions button{padding:9px 10px;font-size:12px;}
+            .reward-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+            .reward-actions button{padding:9px 10px;font-size:12px;width:auto;flex:1;min-width:90px;}
+            .reward-redeem{background:#25d366;color:#fff;}
         `;
         document.head.appendChild(style);
     }
@@ -28,6 +30,14 @@
         }
         if (!res.ok) throw new Error(data.error || data.details || 'Error en recompensas');
         return data;
+    }
+
+    function clienteActual() {
+        try {
+            return typeof clienteSelecionado !== 'undefined' ? clienteSelecionado : null;
+        } catch (_) {
+            return null;
+        }
     }
 
     window.carregarRecompensas = async function carregarRecompensas() {
@@ -63,6 +73,7 @@
                     <div class="reward-desc"></div>
                     <div class="reward-status">${ativa ? '🟢 Activa' : '⚪ Inactiva'}</div>
                     <div class="reward-actions">
+                        ${ativa ? '<button class="reward-redeem">🎁 CANJEAR</button>' : ''}
                         <button class="btn-secondary reward-toggle">${ativa ? 'DESACTIVAR' : 'ACTIVAR'}</button>
                         <button class="btn-danger reward-delete">ELIMINAR</button>
                     </div>
@@ -70,6 +81,12 @@
 
                 div.querySelector('.reward-name').textContent = nome;
                 div.querySelector('.reward-desc').textContent = descricao || 'Sin descripción';
+
+                const redeem = div.querySelector('.reward-redeem');
+                if (redeem) {
+                    redeem.addEventListener('click', () => window.resgatarRecompensa(item.id, nome, pontos, redeem));
+                }
+
                 div.querySelector('.reward-toggle').addEventListener('click', () => window.alternarRecompensa(item.id, !ativa));
                 div.querySelector('.reward-delete').addEventListener('click', () => window.eliminarRecompensa(item.id, nome));
                 lista.appendChild(div);
@@ -114,6 +131,57 @@
             alert('✅ Recompensa creada.');
         } catch (e) {
             alert(`No se pudo crear la recompensa.\n\n${e.message}`);
+        } finally {
+            if (botao) {
+                botao.disabled = false;
+                botao.textContent = textoOriginal;
+            }
+        }
+    };
+
+    window.resgatarRecompensa = async function resgatarRecompensa(id, nome, pontos, botao) {
+        const cliente = clienteActual();
+
+        if (!cliente?.uid) {
+            return alert('Primero busca o escanea al cliente que va a canjear la recompensa.');
+        }
+
+        const saldo = Number(cliente.pontos || 0);
+        if (saldo < pontos) {
+            return alert(`Puntos insuficientes.\n\nSaldo actual: ${saldo} pts\nNecesarios: ${pontos} pts`);
+        }
+
+        const clienteNome = cliente.nome || 'Cliente';
+        if (!confirm(`¿Confirmar canje?\n\n${clienteNome}\n${nome}\nCosto: ${pontos} puntos\nSaldo después: ${saldo - pontos} puntos`)) {
+            return;
+        }
+
+        const textoOriginal = botao?.textContent || '🎁 CANJEAR';
+
+        try {
+            if (botao) {
+                botao.disabled = true;
+                botao.textContent = 'CANJEANDO...';
+            }
+
+            const data = await api(REDEEM_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: cliente.uid, recompensaId: id })
+            });
+
+            cliente.pontos = Number(data.saldo_novo || 0);
+
+            const saldoEl = document.getElementById('clientePontos');
+            if (saldoEl) saldoEl.textContent = cliente.pontos;
+
+            if (typeof carregarHistoricoCliente === 'function') {
+                await carregarHistoricoCliente(cliente.uid);
+            }
+
+            alert(`✅ Recompensa canjeada.\n\n${nome}\n-${data.pontos_descontados} puntos\nNuevo saldo: ${data.saldo_novo} puntos`);
+        } catch (e) {
+            alert(`No se pudo realizar el canje.\n\n${e.message}`);
         } finally {
             if (botao) {
                 botao.disabled = false;
