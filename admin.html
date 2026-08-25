@@ -185,7 +185,7 @@
                 if (!doc.getElementById('recompensasAdminScript')) {
                     const script = doc.createElement('script');
                     script.id = 'recompensasAdminScript';
-                    script.src = '/recompensas-admin.js?v=1';
+                    script.src = '/recompensas-admin.js?v=20260825-2';
                     doc.body.appendChild(script);
                 }
 
@@ -199,7 +199,7 @@
             loginView.style.display = 'none';
             dashboardView.style.display = 'block';
             if (!dashboardFrame.getAttribute('src')) {
-                dashboardFrame.src = '/dashboard.html';
+                dashboardFrame.src = '/dashboard.html?v=20260825-2';
             }
             reiniciarInatividade();
         }
