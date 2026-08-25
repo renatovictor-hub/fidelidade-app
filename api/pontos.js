@@ -1,5 +1,6 @@
 import admin from "firebase-admin";
 import { requireAdmin } from "./_admin-auth.js";
+import { enviarNotificacao } from "./_onesignal.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -17,79 +18,50 @@ const VALOR_MAXIMO_COMPRA = 100000;
 
 export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
-
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" });
-    }
-
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     if (!requireAdmin(req, res)) return;
 
     try {
         const { uid, valorCompra } = req.body || {};
         const uidLimpo = String(uid || "").trim();
         const valor = Number(valorCompra);
-
-        if (!/^user_\d+$/.test(uidLimpo)) {
-            return res.status(400).json({ error: "UID inválido" });
-        }
-
-        if (!Number.isFinite(valor) || valor <= 0 || valor > VALOR_MAXIMO_COMPRA) {
-            return res.status(400).json({ error: "Valor de compra inválido" });
-        }
+        if (!/^user_\d+$/.test(uidLimpo)) return res.status(400).json({ error: "UID inválido" });
+        if (!Number.isFinite(valor) || valor <= 0 || valor > VALOR_MAXIMO_COMPRA) return res.status(400).json({ error: "Valor de compra inválido" });
 
         const valorNormalizado = Math.round(valor * 100) / 100;
         const pontosGanhos = Math.floor(valorNormalizado / PESOS_POR_PONTO);
+        if (pontosGanhos <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
 
-        if (pontosGanhos <= 0) {
-            return res.status(400).json({ error: "El valor no genera puntos" });
-        }
-
-        const userRef = admin.database().ref(`users/${uidLimpo}`);
+        const db = admin.database();
+        const userRef = db.ref(`users/${uidLimpo}`);
         const snapshot = await userRef.once("value");
-
-        if (!snapshot.exists()) {
-            return res.status(404).json({ error: "Cliente no encontrado" });
-        }
+        if (!snapshot.exists()) return res.status(404).json({ error: "Cliente no encontrado" });
 
         const cliente = snapshot.val();
         const pontosAtuais = Number(cliente.pontos || 0);
         const novoSaldo = pontosAtuais + pontosGanhos;
         const agora = new Date().toISOString();
-        const transacaoRef = admin.database().ref("transacoes").push();
-
+        const transacaoRef = db.ref("transacoes").push();
         const updates = {};
         updates[`users/${uidLimpo}/pontos`] = novoSaldo;
         updates[`users/${uidLimpo}/ultima_compra`] = agora;
         updates[`transacoes/${transacaoRef.key}`] = {
-            user_id: uidLimpo,
-            nome: cliente.nome || cliente.nombre || "",
-            telefone: cliente.telefone || "",
-            tipo: "credito",
-            valor_compra: valorNormalizado,
-            pontos: pontosGanhos,
-            saldo_anterior: pontosAtuais,
-            saldo_novo: novoSaldo,
-            data: agora
+            user_id: uidLimpo, nome: cliente.nome || cliente.nombre || "", telefone: cliente.telefone || "",
+            tipo: "credito", valor_compra: valorNormalizado, pontos: pontosGanhos,
+            saldo_anterior: pontosAtuais, saldo_novo: novoSaldo, data: agora
         };
+        await db.ref().update(updates);
 
-        await admin.database().ref().update(updates);
-
-        return res.status(200).json({
-            success: true,
+        const push = await enviarNotificacao({
             uid: uidLimpo,
-            nome: cliente.nome || cliente.nombre || "",
-            pontos_adicionados: pontosGanhos,
-            saldo_anterior: pontosAtuais,
-            saldo_novo: novoSaldo,
-            regra: {
-                pesos_por_ponto: PESOS_POR_PONTO
-            }
-        });
+            titulo: "⭐ ¡Ganaste puntos!",
+            mensagem: `Sumaste ${pontosGanhos} punto${pontosGanhos === 1 ? "" : "s"}. Tu saldo ahora es ${novoSaldo}.`,
+            url: "/"
+        }).catch(error => ({ error: true, details: error.message }));
+
+        return res.status(200).json({ success: true, uid: uidLimpo, nome: cliente.nome || cliente.nombre || "", pontos_adicionados: pontosGanhos, saldo_anterior: pontosAtuais, saldo_novo: novoSaldo, push, regra: { pesos_por_ponto: PESOS_POR_PONTO } });
     } catch (error) {
         console.error("Erro API pontos:", error);
-        return res.status(500).json({
-            error: "Error interno",
-            details: error.message
-        });
+        return res.status(500).json({ error: "Error interno", details: error.message });
     }
 }
