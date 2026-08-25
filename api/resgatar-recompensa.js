@@ -35,7 +35,14 @@ export default async function handler(req, res) {
         updates[`transacoes/${transacaoRef.key}`] = { user_id: uid, nome: cliente.nome || cliente.nombre || "", telefone: cliente.telefone || "", tipo: "debito", origem: "recompensa", recompensa_id: recompensaId, recompensa_nome: recompensa.nome || "", pontos: custo, valor_compra: 0, saldo_anterior: saldoAnterior, saldo_novo: saldoNovo, data: agora };
         await db.ref().update(updates);
 
-        const push = await enviarNotificacao({ uid, titulo: "🎁 Recompensa canjeada", mensagem: `${recompensa.nome || "Tu recompensa"} fue canjeada por ${custo} puntos. Saldo: ${saldoNovo}.`, url: "/recompensas.html" }).catch(error => ({ error: true, details: error.message }));
+        const push = await enviarNotificacao({
+            uid,
+            telefone: cliente.telefone || "",
+            titulo: "🎁 Recompensa canjeada",
+            mensagem: `${recompensa.nome || "Tu recompensa"} fue canjeada por ${custo} puntos. Saldo: ${saldoNovo}.`,
+            url: "https://fidelidad-uai-so.vercel.app/recompensas.html"
+        }).catch(error => ({ error: true, details: error.message }));
+
         return res.status(200).json({ success: true, uid, recompensa_id: recompensaId, recompensa_nome: recompensa.nome || "", pontos_descontados: custo, saldo_anterior: saldoAnterior, saldo_novo: saldoNovo, transacao_id: transacaoRef.key, push });
     } catch (error) {
         console.error("Erro ao resgatar recompensa:", error);
