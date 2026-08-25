@@ -4,12 +4,19 @@ function topicoUnico() {
     return `uaiso-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`.slice(0, 64);
 }
 
-export async function enviarNotificacao({ uid, telefone, titulo, mensagem, url = "https://fidelidad-uai-so.vercel.app/", todos = false, imagem = "" }) {
+function filtrosTelefones(telefones) {
+    const unicos = [...new Set((telefones || []).map(v => String(v || "").replace(/\D/g, "")).filter(v => v.length === 10))];
+    const filtros = [];
+    unicos.forEach((telefone, index) => {
+        if (index > 0) filtros.push({ operator: "OR" });
+        filtros.push({ field: "tag", key: "telefone", relation: "=", value: telefone });
+    });
+    return filtros;
+}
+
+export async function enviarNotificacao({ uid, telefone, telefones, titulo, mensagem, url = "https://fidelidad-uai-so.vercel.app/", todos = false, imagem = "" }) {
     const apiKey = String(process.env.ONESIGNAL_REST_KEY || process.env.ONESIGNAL_REST_API_KEY || "").trim();
-    if (!apiKey) {
-        console.warn("ONESIGNAL_REST_KEY no configurada; push omitido.");
-        return { skipped: true };
-    }
+    if (!apiKey) return { skipped: true };
 
     const body = {
         app_id: ONESIGNAL_APP_ID,
@@ -23,27 +30,13 @@ export async function enviarNotificacao({ uid, telefone, titulo, mensagem, url =
     };
 
     if (todos) {
-        // Mantém o mesmo critério usado anteriormente, que já funcionava no projeto.
-        body.filters = [
-            {
-                field: "last_session",
-                relation: ">",
-                value: "0"
-            }
-        ];
+        body.filters = [{ field: "last_session", relation: ">", value: "0" }];
+    } else if (Array.isArray(telefones) && telefones.length) {
+        body.filters = filtrosTelefones(telefones);
+        if (!body.filters.length) return { error: true, status: 400, details: "Nenhum telefone válido para envio" };
     } else if (telefone) {
-        // Usuários antigos nem sempre possuem external_id no OneSignal,
-        // mas o app já grava o telefone como tag durante o cadastro/recuperação.
-        body.filters = [
-            {
-                field: "tag",
-                key: "telefone",
-                relation: "=",
-                value: String(telefone)
-            }
-        ];
+        body.filters = [{ field: "tag", key: "telefone", relation: "=", value: String(telefone).replace(/\D/g, "") }];
     } else if (uid) {
-        // Fallback para contas que já possuem external_id corretamente vinculado.
         body.include_aliases = { external_id: [uid] };
         body.target_channel = "push";
     } else {
@@ -64,6 +57,5 @@ export async function enviarNotificacao({ uid, telefone, titulo, mensagem, url =
         console.error("OneSignal error:", response.status, data);
         return { error: true, status: response.status, details: data };
     }
-
     return data;
 }
