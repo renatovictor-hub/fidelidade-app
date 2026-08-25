@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mis movimientos - Uai Sô</title>
+<style>
+:root{--roxo:#6a0dad;--roxo2:#9b30ff;--amarelo:#ffcc00;--verde:#1f9d55;--vermelho:#d64545;--fundo:#f7f6fa;--texto:#2d2d33}
+*{box-sizing:border-box}body{margin:0;background:var(--fundo);font-family:'Segoe UI',Roboto,sans-serif;color:var(--texto)}
+.container{max-width:430px;margin:auto;padding:18px 18px 34px;min-height:100vh}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.back{width:42px;height:42px;border-radius:13px;border:1px solid #e7e1ed;background:white;color:var(--roxo);font-size:20px;font-weight:800;cursor:pointer}.logo{width:76px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.08))}.spacer{width:42px}
+.hero{background:linear-gradient(135deg,var(--roxo),var(--roxo2));color:white;border-radius:24px;padding:22px;box-shadow:0 10px 24px rgba(106,13,173,.22);margin-bottom:14px}.hero small{opacity:.85;font-weight:700}.hero h1{font-size:25px;margin:6px 0 4px}.saldo{font-size:36px;font-weight:900;line-height:1;margin-top:15px}.saldo-label{font-size:13px;opacity:.88;margin-top:4px}
+.resumo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}.resumo-card{background:white;border:1px solid #ece7f1;border-radius:18px;padding:15px;box-shadow:0 5px 16px rgba(0,0,0,.04)}.resumo-card span{display:block;font-size:12px;color:#777;font-weight:700}.resumo-card strong{display:block;margin-top:5px;font-size:21px}.ganhos strong{color:var(--verde)}.usados strong{color:var(--vermelho)}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 11px}.section-title h2{font-size:18px;color:var(--roxo);margin:0}.section-title span{font-size:12px;color:#8a8a94}
+.movimento{background:white;border:1px solid #ece7f1;border-radius:18px;padding:15px;margin-bottom:10px;display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.035)}.icone{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px}.credito .icone{background:#eaf8ef}.debito .icone{background:#fff0f0}.mov-info b{display:block;font-size:14px}.mov-info small{display:block;color:#888;margin-top:4px;font-size:12px}.pts{text-align:right;font-weight:900;font-size:16px}.credito .pts{color:var(--verde)}.debito .pts{color:var(--vermelho)}.saldo-pos{display:block;color:#999;font-weight:600;font-size:11px;margin-top:4px}
+.empty,.erro,.loading{background:white;border:1px solid #ece7f1;border-radius:18px;padding:24px;text-align:center;color:#777}.erro{color:#b33}.btn-retry{margin-top:12px;border:0;border-radius:12px;padding:11px 16px;background:var(--roxo);color:white;font-weight:800;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top"><button class="back" onclick="location.href='/'">‹</button><img class="logo" src="logo.png" alt="Uai Sô"><div class="spacer"></div></div>
+  <section class="hero">
+    <small>Tu historial de fidelidad</small>
+    <h1 id="titulo">Mis movimientos</h1>
+    <div class="saldo" id="saldo">—</div>
+    <div class="saldo-label">puntos disponibles</div>
+  </section>
+  <div class="resumo">
+    <div class="resumo-card ganhos"><span>⭐ Puntos ganados</span><strong id="ganhos">—</strong></div>
+    <div class="resumo-card usados"><span>🎁 Puntos usados</span><strong id="usados">—</strong></div>
+  </div>
+  <div class="section-title"><h2>Últimos movimientos</h2><span id="total"></span></div>
+  <div id="lista"><div class="loading">Cargando tus movimientos...</div></div>
+</div>
+<script>
+const uid=localStorage.getItem('uid')||'';
+const lista=document.getElementById('lista');
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function fecha(v){if(!v)return 'Fecha no disponible';const d=new Date(v);if(Number.isNaN(d.getTime()))return 'Fecha no disponible';return new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d);}
+function tituloMovimiento(m){if(m.tipo==='debito'){if(m.origem==='recompensa')return m.recompensa_nome||'Canje de recompensa';return 'Canje de puntos';}if(Number(m.valor_compra||0)>0)return `Compra de $${Number(m.valor_compra).toFixed(2)} MXN`;return 'Puntos acreditados';}
+async function cargar(){
+ if(!/^user_\d+$/.test(uid)){lista.innerHTML='<div class="erro">No encontramos tu sesión. Vuelve a abrir la app.</div>';return;}
+ try{
+   const r=await fetch(`/api/movimientos?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar el historial');
+   document.getElementById('titulo').textContent=`Movimientos de ${d.nome||'Cliente'}`;
+   document.getElementById('saldo').textContent=Number(d.saldo||0).toLocaleString('es-MX');
+   document.getElementById('ganhos').textContent=`+${Number(d.ganhos||0).toLocaleString('es-MX')}`;
+   document.getElementById('usados').textContent=`-${Number(d.usados||0).toLocaleString('es-MX')}`;
+   document.getElementById('total').textContent=`${Number(d.total||0)} movimientos`;
+   if(!d.movimentos?.length){lista.innerHTML='<div class="empty">Todavía no tienes movimientos registrados.</div>';return;}
+   lista.innerHTML=d.movimentos.map(m=>{const tipo=m.tipo==='debito'?'debito':'credito';const p=Math.abs(Number(m.pontos||0));const sinal=tipo==='debito'?'-':'+';const ico=tipo==='debito'?'🎁':'⭐';const saldoPos=Number.isFinite(Number(m.saldo_novo))?`Saldo: ${Number(m.saldo_novo).toLocaleString('es-MX')} pts`:'';return `<div class="movimento ${tipo}"><div class="icone">${ico}</div><div class="mov-info"><b>${esc(tituloMovimiento(m))}</b><small>${esc(fecha(m.data))}</small></div><div class="pts">${sinal}${p}<span class="saldo-pos">${esc(saldoPos)}</span></div></div>`}).join('');
+ }catch(e){lista.innerHTML=`<div class="erro">${esc(e.message||e)}<br><button class="btn-retry" onclick="cargar()">Reintentar</button></div>`;}
+}
+cargar();
+window.addEventListener('pageshow',cargar);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)cargar();});
+</script>
+</body>
+</html>
