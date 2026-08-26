@@ -1,5 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/onboarding.html" }
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/onboarding.html",
+      "permanent": false
+    }
   ]
 }
