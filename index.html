@@ -487,17 +487,13 @@ button {
 
     </div>
 
-    <!-- CADASTRO RÁPIDO -->
+    <!-- NOME -->
 
    <div id="stepNome" class="step-box">
 
-    <div style="font-size:38px;margin-bottom:8px;">🎁</div>
-    <h2 style="color:var(--roxo);margin-bottom:8px;">
-        Únete a Uai Sô Fidelidad
+    <h2 style="color:var(--roxo)">
+        ¿Cómo te llamas?
     </h2>
-    <p style="color:#666;font-size:14px;margin:0 0 18px;">
-        Regístrate en segundos. No necesitas instalar nada para empezar a acumular puntos.
-    </p>
 
     <input
         id="nomeInput"
@@ -532,12 +528,8 @@ button {
         onclick="salvarNome()"
         class="btn-next"
     >
-        CREAR MI TARJETA GRATIS
+        EMPEZAR AHORA
     </button>
-
-    <div style="margin-top:12px;color:#999;font-size:12px;">
-        Al continuar aceptas recibir información relacionada con tu programa de fidelidad. Las notificaciones se activan por separado.
-    </div>
 
 </div>
 
@@ -550,17 +542,6 @@ button {
             text-align:left;
         "
     >
-
-        <!-- ACTIVACIÓN OPCIONAL DESPUÉS DEL REGISTRO -->
-        <div id="quickSetupCard" style="display:none;background:#fff;border:1px solid #eadcff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 5px 16px rgba(106,13,173,.08);">
-            <div style="font-weight:800;color:#6a0dad;margin-bottom:5px;">✨ Tu tarjeta ya está lista</div>
-            <div id="quickSetupText" style="font-size:13px;color:#666;margin-bottom:10px;">Activa las notificaciones para no perder recompensas y promociones.</div>
-            <div style="display:flex;gap:8px;">
-                <button id="quickNotifBtn" onclick="ativarNotifRapida()" style="margin:0;padding:10px;font-size:12px;background:#ffcc00;color:#222;">🔔 ACTIVAR ALERTAS</button>
-                <button id="quickInstallBtn" onclick="instalarRapido()" style="display:none;margin:0;padding:10px;font-size:12px;background:#6a0dad;color:#fff;">📲 INSTALAR APP</button>
-            </div>
-            <button onclick="ocultarQuickSetup()" style="margin:8px 0 0;padding:4px;background:transparent;color:#999;font-size:11px;font-weight:600;">Ahora no</button>
-        </div>
 
         <!-- CONTADOR -->
 
@@ -1026,9 +1007,52 @@ window.onload = () => {
         return abrirApp();
     }
 
-    // Cadastro primeiro: quem escaneia o QR entra direto no programa,
-    // sem ser obrigado a instalar a PWA ou permitir notificações.
-    show("stepNome");
+
+    if (isStandalone) {
+
+        if (!push) {
+            return show("stepNotif");
+        }
+
+        return show("stepNome");
+    }
+
+
+    show("stepInstall");
+
+
+    if (isIOS) {
+
+        const guide =
+            document.getElementById(
+                "iosGuide"
+            );
+
+        const msg =
+            document.getElementById(
+                "installMsg"
+            );
+
+        if (guide) {
+            guide.style.display =
+                "block";
+        }
+
+        if (msg) {
+            msg.innerText =
+                "Sigue los pasos para instalar la App en tu iPhone.";
+        }
+
+        const btnAnd =
+            document.getElementById(
+                "btnAndroid"
+            );
+
+        if (btnAnd) {
+            btnAnd.style.display =
+                "none";
+        }
+    }
 };
 
 
@@ -1195,7 +1219,6 @@ async function salvarNome() {
             );
 
             abrirApp();
-            mostrarQuickSetup();
 
             return;
         }
@@ -1255,7 +1278,6 @@ async function salvarNome() {
 
 
         abrirApp();
-        mostrarQuickSetup();
 
 
     } catch (e) {
@@ -1270,69 +1292,6 @@ async function salvarNome() {
             e.message
         );
     }
-}
-
-/* ==========================
-   ATIVAÇÃO OPCIONAL PÓS-CADASTRO
-========================== */
-
-function mostrarQuickSetup() {
-    const card = document.getElementById("quickSetupCard");
-    if (!card) return;
-
-    const notifAtiva = localStorage.getItem("push") === "true" ||
-        (typeof Notification !== "undefined" && Notification.permission === "granted");
-    const installBtn = document.getElementById("quickInstallBtn");
-    const notifBtn = document.getElementById("quickNotifBtn");
-    const texto = document.getElementById("quickSetupText");
-
-    if (notifBtn) notifBtn.style.display = notifAtiva ? "none" : "block";
-    if (installBtn) installBtn.style.display = (!isStandalone && deferredPrompt) ? "block" : "none";
-
-    if (texto) {
-        texto.innerText = notifAtiva
-            ? "Todo listo. Puedes instalar la app para abrir tu tarjeta más rápido."
-            : "Activa las notificaciones para no perder recompensas y promociones.";
-    }
-
-    if (!notifAtiva || (!isStandalone && deferredPrompt)) card.style.display = "block";
-}
-
-function ocultarQuickSetup() {
-    const card = document.getElementById("quickSetupCard");
-    if (card) card.style.display = "none";
-}
-
-async function ativarNotifRapida() {
-    if (!OneSignalInstance) return alert("Espera unos segundos y vuelve a intentar.");
-    try {
-        await OneSignalInstance.Notifications.requestPermission();
-        if (Notification.permission === "granted") {
-            localStorage.setItem("push", "true");
-            await OneSignalInstance.login(uid);
-            const nome = localStorage.getItem("nome") || "";
-            const telefone = localStorage.getItem("telefone") || "";
-            if (nome) await OneSignalInstance.User.addTag("user_name", nome);
-            if (telefone) await OneSignalInstance.User.addTag("telefone", telefone);
-            mostrarQuickSetup();
-        } else {
-            alert("Las notificaciones siguen desactivadas. Puedes activarlas después.");
-        }
-    } catch (e) {
-        console.error(e);
-        alert("No se pudieron activar las notificaciones ahora.");
-    }
-}
-
-async function instalarRapido() {
-    if (!deferredPrompt) {
-        if (isIOS) alert("En iPhone: toca Compartir y después “Agregar a pantalla de inicio”.");
-        return;
-    }
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice.catch(() => null);
-    deferredPrompt = null;
-    mostrarQuickSetup();
 }
 
 /* ==========================
