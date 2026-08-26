@@ -5,5 +5,11 @@
       "destination": "/onboarding.html",
       "permanent": false
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/sendpush?job=birthdays",
+      "schedule": "0 14 * * *"
+    }
   ]
 }
