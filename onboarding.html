@@ -23,7 +23,7 @@
 <div class="benefit"><span class="ico">⭐</span><span>Consulta tu saldo y movimientos cuando quieras</span></div>
 <div class="benefit"><span class="ico">🎂</span><span>Accede a regalos y beneficios especiales</span></div>
 </div>
-<button id="installBtn" class="install" disabled>PREPARANDO INSTALACIÓN…</button>
+<button id="installBtn" class="install">INSTALAR APP</button>
 <div id="iosGuide" class="ios"><b>En iPhone:</b><br>1. Toca <b>Compartir</b> ⬆️ en Safari.<br>2. Elige <b>Agregar a pantalla de inicio</b>.<br>3. Toca <b>Agregar</b> y abre Uai Sô desde el nuevo ícono.</div>
 <div id="installedMsg" class="installed">✓ App instalada. Abriendo Uai Sô…</div>
 <p class="note">Después de instalar, te pediremos tu nombre y permiso para recibir notificaciones. Así no pierdes promociones ni recompensas.</p>
@@ -51,14 +51,40 @@ window.addEventListener('beforeinstallprompt',e=>{
 
 window.addEventListener('appinstalled',()=>abrirApp());
 
+async function esperarPrompt(maxMs=3000){
+  if(deferredPrompt) return deferredPrompt;
+  const inicio=Date.now();
+  while(!deferredPrompt && Date.now()-inicio<maxMs){
+    await new Promise(r=>setTimeout(r,100));
+  }
+  return deferredPrompt;
+}
+
 btn.addEventListener('click',async()=>{
-  if(isiOS){ios.style.display='block';return}
-  if(!deferredPrompt){return}
+  if(isiOS){
+    ios.style.display='block';
+    btn.textContent='VER CÓMO INSTALAR';
+    return;
+  }
+
+  if(standalone()) return abrirApp();
+
   btn.disabled=true;
   btn.textContent='ABRIENDO INSTALACIÓN…';
-  deferredPrompt.prompt();
-  const choice=await deferredPrompt.userChoice;
+
+  const promptDisponible=await esperarPrompt(3000);
+
+  if(!promptDisponible){
+    btn.disabled=false;
+    btn.textContent='INSTALAR APP';
+    alert('No se pudo abrir la instalación automática en este navegador. Abre esta página en Google Chrome y vuelve a tocar INSTALAR APP.');
+    return;
+  }
+
+  promptDisponible.prompt();
+  const choice=await promptDisponible.userChoice;
   deferredPrompt=null;
+
   if(choice.outcome!=='accepted'){
     btn.disabled=false;
     btn.textContent='INSTALAR APP';
@@ -71,14 +97,7 @@ if(isiOS&&!standalone()){
   btn.textContent='VER CÓMO INSTALAR';
 }
 
-// No Android, nunca mostramos a instrução de abrir o menu.
-// O botão só fica ativo quando o navegador disponibiliza o prompt nativo.
-setTimeout(()=>{
-  if(!isiOS&&!standalone()&&!deferredPrompt){
-    btn.textContent='PREPARANDO INSTALACIÓN…';
-    btn.disabled=true;
-  }
-},2500);
+// O botão nunca fica preso em "preparando". O prompt nativo é usado assim que o Chrome o disponibiliza.
 </script>
 </body>
 </html>
