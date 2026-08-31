@@ -51,6 +51,8 @@ const ios=document.getElementById('iosGuide');
 const installed=document.getElementById('installedMsg');
 const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const refParam=String(new URLSearchParams(location.search).get('ref')||'').trim();
+if(/^user_\d+$/.test(refParam)) localStorage.setItem('referral_uid',refParam);
 function abrirApp(){installed.style.display='block';btn.style.display='none';setTimeout(()=>location.replace('/index.html?installed=1'),350)}
 if(standalone()) abrirApp();
 

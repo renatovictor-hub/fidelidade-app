@@ -248,39 +248,39 @@ button {
     box-shadow:0 3px 10px rgba(106,13,173,0.06);
 }
 .client-greeting-card {
-    background:#fff;
-    border:1px solid #eee;
-    border-radius:18px;
-    padding:14px 16px;
-    margin:0 0 12px 0;
-    text-align:center;
-    box-shadow:0 5px 16px rgba(0,0,0,0.05);
+    background:transparent;
+    border:0;
+    border-radius:0;
+    padding:2px 4px 8px;
+    margin:0 0 6px 0;
+    text-align:left;
+    box-shadow:none;
 }
 .client-greeting-card #greeting {
     color:var(--roxo);
-    margin:0 0 4px 0;
-    font-size:24px;
+    margin:0 0 1px 0;
+    font-size:17px;
     line-height:1.15;
-    text-align:center;
+    text-align:left;
 }
 .client-greeting-card p {
     margin:0;
-    color:#666;
-    font-size:14px;
-    text-align:center;
+    color:#777;
+    font-size:11px;
+    text-align:left;
 }
 .client-points-card {
     background:linear-gradient(135deg,#6a0dad,#9b30ff);
     color:white;
-    padding:16px 14px 16px 18px;
-    border-radius:18px;
-    margin-bottom:16px;
-    box-shadow:0 6px 16px rgba(106,13,173,0.22);
+    padding:9px 10px 9px 14px;
+    border-radius:15px;
+    margin-bottom:10px;
+    box-shadow:0 5px 13px rgba(106,13,173,0.20);
     display:flex;
     align-items:stretch;
     justify-content:space-between;
-    gap:14px;
-    min-height:112px;
+    gap:10px;
+    min-height:68px;
 }
 .client-points-info {
     min-width:0;
@@ -291,46 +291,169 @@ button {
     text-align:left;
 }
 .client-points-label {
-    font-size:13px;
+    font-size:10px;
     opacity:.9;
-    margin-bottom:7px;
+    margin-bottom:3px;
     font-weight:700;
 }
 .client-points-value {
-    font-size:34px;
+    font-size:25px;
     font-weight:800;
     line-height:1;
 }
 .client-points-caption {
-    font-size:13px;
-    margin-top:7px;
+    font-size:10px;
+    margin-top:3px;
     opacity:.92;
 }
 .client-qr-button {
-    width:132px;
-    min-width:132px;
+    width:104px;
+    min-width:104px;
     margin:0;
-    padding:10px 8px;
-    border-radius:15px;
+    padding:5px 6px;
+    border-radius:12px;
     border:none;
     background:rgba(255,255,255,.96);
     color:#6a0dad;
     font-weight:800;
-    font-size:12px;
+    font-size:10px;
     cursor:pointer;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:7px;
-    box-shadow:0 4px 12px rgba(56,0,96,.16);
+    gap:3px;
+    box-shadow:0 3px 9px rgba(56,0,96,.14);
 }
-.client-qr-button i { font-size:30px; }
+.client-qr-button i { font-size:20px; }
+
+.mini-tools-row {
+    position:relative;
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    min-height:58px;
+    margin:0 0 10px 0;
+    transition:min-height .22s ease;
+}
+.mini-tools-row.has-expanded {
+    min-height:164px;
+}
+.mini-tool-card {
+    position:relative;
+    flex:1 1 0;
+    width:calc(50% - 4px);
+    min-width:0;
+    box-sizing:border-box;
+    border-radius:14px;
+    padding:9px 11px;
+    cursor:pointer;
+    overflow:hidden;
+    transition:
+        width .22s ease,
+        left .22s ease,
+        right .22s ease,
+        padding .22s ease,
+        box-shadow .22s ease;
+}
+.vip-card-compact {
+    background:#fff;
+    border:1px solid #eadff4;
+    box-shadow:0 4px 12px rgba(106,13,173,.07);
+}
+.referral-card-compact {
+    background:linear-gradient(135deg,#f4eaff,#ead9ff);
+    border:1px solid #d8b9ff;
+    box-shadow:0 4px 12px rgba(106,13,173,.08);
+}
+.mini-tool-card.expanded {
+    position:absolute;
+    top:0;
+    width:100%;
+    z-index:20;
+    padding:13px 14px;
+    overflow:visible;
+}
+.vip-card-compact.expanded {
+    left:0;
+    right:auto;
+    box-shadow:0 8px 20px rgba(106,13,173,.16);
+}
+.referral-card-compact.expanded {
+    right:0;
+    left:auto;
+    box-shadow:0 8px 20px rgba(106,13,173,.16);
+}
+.mini-card-header {
+    min-height:38px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:7px;
+}
+.mini-card-main {
+    min-width:0;
+}
+.mini-card-kicker {
+    font-size:9px;
+    color:#7b6b86;
+    font-weight:800;
+    letter-spacing:.15px;
+}
+.mini-card-level,
+.mini-card-title {
+    font-size:14px;
+    font-weight:900;
+    color:#6a0dad;
+    margin-top:1px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.mini-card-toggle {
+    flex:none;
+    color:#6a0dad;
+    font-size:13px;
+    font-weight:900;
+    transition:transform .18s ease;
+}
+.mini-card-details {
+    display:none;
+    padding-top:3px;
+}
+.mini-tool-card.expanded .mini-card-details {
+    display:block;
+}
+.mini-tool-card.expanded .mini-card-toggle {
+    transform:rotate(180deg);
+}
+.vip-card-progress {
+    height:7px;
+    background:#eee7f4;
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:9px;
+}
+.referral-mini-button {
+    width:100%;
+    margin:10px 0 0;
+    background:#6a0dad;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:10px;
+    font-weight:800;
+    font-size:11px;
+}
+@media (max-width:420px) {
+    .mini-tool-card { padding:8px 9px; }
+    .mini-card-level,.mini-card-title { font-size:13px; }
+}
 @media (max-width:370px) {
     .action-menu { gap:6px; }
     .btn-small { padding:9px 5px; font-size:11px; }
     .client-points-card { gap:9px; padding-left:14px; }
-    .client-qr-button { width:112px; min-width:112px; font-size:11px; }
+    .client-qr-button { width:96px; min-width:96px; font-size:9px; }
 }
 
 </style>
@@ -494,6 +617,9 @@ button {
     <h2 style="color:var(--roxo)">
         ¿Cómo te llamas?
     </h2>
+    <div id="referralSignupBanner" style="display:none;background:#f3e8ff;color:#6a0dad;border:1px solid #dfc3ff;border-radius:12px;padding:10px 12px;margin:0 0 14px;font-size:13px;font-weight:700;">
+        🎁 Llegaste invitado por un amigo. Tu beneficio se activará con tu primera compra válida.
+    </div>
 
     <input
         id="nomeInput"
@@ -604,6 +730,43 @@ button {
             </button>
         </div>
 
+
+
+
+        <!-- NIVEL VIP + INVITAR -->
+        <div id="miniToolsRow" class="mini-tools-row">
+            <div id="vipCard" class="mini-tool-card vip-card-compact" style="display:none;" onclick="toggleMiniCard('vip')" role="button" tabindex="0" aria-expanded="false">
+                <div class="mini-card-header">
+                    <div class="mini-card-main">
+                        <div class="mini-card-kicker">TU NIVEL</div>
+                        <div id="vipNivel" class="mini-card-level">🥉 Bronce</div>
+                    </div>
+                    <div class="mini-card-toggle">⌄</div>
+                </div>
+                <div class="mini-card-details">
+                    <div id="vipAcumulado" style="font-size:11px;color:#7b6b86;margin-top:5px;"></div>
+                    <div class="vip-card-progress">
+                        <div id="vipBarra" style="height:100%;width:0;background:linear-gradient(90deg,#6a0dad,#9b30ff);border-radius:999px;transition:width .35s ease;"></div>
+                    </div>
+                    <div id="vipProximo" style="font-size:11px;color:#6f6278;margin-top:6px;"></div>
+                </div>
+            </div>
+
+            <div id="referralCard" class="mini-tool-card referral-card-compact" onclick="toggleMiniCard('referral')" role="button" tabindex="0" aria-expanded="false">
+                <div class="mini-card-header">
+                    <div class="mini-card-main">
+                        <div class="mini-card-kicker">BENEFICIO</div>
+                        <div class="mini-card-title">🤝 Invita a un amigo</div>
+                    </div>
+                    <div class="mini-card-toggle">⌄</div>
+                </div>
+                <div class="mini-card-details">
+                    <div id="referralText" style="font-size:12px;color:#5e4c70;margin-top:4px;">Comparte tu enlace y gana puntos cuando tu amigo haga su primera compra.</div>
+                    <div id="referralStats" style="font-size:11px;color:#7d6690;margin-top:6px;"></div>
+                    <button class="referral-mini-button" onclick="event.stopPropagation();compartirInvitacion()">📲 INVITAR AMIGO</button>
+                </div>
+            </div>
+        </div>
 
         <!-- REGALO DE CUMPLEAÑOS -->
         <div id="birthdayGiftCard" style="display:none;background:linear-gradient(135deg,#fff3cd,#ffe59a);border:1px solid #f0cf63;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(150,110,0,.10);">
@@ -924,11 +1087,14 @@ window.addEventListener("focus", () => {
 
     carregarBeneficioCumpleanos();
     carregarBonusPontos();
+    carregarIndicacoes();
 });
 
 // Especialmente útil no Safari / PWA do iPhone
 window.addEventListener("pageshow", () => {
     carregarPontos();
+    carregarIndicacoes();
+    carregarNivelVip();
 });
 
 // Enquanto o app estiver aberto,
@@ -1021,6 +1187,12 @@ window.onload = async () => {
 
     const push =
         localStorage.getItem("push");
+
+    const referralUidGuardado = localStorage.getItem("referral_uid");
+    const referralBanner = document.getElementById("referralSignupBanner");
+    if (referralBanner && /^user_\d+$/.test(String(referralUidGuardado || ""))) {
+        referralBanner.style.display = "block";
+    }
 
     // Somente em Preview da Vercel: permite testar a interface sem instalar a PWA.
     // Não altera o fluxo obrigatório do domínio de produção.
@@ -1333,6 +1505,7 @@ async function salvarNome() {
                 "Tus puntos y datos fueron recuperados."
             );
 
+            localStorage.removeItem("referral_uid");
             abrirApp();
 
             return;
@@ -1386,6 +1559,11 @@ async function salvarNome() {
                     nascimento: nascimento,
                     user_id: uid,
                     pontos: 0,
+                    referido_por: (() => {
+                        const ref = String(localStorage.getItem("referral_uid") || "").trim();
+                        return /^user_\d+$/.test(ref) && ref !== uid ? ref : null;
+                    })(),
+                    referido_recompensado: false,
                     created_at:
                         new Date().toISOString(),
                     updated_at:
@@ -1395,6 +1573,7 @@ async function salvarNome() {
         );
 
 
+        localStorage.removeItem("referral_uid");
         abrirApp();
 
 
@@ -1460,6 +1639,166 @@ function abrirApp() {
     carregarPontos();
 }
 
+
+/* ==========================
+   NIVELES VIP
+========================== */
+
+function toggleMiniCard(tipo) {
+    const row = document.getElementById("miniToolsRow");
+    const vip = document.getElementById("vipCard");
+    const referral = document.getElementById("referralCard");
+    const alvo = tipo === "vip" ? vip : referral;
+    const outro = tipo === "vip" ? referral : vip;
+    if (!row || !alvo) return;
+
+    const vaiAbrir = !alvo.classList.contains("expanded");
+
+    [vip, referral].forEach(card => {
+        if (!card) return;
+        card.classList.remove("expanded");
+        card.setAttribute("aria-expanded", "false");
+    });
+
+    if (vaiAbrir) {
+        alvo.classList.add("expanded");
+        alvo.setAttribute("aria-expanded", "true");
+        if (outro) outro.style.visibility = "hidden";
+        row.classList.add("has-expanded");
+    } else {
+        row.classList.remove("has-expanded");
+    }
+
+    if (!vaiAbrir && outro) outro.style.visibility = "";
+    if (vaiAbrir) {
+        setTimeout(() => {
+            if (outro) outro.style.visibility = "";
+        }, 220);
+    }
+}
+
+async function carregarNivelVip() {
+    const card=document.getElementById("vipCard");
+    if(!card || !uid) return;
+    try {
+        const [uRes,cRes]=await Promise.all([
+            fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:"no-store"}),
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/niveles_vip.json?t=${Date.now()}`,{cache:"no-store"})
+        ]);
+        const u=await uRes.json();
+        const cfg=await cRes.json()||{};
+        if(cfg.ativo===false){card.style.display="none";return;}
+
+        const total=Math.max(0,Number(u.pontos_acumulados||u.pontos||0));
+        const prata=Math.max(1,Number(cfg.prata||300));
+        const ouro=Math.max(prata+1,Number(cfg.ouro||800));
+        const diamante=Math.max(ouro+1,Number(cfg.diamante||1500));
+        const niveis=[
+            {nome:"🥉 Bronce",min:0,next:prata},
+            {nome:"🥈 Plata",min:prata,next:ouro},
+            {nome:"🥇 Oro",min:ouro,next:diamante},
+            {nome:"💎 Diamante",min:diamante,next:null}
+        ];
+        const atual=[...niveis].reverse().find(n=>total>=n.min)||niveis[0];
+        document.getElementById("vipNivel").innerText=atual.nome;
+        document.getElementById("vipAcumulado").innerText=`${total} puntos acumulados`;
+
+        if(atual.next===null){
+            document.getElementById("vipBarra").style.width="100%";
+            document.getElementById("vipProximo").innerText="⭐ Alcanzaste el nivel máximo.";
+        }else{
+            const faixa=Math.max(1,atual.next-atual.min);
+            const pct=Math.max(0,Math.min(100,((total-atual.min)/faixa)*100));
+            const faltam=Math.max(0,atual.next-total);
+            const proximo=niveis.find(n=>n.min===atual.next);
+            document.getElementById("vipBarra").style.width=pct+"%";
+            document.getElementById("vipProximo").innerText=`Te faltan ${faltam} puntos para ${proximo?.nome||"el próximo nivel"}.`;
+        }
+        card.style.display="block";
+    } catch(e) {
+        console.error("Error nivel VIP:",e);
+        card.style.display="none";
+    }
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (e.target?.id === "vipCard") {
+        e.preventDefault();
+        toggleMiniCard("vip");
+    }
+    if (e.target?.id === "referralCard") {
+        e.preventDefault();
+        toggleMiniCard("referral");
+    }
+});
+
+/* ==========================
+   INDICAÇÕES / INVITA A UN AMIGO
+========================== */
+
+let referralConfigCache = null;
+
+async function carregarIndicacoes() {
+    try {
+        const [clienteRes, cfgRes] = await Promise.all([
+            fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`, { cache:"no-store" }),
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/referidos.json?t=${Date.now()}`, { cache:"no-store" })
+        ]);
+
+        const cliente = await clienteRes.json();
+        const cfg = await cfgRes.json();
+        referralConfigCache = cfg || {};
+
+        const ativo = cfg && cfg.ativo !== false;
+        const card = document.getElementById("referralCard");
+        if (card) card.style.display = ativo ? "block" : "none";
+        const vip = document.getElementById("vipCard");
+        if (vip && !ativo) vip.style.width = "50%";
+        if (!ativo) return;
+
+        const amigo = Math.max(0, Number(cfg.pontos_amigo || 10));
+        const indica = Math.max(0, Number(cfg.pontos_indicador || 20));
+        const minima = Math.max(0, Number(cfg.compra_minima || 100));
+        const total = Number(cliente.referidos_recompensados || 0);
+
+        const texto = document.getElementById("referralText");
+        if (texto) {
+            texto.innerText =
+                `Tu amigo gana ${amigo} puntos y tú ganas ${indica} puntos cuando haga una compra de $ ${minima} MXN o más.`;
+        }
+
+        const stats = document.getElementById("referralStats");
+        if (stats) {
+            stats.innerText = total > 0
+                ? `🏆 ${total} amigo${total === 1 ? "" : "s"} ya te generaron recompensa.`
+                : "Comparte tu enlace personal.";
+        }
+    } catch (e) {
+        console.error("Error indicaciones:", e);
+    }
+}
+
+async function compartirInvitacion() {
+    const cfg = referralConfigCache || {};
+    const indica = Math.max(0, Number(cfg.pontos_indicador || 20));
+    const link = `https://fidelidad-uai-so.vercel.app/?ref=${encodeURIComponent(uid)}`;
+    const texto = `¡Únete a Uai Sô Fidelidad! Instala la app con mi invitación y recibe beneficios. Yo gano ${indica} puntos cuando hagas tu primera compra válida. ${link}`;
+
+    try {
+        if (navigator.share) {
+            await navigator.share({
+                title: "Uai Sô Fidelidad",
+                text: "¡Te invito a Uai Sô Fidelidad!",
+                url: link
+            });
+            return;
+        }
+    } catch (_) {}
+
+    const wa = "https://wa.me/?text=" + encodeURIComponent(texto);
+    window.open(wa, "_blank", "noopener");
+}
 
 /* ==========================
    BENEFÍCIO DE CUMPLEAÑOS

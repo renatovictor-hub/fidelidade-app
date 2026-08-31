@@ -118,6 +118,20 @@
                     doc.body.appendChild(script);
                 }
 
+                if (!doc.getElementById('referidosAdminScript')) {
+                    const script = doc.createElement('script');
+                    script.id = 'referidosAdminScript';
+                    script.src = '/referidos-admin.js?v=20260831-1';
+                    doc.body.appendChild(script);
+                }
+
+                if (!doc.getElementById('nivelesVipAdminScript')) {
+                    const script = doc.createElement('script');
+                    script.id = 'nivelesVipAdminScript';
+                    script.src = '/niveles-vip-admin.js?v=20260831-1';
+                    doc.body.appendChild(script);
+                }
+
                 ['pointerdown','keydown','touchstart'].forEach(eventName => {
                     doc.addEventListener(eventName, reiniciarInatividade, { passive:true });
                 });
