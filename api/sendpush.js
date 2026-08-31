@@ -11,8 +11,64 @@ function telefoneValido(v) { const t = String(v || "").replace(/\D/g, ""); retur
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (!["GET","POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
-  if (!requireAdmin(req, res)) return;
   const db = admin.database();
+
+  // Job diário idempotente de aniversários. Pode ser chamado pelo Cron da Vercel.
+  if (req.method === "GET" && String(req.query?.job || "") === "birthdays") {
+    try {
+      const [cfgSnap, usersSnap] = await Promise.all([
+        db.ref("config/cumpleanos").once("value"),
+        db.ref("users").once("value")
+      ]);
+      const cfg = cfgSnap.val() || {};
+      if (cfg.ativo === false) return res.status(200).json({ success:true, skipped:"inactive" });
+
+      const diasAntes = Math.max(0, Number(cfg.dias_antes ?? 3));
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const alvo = new Date(hoje.getTime() + diasAntes * 86400000);
+      const alvoMes = alvo.getMonth() + 1;
+      const alvoDia = alvo.getDate();
+      let enviados = 0;
+
+      for (const [uid,u] of Object.entries(usersSnap.val() || {})) {
+        const nascimento = String(u?.nascimento || "");
+        const partes = nascimento.split("-");
+        if (partes.length !== 3) continue;
+        if (Number(partes[1]) !== alvoMes || Number(partes[2]) !== alvoDia) continue;
+
+        const telefone = telefoneValido(u?.telefone);
+        if (!telefone) continue;
+
+        const markerRef = db.ref(`users/${uid}/cumpleanos_push/${ano}`);
+        const marker = await markerRef.once("value");
+        if (marker.exists()) continue;
+
+        const titulo = diasAntes > 0 ? "🎂 ¡Tu cumpleaños se acerca!" : "🎂 ¡Feliz cumpleaños!";
+        const mensagem = diasAntes > 0
+          ? `Tu regalo de cumpleaños estará disponible muy pronto: ${cfg.regalo || "beneficio especial"}.`
+          : `¡Hoy es tu día! Ya tienes disponible: ${cfg.regalo || "un regalo especial"}.`;
+
+        const r = await enviarNotificacao({
+          telefone,
+          titulo,
+          mensagem,
+          url: "https://fidelidad-uai-so.vercel.app/"
+        });
+
+        if (!r?.error && !r?.skipped) {
+          await markerRef.set(new Date().toISOString());
+          enviados++;
+        }
+      }
+
+      return res.status(200).json({ success:true, enviados, fecha_objetivo: alvo.toISOString().slice(0,10) });
+    } catch (error) {
+      return res.status(500).json({ error:"Error job cumpleaños", details:error.message });
+    }
+  }
+
+  if (!requireAdmin(req, res)) return;
 
   if (req.method === "GET") {
     try {

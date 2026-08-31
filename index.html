@@ -524,6 +524,26 @@ button {
         "
     >
 
+    <label for="nascimentoInput" style="display:block;text-align:left;margin:14px 0 6px;font-size:13px;font-weight:700;color:#6a0dad;">
+        🎂 Fecha de nacimiento
+    </label>
+    <input
+        id="nascimentoInput"
+        type="date"
+        style="
+            width:100%;
+            padding:15px;
+            border-radius:12px;
+            border:1px solid #ddd;
+            box-sizing:border-box;
+            font-size:16px;
+            background:white;
+        "
+    >
+    <div style="font-size:11px;color:#999;text-align:left;margin-top:6px;">
+        La usamos solamente para tu beneficio de cumpleaños.
+    </div>
+
     <button
         onclick="salvarNome()"
         class="btn-next"
@@ -582,6 +602,20 @@ button {
                 <i class="fas fa-qrcode"></i>
                 <span>MOSTRAR MI QR</span>
             </button>
+        </div>
+
+
+        <!-- REGALO DE CUMPLEAÑOS -->
+        <div id="birthdayGiftCard" style="display:none;background:linear-gradient(135deg,#fff3cd,#ffe59a);border:1px solid #f0cf63;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(150,110,0,.10);">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+                <div style="font-size:34px;">🎂</div>
+                <div style="flex:1;">
+                    <div style="font-size:17px;font-weight:800;color:#6a0dad;">¡Tienes un regalo de cumpleaños!</div>
+                    <div id="birthdayGiftName" style="font-size:14px;color:#5d4d10;margin-top:4px;"></div>
+                    <div id="birthdayGiftValidity" style="font-size:12px;color:#7a6a31;margin-top:5px;"></div>
+                    <div style="font-size:11px;color:#8a7b45;margin-top:7px;">Muéstralo al personal para canjearlo.</div>
+                </div>
+            </div>
         </div>
 
         <!-- BANNER -->
@@ -875,6 +909,8 @@ document.addEventListener("visibilitychange", () => {
 // Quando o app recupera o foco
 window.addEventListener("focus", () => {
     carregarPontos();
+
+    carregarBeneficioCumpleanos();
 });
 
 // Especialmente útil no Safari / PWA do iPhone
@@ -1137,6 +1173,9 @@ async function salvarNome() {
     const telefone =
         document.getElementById("telefoneInput")?.value.trim();
 
+    const nascimento =
+        document.getElementById("nascimentoInput")?.value || "";
+
     if (!nome) {
         return alert("Escribe tu nombre");
     }
@@ -1152,6 +1191,15 @@ async function salvarNome() {
         return alert(
             "Ingresa un teléfono válido de 10 dígitos."
         );
+    }
+
+    if (!nascimento) {
+        return alert("Selecciona tu fecha de nacimiento.");
+    }
+
+    const nascimentoData = new Date(nascimento + "T12:00:00");
+    if (Number.isNaN(nascimentoData.getTime()) || nascimentoData > new Date()) {
+        return alert("Ingresa una fecha de nacimiento válida.");
     }
 
     try {
@@ -1196,6 +1244,20 @@ async function salvarNome() {
                 telefoneLimpo
             );
 
+            localStorage.setItem("nascimento", nascimento);
+
+            await fetch(
+                `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nascimento: nascimento,
+                        updated_at: new Date().toISOString()
+                    })
+                }
+            );
+
 
             if (OneSignalInstance) {
 
@@ -1235,6 +1297,8 @@ async function salvarNome() {
             telefoneLimpo
         );
 
+        localStorage.setItem("nascimento", nascimento);
+
 
         if (OneSignalInstance) {
 
@@ -1266,6 +1330,7 @@ async function salvarNome() {
                 body: JSON.stringify({
                     nome: nome,
                     telefone: telefoneLimpo,
+                    nascimento: nascimento,
                     user_id: uid,
                     pontos: 0,
                     created_at:
@@ -1342,6 +1407,65 @@ function abrirApp() {
     carregarPontos();
 }
 
+
+/* ==========================
+   BENEFÍCIO DE CUMPLEAÑOS
+========================== */
+
+function dataCumpleDoAno(nascimento, ano) {
+    const partes = String(nascimento || "").split("-");
+    if (partes.length !== 3) return null;
+    const mes = Number(partes[1]);
+    const dia = Number(partes[2]);
+    if (!mes || !dia) return null;
+    return new Date(ano, mes - 1, dia, 12, 0, 0);
+}
+
+async function carregarBeneficioCumpleanos() {
+    const card = document.getElementById("birthdayGiftCard");
+    if (!card) return;
+
+    try {
+        const [userRes, cfgRes] = await Promise.all([
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json?t=${Date.now()}`, { cache:"no-store" }),
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/cumpleanos.json?t=${Date.now()}`, { cache:"no-store" })
+        ]);
+
+        const user = await userRes.json();
+        const cfg = await cfgRes.json();
+
+        if (!user || !cfg || cfg.ativo === false || !user.nascimento) {
+            card.style.display = "none";
+            return;
+        }
+
+        const agora = new Date();
+        const ano = agora.getFullYear();
+        let cumple = dataCumpleDoAno(user.nascimento, ano);
+        if (!cumple) return;
+
+        const antes = Math.max(0, Number(cfg.dias_antes ?? 3));
+        const depois = Math.max(0, Number(cfg.dias_depois ?? 7));
+        const inicio = new Date(cumple.getTime() - antes * 86400000);
+        const fim = new Date(cumple.getTime() + depois * 86400000);
+
+        const canjes = user.cumpleanos_canjes || {};
+        const jaCanjeado = canjes[String(ano)] === true;
+
+        if (agora >= inicio && agora <= fim && !jaCanjeado) {
+            document.getElementById("birthdayGiftName").innerText =
+                cfg.regalo || "Regalo especial de cumpleaños";
+            document.getElementById("birthdayGiftValidity").innerText =
+                `Disponible hasta ${fim.toLocaleDateString("es-MX")}`;
+            card.style.display = "block";
+        } else {
+            card.style.display = "none";
+        }
+    } catch (e) {
+        console.error("Error cumpleaños:", e);
+        card.style.display = "none";
+    }
+}
 
 /* ==========================
    PROMOÇÕES

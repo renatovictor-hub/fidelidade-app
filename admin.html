@@ -104,6 +104,13 @@
                     doc.body.appendChild(script);
                 }
 
+                if (!doc.getElementById('cumpleanosAdminScript')) {
+                    const script = doc.createElement('script');
+                    script.id = 'cumpleanosAdminScript';
+                    script.src = '/cumpleanos-admin.js?v=20260826-1';
+                    doc.body.appendChild(script);
+                }
+
                 ['pointerdown','keydown','touchstart'].forEach(eventName => {
                     doc.addEventListener(eventName, reiniciarInatividade, { passive:true });
                 });
