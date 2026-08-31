@@ -1777,12 +1777,12 @@ function abrirFeedbackManual() {
 
 async function verificarPedidoFeedback() {
     try {
-        const [uRes,cRes] = await Promise.all([
-            fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`, { cache:"no-store" }),
-            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/reviews.json?t=${Date.now()}`, { cache:"no-store" })
-        ]);
+        const uRes = await fetch(
+            `/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,
+            { cache:"no-store" }
+        );
         const u = await uRes.json();
-        const cfg = await cRes.json() || {};
+        const cfg = u?.reviews || {};
         feedbackConfig = cfg;
         googleReviewUrl = String(cfg.google_url || "").trim();
 
@@ -1791,7 +1791,6 @@ async function verificarPedidoFeedback() {
 
         if (opinionCard) opinionCard.style.display = "none";
 
-        // Google Review: independente de compra e só até o primeiro clique.
         const googleDisponivel =
             uRes.ok &&
             !!googleReviewUrl &&
@@ -1799,7 +1798,6 @@ async function verificarPedidoFeedback() {
 
         if (googleWrap) googleWrap.style.display = googleDisponivel ? "block" : "none";
 
-        // Opinião privada: somente quando existe uma nova compra registrada.
         if (!uRes.ok || cfg.ativo === false || !u.ultima_compra) return;
 
         const compraRef = String(u.ultima_compra);
@@ -1815,9 +1813,6 @@ async function verificarPedidoFeedback() {
         if (idadeDias < 0 || idadeDias > maxDias) return;
 
         if (opinionCard) opinionCard.style.display = "block";
-
-        // Se o app já está aberto e acabou de receber pontos/compra,
-        // mostramos o card, mas não forçamos popup repetidamente.
     } catch (e) {
         console.error("Error feedback:", e);
     }
