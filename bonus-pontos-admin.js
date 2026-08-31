@@ -1,5 +1,4 @@
 (() => {
-  const FB = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
   if (document.getElementById("bonusPontosAdminCard")) return;
 
   const aside = document.querySelector("aside");
@@ -58,8 +57,10 @@
 
   async function carregar(){
     try {
-      const r=await fetch(`${FB}/config/bonus_pontos.json?t=${Date.now()}`,{cache:"no-store"});
-      const c=await r.json()||{};
+      const r=await fetch(`/api/sendpush?config=bonus_pontos&t=${Date.now()}`,{cache:"no-store"});
+      const data=await r.json();
+      if(!r.ok) throw new Error(data.error||"Error al cargar");
+      const c=data.config||{};
       $("bonusMultiplicador").value=String(c.multiplicador||2);
       $("bonusInicio").value=c.inicio||"14:00";
       $("bonusFim").value=c.fim||"17:00";
@@ -83,14 +84,15 @@
       dias:diasAtivos,
       updated_at:new Date().toISOString()
     };
-    const r=await fetch(`${FB}/config/bonus_pontos.json`,{
-      method:"PUT",
+    const r=await fetch("/api/sendpush",{
+      method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(cfg)
+      body:JSON.stringify({action:"save_config",config:"bonus_pontos",value:cfg})
     });
+    const data=await r.json().catch(()=>({}));
     $("bonusEstado").textContent=r.ok
       ? (cfg.ativo?"✅ Bonus activo y guardado":"✅ Configuración guardada; bonus desactivado")
-      : "❌ Error al guardar.";
+      : "❌ "+(data.error||"Error al guardar.");
   };
 
   // Atualiza o preview de pontos do dashboard de acordo com a regra salva.
@@ -98,8 +100,9 @@
   async function getCfg(){
     if(cfgAtual) return cfgAtual;
     try{
-      const r=await fetch(`${FB}/config/bonus_pontos.json?t=${Date.now()}`,{cache:"no-store"});
-      cfgAtual=await r.json()||{};
+      const r=await fetch(`/api/sendpush?config=bonus_pontos&t=${Date.now()}`,{cache:"no-store"});
+      const data=await r.json();
+      cfgAtual=data.config||{};
     }catch(_){cfgAtual={};}
     return cfgAtual;
   }
