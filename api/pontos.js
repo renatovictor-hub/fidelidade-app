@@ -61,7 +61,9 @@ export default async function handler(req, res) {
         const transacaoRef = db.ref("transacoes").push();
         const updates = {};
 
+        const acumuladosAtuais = Number(cliente.pontos_acumulados ?? cliente.pontos ?? 0);
         updates[`users/${uidLimpo}/pontos`] = saldoCompra;
+        updates[`users/${uidLimpo}/pontos_acumulados`] = acumuladosAtuais + pontosGanhos;
         updates[`users/${uidLimpo}/ultima_compra`] = agora;
         updates[`transacoes/${transacaoRef.key}`] = {
             user_id: uidLimpo, nome: cliente.nome || cliente.nombre || "", telefone: cliente.telefone || "",
@@ -94,9 +96,11 @@ export default async function handler(req, res) {
                     saldoFinalCliente = saldoCompra + pontosAmigo;
 
                     updates[`users/${uidLimpo}/pontos`] = saldoFinalCliente;
+                    updates[`users/${uidLimpo}/pontos_acumulados`] = acumuladosAtuais + pontosGanhos + pontosAmigo;
                     updates[`users/${uidLimpo}/referido_recompensado`] = true;
                     updates[`users/${uidLimpo}/referido_recompensado_em`] = agora;
                     updates[`users/${refUid}/pontos`] = novoSaldoIndicador;
+                    updates[`users/${refUid}/pontos_acumulados`] = Number(indicadorCliente.pontos_acumulados ?? indicadorCliente.pontos ?? 0) + pontosIndicador;
                     updates[`users/${refUid}/referidos_recompensados`] = Number(indicadorCliente.referidos_recompensados || 0) + 1;
                     updates[`users/${refUid}/pontos_indicacao_total`] = Number(indicadorCliente.pontos_indicacao_total || 0) + pontosIndicador;
 
