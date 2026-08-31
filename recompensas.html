@@ -13,7 +13,7 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <button class="back" onclick="location.href='/'" aria-label="Volver"><i class="fas fa-arrow-left"></i></button>
+    <button class="back" onclick="volverAlApp()" aria-label="Volver"><i class="fas fa-arrow-left"></i></button>
     <img src="logo.png" class="logo" alt="Uai Sô">
     <div style="width:42px"></div>
   </div>
@@ -25,6 +25,14 @@
 </div>
 <script>
 const uid=localStorage.getItem('uid')||'';
+function volverAlApp(){
+  sessionStorage.setItem('uaiso_internal_return','1');
+  if(history.length>1){
+    history.back();
+  }else{
+    location.replace('/');
+  }
+}
 let saldoActual=0;
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 async function cargarSaldo(){if(!uid)return;const r=await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'});const d=await r.json();if(r.ok){saldoActual=Number(d.pontos||0);document.getElementById('saldo').textContent=saldoActual;}}
