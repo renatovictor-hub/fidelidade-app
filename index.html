@@ -1014,13 +1014,38 @@ function gerarQrCliente() {
    INICIALIZAÇÃO
 ========================== */
 
-window.onload = () => {
+window.onload = async () => {
 
-    const nome =
+    let nome =
         localStorage.getItem("nome");
 
     const push =
         localStorage.getItem("push");
+
+    // Somente em Preview da Vercel: permite testar a interface sem instalar a PWA.
+    // Não altera o fluxo obrigatório do domínio de produção.
+    const params = new URLSearchParams(location.search);
+    const previewMode =
+        location.hostname.includes("renatovictor-1384s-projects.vercel.app") &&
+        params.get("preview") === "1";
+
+    if (previewMode) {
+        const previewUid = String(params.get("uid") || "").trim();
+
+        if (/^user_\d+$/.test(previewUid)) {
+            uid = previewUid;
+            try {
+                const r = await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`, { cache:"no-store" });
+                const cliente = await r.json();
+                if (r.ok && cliente && !cliente.error) {
+                    nome = cliente.nome || cliente.nombre || "Cliente de prueba";
+                }
+            } catch (_) {}
+        }
+
+        if (!nome) nome = "Cliente de prueba";
+        return abrirAppPreview(nome);
+    }
 
 
     document.body.addEventListener(
@@ -1104,6 +1129,21 @@ window.onload = () => {
     }
 };
 
+
+async function abrirAppPreview(nomePreview) {
+    document.querySelectorAll(".step-box").forEach(e => e.classList.remove("active"));
+    const main = document.getElementById("mainApp");
+    if (main) main.style.display = "block";
+
+    const greeting = document.getElementById("greeting");
+    if (greeting) greeting.innerText = `Hola, ${nomePreview}`;
+
+    await carregarPontos();
+    carregarBeneficioCumpleanos();
+    carregarBonusPontos();
+    carregarPromocoes();
+    carregarContadorUsers();
+}
 
 /* ==========================
    FUNÇÕES DE INTERAÇÃO
