@@ -609,6 +609,22 @@ button {
 
 
 
+
+        <!-- NIVEL VIP -->
+        <div id="vipCard" style="display:none;background:white;border:1px solid #eadff4;border-radius:18px;padding:15px 16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(106,13,173,.08);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div>
+                    <div style="font-size:12px;color:#7b6b86;font-weight:700;">TU NIVEL</div>
+                    <div id="vipNivel" style="font-size:20px;font-weight:900;color:#6a0dad;margin-top:2px;">🥉 Bronce</div>
+                </div>
+                <div id="vipAcumulado" style="font-size:12px;color:#7b6b86;text-align:right;"></div>
+            </div>
+            <div style="height:9px;background:#eee7f4;border-radius:999px;overflow:hidden;margin-top:12px;">
+                <div id="vipBarra" style="height:100%;width:0;background:linear-gradient(90deg,#6a0dad,#9b30ff);border-radius:999px;transition:width .35s ease;"></div>
+            </div>
+            <div id="vipProximo" style="font-size:12px;color:#6f6278;margin-top:7px;"></div>
+        </div>
+
         <!-- INVITA A UN AMIGO -->
         <div id="referralCard" style="background:linear-gradient(135deg,#f4eaff,#ead9ff);border:1px solid #d8b9ff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(106,13,173,.10);">
             <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -950,6 +966,7 @@ window.addEventListener("focus", () => {
 window.addEventListener("pageshow", () => {
     carregarPontos();
     carregarIndicacoes();
+    carregarNivelVip();
 });
 
 // Enquanto o app estiver aberto,
@@ -1494,6 +1511,54 @@ function abrirApp() {
     carregarPontos();
 }
 
+
+/* ==========================
+   NIVELES VIP
+========================== */
+
+async function carregarNivelVip() {
+    const card=document.getElementById("vipCard");
+    if(!card || !uid) return;
+    try {
+        const [uRes,cRes]=await Promise.all([
+            fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:"no-store"}),
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/niveles_vip.json?t=${Date.now()}`,{cache:"no-store"})
+        ]);
+        const u=await uRes.json();
+        const cfg=await cRes.json()||{};
+        if(cfg.ativo===false){card.style.display="none";return;}
+
+        const total=Math.max(0,Number(u.pontos_acumulados||u.pontos||0));
+        const prata=Math.max(1,Number(cfg.prata||300));
+        const ouro=Math.max(prata+1,Number(cfg.ouro||800));
+        const diamante=Math.max(ouro+1,Number(cfg.diamante||1500));
+        const niveis=[
+            {nome:"🥉 Bronce",min:0,next:prata},
+            {nome:"🥈 Plata",min:prata,next:ouro},
+            {nome:"🥇 Oro",min:ouro,next:diamante},
+            {nome:"💎 Diamante",min:diamante,next:null}
+        ];
+        const atual=[...niveis].reverse().find(n=>total>=n.min)||niveis[0];
+        document.getElementById("vipNivel").innerText=atual.nome;
+        document.getElementById("vipAcumulado").innerText=`${total} puntos acumulados`;
+
+        if(atual.next===null){
+            document.getElementById("vipBarra").style.width="100%";
+            document.getElementById("vipProximo").innerText="⭐ Alcanzaste el nivel máximo.";
+        }else{
+            const faixa=Math.max(1,atual.next-atual.min);
+            const pct=Math.max(0,Math.min(100,((total-atual.min)/faixa)*100));
+            const faltam=Math.max(0,atual.next-total);
+            const proximo=niveis.find(n=>n.min===atual.next);
+            document.getElementById("vipBarra").style.width=pct+"%";
+            document.getElementById("vipProximo").innerText=`Te faltan ${faltam} puntos para ${proximo?.nome||"el próximo nivel"}.`;
+        }
+        card.style.display="block";
+    } catch(e) {
+        console.error("Error nivel VIP:",e);
+        card.style.display="none";
+    }
+}
 
 /* ==========================
    INDICAÇÕES / INVITA A UN AMIGO
