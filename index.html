@@ -768,6 +768,20 @@ button {
             </div>
         </div>
 
+        <!-- TU OPINIÓN -->
+        <div id="opinionCard" style="display:none;background:#fff;border:1px solid #eadff4;border-radius:14px;padding:10px 12px;margin:0 0 10px;box-shadow:0 4px 12px rgba(106,13,173,.06);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div style="min-width:0;">
+                    <div style="font-size:10px;color:#7b6b86;font-weight:800;">TU OPINIÓN</div>
+                    <div id="opinionCardTitle" style="font-size:14px;font-weight:900;color:#6a0dad;margin-top:1px;">⭐ ¿Cómo estuvo tu experiencia?</div>
+                    <div id="opinionCardText" style="font-size:11px;color:#777;margin-top:3px;">Cuéntanos qué te pareció Uai Sô.</div>
+                </div>
+                <button type="button" onclick="abrirFeedbackManual()" style="flex:none;border:0;border-radius:10px;padding:9px 11px;background:#6a0dad;color:white;font-size:10px;font-weight:800;cursor:pointer;">
+                    OPINAR
+                </button>
+            </div>
+        </div>
+
         <!-- REGALO DE CUMPLEAÑOS -->
         <div id="birthdayGiftCard" style="display:none;background:linear-gradient(135deg,#fff3cd,#ffe59a);border:1px solid #f0cf63;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(150,110,0,.10);">
             <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -1677,6 +1691,19 @@ function fecharFeedback() {
     if (modal) modal.style.display = "none";
 }
 
+function abrirFeedbackManual() {
+    feedbackEstrelas = 0;
+    document.querySelectorAll("#feedbackStars [data-star]").forEach(btn => {
+        btn.style.color = "#ccc";
+    });
+
+    const comentario = document.getElementById("feedbackComentario");
+    if (comentario) comentario.value = "";
+
+    const modal = document.getElementById("feedbackModal");
+    if (modal) modal.style.display = "flex";
+}
+
 async function verificarPedidoFeedback() {
     try {
         const [uRes,cRes] = await Promise.all([
@@ -1687,8 +1714,39 @@ async function verificarPedidoFeedback() {
         const cfg = await cRes.json() || {};
         feedbackConfig = cfg;
 
-        if (!uRes.ok || cfg.ativo === false || !u.ultima_compra) return;
-        if (u.feedback_last_purchase && String(u.feedback_last_purchase) === String(u.ultima_compra)) return;
+        const card = document.getElementById("opinionCard");
+        const title = document.getElementById("opinionCardTitle");
+        const text = document.getElementById("opinionCardText");
+
+        if (!uRes.ok || cfg.ativo === false) {
+            if (card) card.style.display = "none";
+            return;
+        }
+
+        if (card) card.style.display = "block";
+
+        const googleBtn = document.getElementById("googleReviewBtn");
+        if (googleBtn && cfg.google_url) {
+            googleBtn.href = cfg.google_url;
+            googleBtn.style.display = "block";
+        }
+
+        // Mesmo sem compra recente, o cliente sempre vê "Tu opinión" no app
+        // e pode abrir o formulário manualmente.
+        if (!u.ultima_compra) {
+            feedbackCompraRef = "";
+            if (title) title.innerText = "⭐ ¿Cómo estuvo tu experiencia?";
+            if (text) text.innerText = "Cuéntanos qué te pareció Uai Sô.";
+            return;
+        }
+
+        feedbackCompraRef = String(u.ultima_compra);
+
+        if (u.feedback_last_purchase && String(u.feedback_last_purchase) === String(u.ultima_compra)) {
+            if (title) title.innerText = "✅ Gracias por tu opinión";
+            if (text) text.innerText = "Ya registramos tu opinión de tu compra más reciente.";
+            return;
+        }
 
         const compraTs = new Date(u.ultima_compra).getTime();
         if (!Number.isFinite(compraTs)) return;
@@ -1696,12 +1754,8 @@ async function verificarPedidoFeedback() {
         const idadeDias = (Date.now() - compraTs) / 86400000;
         if (idadeDias < 0 || idadeDias > maxDias) return;
 
-        feedbackCompraRef = String(u.ultima_compra);
-        const googleBtn = document.getElementById("googleReviewBtn");
-        if (googleBtn && cfg.google_url) {
-            googleBtn.href = cfg.google_url;
-            googleBtn.style.display = "block";
-        }
+        if (title) title.innerText = "⭐ Califica tu compra reciente";
+        if (text) text.innerText = "Tu opinión nos ayuda a mejorar.";
 
         setTimeout(() => {
             const modal = document.getElementById("feedbackModal");
