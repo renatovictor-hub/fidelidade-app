@@ -86,6 +86,8 @@ export default async function handler(req, res) {
         }
 
         const cliente = snapshot.val();
+        const reviewsSnap = await admin.database().ref("config/reviews").once("value");
+        const reviewsCfg = reviewsSnap.val() || {};
 
         return res.status(200).json({
             uid,
@@ -97,7 +99,12 @@ export default async function handler(req, res) {
             pontos_indicacao_total: Number(cliente.pontos_indicacao_total || 0),
             ultima_compra: cliente.ultima_compra || "",
             feedback_last_purchase: cliente.feedback_last_purchase || "",
-            google_review_clicked: cliente.google_review_clicked === true
+            google_review_clicked: cliente.google_review_clicked === true,
+            reviews: {
+                ativo: reviewsCfg.ativo !== false,
+                google_url: String(reviewsCfg.google_url || ""),
+                dias_apos_compra: Math.max(1, Number(reviewsCfg.dias_apos_compra || 3))
+            }
         });
     } catch (error) {
         console.error("Erro API cliente:", error);
