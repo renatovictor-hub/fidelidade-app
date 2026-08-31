@@ -704,7 +704,7 @@ button {
             <a href="#" class="btn-small">
                 <i class="fas fa-utensils"></i> Nuestro Menú
             </a>
-            <a href="/recompensas.html" class="btn-small">
+            <a href="/recompensas.html" class="btn-small" onclick="sessionStorage.setItem('uaiso_internal_return','1')">
                 <i class="fas fa-gift"></i> Recompensas
             </a>
         </div>
@@ -1307,6 +1307,12 @@ window.onload = async () => {
     );
 
 
+    const retornoInterno = sessionStorage.getItem("uaiso_internal_return") === "1";
+    if (retornoInterno) {
+        sessionStorage.removeItem("uaiso_internal_return");
+        if (nome) return abrirApp();
+    }
+
     if (nome) {
         return abrirApp();
     }
@@ -1780,7 +1786,6 @@ async function verificarPedidoFeedback() {
         // Google Review: independente de compra e só até o primeiro clique.
         const googleDisponivel =
             uRes.ok &&
-            cfg.ativo !== false &&
             !!googleReviewUrl &&
             u.google_review_clicked !== true;
 
