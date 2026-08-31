@@ -1377,6 +1377,9 @@ async function abrirAppPreview(nomePreview) {
     await carregarPontos();
     carregarBeneficioCumpleanos();
     carregarBonusPontos();
+    carregarIndicacoes();
+    carregarNivelVip();
+    verificarPedidoFeedback();
     carregarPromocoes();
     carregarContadorUsers();
 }
@@ -1701,6 +1704,11 @@ function abrirApp() {
     atualizarContador();
 
     carregarPontos();
+    carregarBeneficioCumpleanos();
+    carregarBonusPontos();
+    carregarIndicacoes();
+    carregarNivelVip();
+    verificarPedidoFeedback();
 }
 
 
