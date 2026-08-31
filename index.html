@@ -768,6 +768,13 @@ button {
             </div>
         </div>
 
+        <!-- GOOGLE REVIEW: independente de compra, aparece uma única vez por cliente -->
+        <div id="googleReviewMiniWrap" style="display:none;text-align:right;margin:-2px 0 9px;">
+            <button type="button" onclick="abrirGoogleReviewPopup()" style="border:1px solid #ead7a2;background:#fff8df;color:#6a0dad;border-radius:999px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer;box-shadow:0 3px 9px rgba(106,13,173,.06);">
+                ⭐ Evalúanos en Google
+            </button>
+        </div>
+
         <!-- TU OPINIÓN: só aparece quando existe uma compra pendente de avaliação -->
         <div id="opinionCard" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:1px solid #eadff4;border-radius:14px;padding:11px 12px;margin:0 0 10px;box-shadow:0 4px 12px rgba(106,13,173,.06);">
             <div style="display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;">
@@ -861,6 +868,23 @@ button {
 
     </div>
 
+</div>
+
+<!-- GOOGLE REVIEW POPUP -->
+<div id="googleReviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10030;align-items:center;justify-content:center;padding:18px;">
+  <div style="width:100%;max-width:330px;background:#fff;border-radius:20px;padding:20px;box-shadow:0 18px 45px rgba(0,0,0,.28);text-align:center;">
+    <div style="font-size:30px;margin-bottom:5px;">⭐</div>
+    <div style="font-size:18px;font-weight:900;color:#6a0dad;">¿Nos calificas en Google?</div>
+    <div style="font-size:12px;color:#777;line-height:1.35;margin-top:6px;">
+      Tu reseña pública ayuda a otras personas a encontrarnos. Este aviso se mostrará una sola vez.
+    </div>
+    <button id="googleReviewGoBtn" type="button" onclick="irAGoogleReview()" style="width:100%;margin-top:14px;border:0;border-radius:12px;padding:12px;background:#6a0dad;color:#fff;font-weight:800;cursor:pointer;">
+      ABRIR GOOGLE
+    </button>
+    <button type="button" onclick="fecharGoogleReviewPopup()" style="margin-top:8px;border:0;background:transparent;color:#999;font-size:11px;cursor:pointer;">
+      Ahora no
+    </button>
+  </div>
 </div>
 
 <!-- FEEDBACK / RESEÑA -->
@@ -1107,6 +1131,7 @@ document.addEventListener("visibilitychange", () => {
 
     if (document.visibilityState === "visible") {
         carregarPontos();
+        verificarPedidoFeedback();
     }
 
 });
@@ -1118,6 +1143,7 @@ window.addEventListener("focus", () => {
     carregarBeneficioCumpleanos();
     carregarBonusPontos();
     carregarIndicacoes();
+    verificarPedidoFeedback();
 });
 
 // Especialmente útil no Safari / PWA do iPhone
@@ -1134,6 +1160,7 @@ setInterval(() => {
 
     if (document.visibilityState === "visible") {
         carregarPontos();
+        verificarPedidoFeedback();
     }
 
 }, 15000);
@@ -1678,6 +1705,7 @@ function abrirApp() {
 let feedbackEstrelas = 0;
 let feedbackConfig = null;
 let feedbackCompraRef = "";
+let googleReviewUrl = "";
 
 function seleccionarEstrellas(n) {
     feedbackEstrelas = Number(n || 0);
@@ -1689,6 +1717,35 @@ function seleccionarEstrellas(n) {
 function fecharFeedback() {
     const modal = document.getElementById("feedbackModal");
     if (modal) modal.style.display = "none";
+}
+
+function abrirGoogleReviewPopup() {
+    const modal = document.getElementById("googleReviewModal");
+    if (modal) modal.style.display = "flex";
+}
+
+function fecharGoogleReviewPopup() {
+    const modal = document.getElementById("googleReviewModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function irAGoogleReview() {
+    if (!googleReviewUrl) return alert("El enlace de Google todavía no está configurado.");
+
+    const wrap = document.getElementById("googleReviewMiniWrap");
+    if (wrap) wrap.style.display = "none";
+    fecharGoogleReviewPopup();
+
+    // Guardamos en servidor antes de salir a Google para no volver a insistir.
+    try {
+        await fetch("/api/cliente", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ uid, action:"google_review_clicked" })
+        });
+    } catch (_) {}
+
+    window.open(googleReviewUrl, "_blank", "noopener");
 }
 
 function abrirFeedbackManual() {
@@ -1713,19 +1770,28 @@ async function verificarPedidoFeedback() {
         const u = await uRes.json();
         const cfg = await cRes.json() || {};
         feedbackConfig = cfg;
+        googleReviewUrl = String(cfg.google_url || "").trim();
 
-        const card = document.getElementById("opinionCard");
-        const googleBtn = document.getElementById("googleReviewBtn");
-        if (card) card.style.display = "none";
-        if (googleBtn) googleBtn.style.display = "none";
+        const opinionCard = document.getElementById("opinionCard");
+        const googleWrap = document.getElementById("googleReviewMiniWrap");
 
-        // Não existe solicitação permanente: opinião é vinculada a uma compra registrada.
+        if (opinionCard) opinionCard.style.display = "none";
+
+        // Google Review: independente de compra e só até o primeiro clique.
+        const googleDisponivel =
+            uRes.ok &&
+            cfg.ativo !== false &&
+            !!googleReviewUrl &&
+            u.google_review_clicked !== true;
+
+        if (googleWrap) googleWrap.style.display = googleDisponivel ? "block" : "none";
+
+        // Opinião privada: somente quando existe uma nova compra registrada.
         if (!uRes.ok || cfg.ativo === false || !u.ultima_compra) return;
 
         const compraRef = String(u.ultima_compra);
         feedbackCompraRef = compraRef;
 
-        // Se a compra atual já foi avaliada, não mostramos novamente.
         if (u.feedback_last_purchase && String(u.feedback_last_purchase) === compraRef) return;
 
         const compraTs = new Date(compraRef).getTime();
@@ -1735,25 +1801,10 @@ async function verificarPedidoFeedback() {
         const idadeDias = (Date.now() - compraTs) / 86400000;
         if (idadeDias < 0 || idadeDias > maxDias) return;
 
-        // Existe compra nova pendente: agora sim aparece na tela principal.
-        if (card) card.style.display = "block";
+        if (opinionCard) opinionCard.style.display = "block";
 
-        // Google Review é oferecido uma única vez pelo nosso app.
-        // Depois de clicar, gravamos localmente para não insistir novamente.
-        const googleJaOferecido = localStorage.getItem("google_review_offered") === "1";
-        if (googleBtn && cfg.google_url && !googleJaOferecido) {
-            googleBtn.href = cfg.google_url;
-            googleBtn.style.display = "block";
-            googleBtn.onclick = () => {
-                localStorage.setItem("google_review_offered", "1");
-                googleBtn.style.display = "none";
-            };
-        }
-
-        setTimeout(() => {
-            const modal = document.getElementById("feedbackModal");
-            if (modal && card && card.style.display !== "none") modal.style.display = "flex";
-        }, 800);
+        // Se o app já está aberto e acabou de receber pontos/compra,
+        // mostramos o card, mas não forçamos popup repetidamente.
     } catch (e) {
         console.error("Error feedback:", e);
     }
