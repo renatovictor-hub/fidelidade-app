@@ -73,7 +73,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       const config = String(req.query?.config || "").trim();
-      if (config === "cumpleanos" || config === "bonus_pontos") {
+      if (config === "cumpleanos" || config === "bonus_pontos" || config === "referidos") {
         const snap = await db.ref(`config/${config}`).once("value");
         return res.status(200).json({ success:true, config: snap.val() || {} });
       }
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
     if (action === "save_config") {
       const config = String(req.body?.config || "").trim();
-      if (!["cumpleanos","bonus_pontos"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
+      if (!["cumpleanos","bonus_pontos","referidos"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
 
       const value = req.body?.value && typeof req.body.value === "object" ? req.body.value : {};
       if (config === "cumpleanos") {
@@ -101,6 +101,18 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString()
         };
         await db.ref("config/cumpleanos").set(limpio);
+        return res.status(200).json({ success:true, config:limpio });
+      }
+
+      if (config === "referidos") {
+        const limpio = {
+          ativo: value.ativo !== false,
+          pontos_indicador: Math.max(0, Math.min(1000, Math.floor(Number(value.pontos_indicador || 20)))),
+          pontos_amigo: Math.max(0, Math.min(1000, Math.floor(Number(value.pontos_amigo || 10)))),
+          compra_minima: Math.max(0, Math.min(100000, Number(value.compra_minima || 100))),
+          updated_at: new Date().toISOString()
+        };
+        await db.ref("config/referidos").set(limpio);
         return res.status(200).json({ success:true, config:limpio });
       }
 
