@@ -494,6 +494,9 @@ button {
     <h2 style="color:var(--roxo)">
         ¿Cómo te llamas?
     </h2>
+    <div id="referralSignupBanner" style="display:none;background:#f3e8ff;color:#6a0dad;border:1px solid #dfc3ff;border-radius:12px;padding:10px 12px;margin:0 0 14px;font-size:13px;font-weight:700;">
+        🎁 Llegaste invitado por un amigo. Tu beneficio se activará con tu primera compra válida.
+    </div>
 
     <input
         id="nomeInput"
@@ -604,6 +607,22 @@ button {
             </button>
         </div>
 
+
+
+        <!-- INVITA A UN AMIGO -->
+        <div id="referralCard" style="background:linear-gradient(135deg,#f4eaff,#ead9ff);border:1px solid #d8b9ff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(106,13,173,.10);">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+                <div style="font-size:34px;">🤝</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:17px;font-weight:800;color:#6a0dad;">Invita a un amigo</div>
+                    <div id="referralText" style="font-size:13px;color:#5e4c70;margin-top:4px;">Comparte tu enlace y gana puntos cuando tu amigo haga su primera compra.</div>
+                    <div id="referralStats" style="font-size:12px;color:#7d6690;margin-top:6px;"></div>
+                </div>
+            </div>
+            <button onclick="compartirInvitacion()" style="margin-top:12px;width:100%;background:#6a0dad;color:white;border:none;border-radius:12px;padding:12px;font-weight:800;font-size:13px;">
+                📲 INVITAR AMIGO
+            </button>
+        </div>
 
         <!-- REGALO DE CUMPLEAÑOS -->
         <div id="birthdayGiftCard" style="display:none;background:linear-gradient(135deg,#fff3cd,#ffe59a);border:1px solid #f0cf63;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(150,110,0,.10);">
@@ -929,6 +948,7 @@ window.addEventListener("focus", () => {
 // Especialmente útil no Safari / PWA do iPhone
 window.addEventListener("pageshow", () => {
     carregarPontos();
+    carregarIndicacoes();
 });
 
 // Enquanto o app estiver aberto,
@@ -1021,6 +1041,12 @@ window.onload = async () => {
 
     const push =
         localStorage.getItem("push");
+
+    const referralUidGuardado = localStorage.getItem("referral_uid");
+    const referralBanner = document.getElementById("referralSignupBanner");
+    if (referralBanner && /^user_\d+$/.test(String(referralUidGuardado || ""))) {
+        referralBanner.style.display = "block";
+    }
 
     // Somente em Preview da Vercel: permite testar a interface sem instalar a PWA.
     // Não altera o fluxo obrigatório do domínio de produção.
@@ -1333,6 +1359,7 @@ async function salvarNome() {
                 "Tus puntos y datos fueron recuperados."
             );
 
+            localStorage.removeItem("referral_uid");
             abrirApp();
 
             return;
@@ -1386,6 +1413,11 @@ async function salvarNome() {
                     nascimento: nascimento,
                     user_id: uid,
                     pontos: 0,
+                    referido_por: (() => {
+                        const ref = String(localStorage.getItem("referral_uid") || "").trim();
+                        return /^user_\d+$/.test(ref) && ref !== uid ? ref : null;
+                    })(),
+                    referido_recompensado: false,
                     created_at:
                         new Date().toISOString(),
                     updated_at:
@@ -1395,6 +1427,7 @@ async function salvarNome() {
         );
 
 
+        localStorage.removeItem("referral_uid");
         abrirApp();
 
 
@@ -1460,6 +1493,71 @@ function abrirApp() {
     carregarPontos();
 }
 
+
+/* ==========================
+   INDICAÇÕES / INVITA A UN AMIGO
+========================== */
+
+let referralConfigCache = null;
+
+async function carregarIndicacoes() {
+    try {
+        const [clienteRes, cfgRes] = await Promise.all([
+            fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`, { cache:"no-store" }),
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/referidos.json?t=${Date.now()}`, { cache:"no-store" })
+        ]);
+
+        const cliente = await clienteRes.json();
+        const cfg = await cfgRes.json();
+        referralConfigCache = cfg || {};
+
+        const ativo = cfg && cfg.ativo !== false;
+        const card = document.getElementById("referralCard");
+        if (card) card.style.display = ativo ? "block" : "none";
+        if (!ativo) return;
+
+        const amigo = Math.max(0, Number(cfg.pontos_amigo || 10));
+        const indica = Math.max(0, Number(cfg.pontos_indicador || 20));
+        const minima = Math.max(0, Number(cfg.compra_minima || 100));
+        const total = Number(cliente.referidos_recompensados || 0);
+
+        const texto = document.getElementById("referralText");
+        if (texto) {
+            texto.innerText =
+                `Tu amigo gana ${amigo} puntos y tú ganas ${indica} puntos cuando haga una compra de $ ${minima} MXN o más.`;
+        }
+
+        const stats = document.getElementById("referralStats");
+        if (stats) {
+            stats.innerText = total > 0
+                ? `🏆 ${total} amigo${total === 1 ? "" : "s"} ya te generaron recompensa.`
+                : "Comparte tu enlace personal.";
+        }
+    } catch (e) {
+        console.error("Error indicaciones:", e);
+    }
+}
+
+async function compartirInvitacion() {
+    const cfg = referralConfigCache || {};
+    const indica = Math.max(0, Number(cfg.pontos_indicador || 20));
+    const link = `https://fidelidad-uai-so.vercel.app/?ref=${encodeURIComponent(uid)}`;
+    const texto = `¡Únete a Uai Sô Fidelidad! Instala la app con mi invitación y recibe beneficios. Yo gano ${indica} puntos cuando hagas tu primera compra válida. ${link}`;
+
+    try {
+        if (navigator.share) {
+            await navigator.share({
+                title: "Uai Sô Fidelidad",
+                text: "¡Te invito a Uai Sô Fidelidad!",
+                url: link
+            });
+            return;
+        }
+    } catch (_) {}
+
+    const wa = "https://wa.me/?text=" + encodeURIComponent(texto);
+    window.open(wa, "_blank", "noopener");
+}
 
 /* ==========================
    BENEFÍCIO DE CUMPLEAÑOS
