@@ -248,39 +248,39 @@ button {
     box-shadow:0 3px 10px rgba(106,13,173,0.06);
 }
 .client-greeting-card {
-    background:#fff;
-    border:1px solid #eee;
-    border-radius:18px;
-    padding:14px 16px;
-    margin:0 0 12px 0;
-    text-align:center;
-    box-shadow:0 5px 16px rgba(0,0,0,0.05);
+    background:transparent;
+    border:0;
+    border-radius:0;
+    padding:2px 4px 8px;
+    margin:0 0 6px 0;
+    text-align:left;
+    box-shadow:none;
 }
 .client-greeting-card #greeting {
     color:var(--roxo);
-    margin:0 0 4px 0;
-    font-size:24px;
+    margin:0 0 1px 0;
+    font-size:17px;
     line-height:1.15;
-    text-align:center;
+    text-align:left;
 }
 .client-greeting-card p {
     margin:0;
-    color:#666;
-    font-size:14px;
-    text-align:center;
+    color:#777;
+    font-size:11px;
+    text-align:left;
 }
 .client-points-card {
     background:linear-gradient(135deg,#6a0dad,#9b30ff);
     color:white;
-    padding:16px 14px 16px 18px;
-    border-radius:18px;
-    margin-bottom:16px;
-    box-shadow:0 6px 16px rgba(106,13,173,0.22);
+    padding:9px 10px 9px 14px;
+    border-radius:15px;
+    margin-bottom:10px;
+    box-shadow:0 5px 13px rgba(106,13,173,0.20);
     display:flex;
     align-items:stretch;
     justify-content:space-between;
-    gap:14px;
-    min-height:112px;
+    gap:10px;
+    min-height:68px;
 }
 .client-points-info {
     min-width:0;
@@ -291,46 +291,105 @@ button {
     text-align:left;
 }
 .client-points-label {
-    font-size:13px;
+    font-size:10px;
     opacity:.9;
-    margin-bottom:7px;
+    margin-bottom:3px;
     font-weight:700;
 }
 .client-points-value {
-    font-size:34px;
+    font-size:25px;
     font-weight:800;
     line-height:1;
 }
 .client-points-caption {
-    font-size:13px;
-    margin-top:7px;
+    font-size:10px;
+    margin-top:3px;
     opacity:.92;
 }
 .client-qr-button {
-    width:132px;
-    min-width:132px;
+    width:104px;
+    min-width:104px;
     margin:0;
-    padding:10px 8px;
-    border-radius:15px;
+    padding:5px 6px;
+    border-radius:12px;
     border:none;
     background:rgba(255,255,255,.96);
     color:#6a0dad;
     font-weight:800;
-    font-size:12px;
+    font-size:10px;
     cursor:pointer;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:7px;
-    box-shadow:0 4px 12px rgba(56,0,96,.16);
+    gap:3px;
+    box-shadow:0 3px 9px rgba(56,0,96,.14);
 }
-.client-qr-button i { font-size:30px; }
+.client-qr-button i { font-size:20px; }
+
+.vip-card-compact {
+    width:50%;
+    min-width:178px;
+    background:#fff;
+    border:1px solid #eadff4;
+    border-radius:14px;
+    padding:10px 12px;
+    margin:0 0 10px 0;
+    box-shadow:0 4px 12px rgba(106,13,173,.07);
+    cursor:pointer;
+    transition:width .22s ease, padding .22s ease, box-shadow .22s ease;
+}
+.vip-card-compact.expanded {
+    width:100%;
+    padding:14px 16px;
+    box-shadow:0 6px 16px rgba(106,13,173,.12);
+}
+.vip-card-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+}
+.vip-card-title {
+    font-size:10px;
+    color:#7b6b86;
+    font-weight:700;
+}
+.vip-card-level {
+    font-size:15px;
+    font-weight:900;
+    color:#6a0dad;
+    margin-top:1px;
+}
+.vip-card-toggle {
+    color:#6a0dad;
+    font-size:13px;
+    font-weight:800;
+}
+.vip-card-details {
+    display:none;
+}
+.vip-card-compact.expanded .vip-card-details {
+    display:block;
+}
+.vip-card-compact.expanded .vip-card-toggle {
+    transform:rotate(180deg);
+}
+.vip-card-progress {
+    height:7px;
+    background:#eee7f4;
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:10px;
+}
+@media (max-width:420px) {
+    .vip-card-compact { width:52%; min-width:0; }
+}
 @media (max-width:370px) {
     .action-menu { gap:6px; }
     .btn-small { padding:9px 5px; font-size:11px; }
     .client-points-card { gap:9px; padding-left:14px; }
-    .client-qr-button { width:112px; min-width:112px; font-size:11px; }
+    .client-qr-button { width:96px; min-width:96px; font-size:9px; }
 }
 
 </style>
@@ -611,18 +670,21 @@ button {
 
 
         <!-- NIVEL VIP -->
-        <div id="vipCard" style="display:none;background:white;border:1px solid #eadff4;border-radius:18px;padding:15px 16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(106,13,173,.08);">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div id="vipCard" class="vip-card-compact" style="display:none;" onclick="toggleVipCard()" role="button" tabindex="0" aria-expanded="false">
+            <div class="vip-card-header">
                 <div>
-                    <div style="font-size:12px;color:#7b6b86;font-weight:700;">TU NIVEL</div>
-                    <div id="vipNivel" style="font-size:20px;font-weight:900;color:#6a0dad;margin-top:2px;">🥉 Bronce</div>
+                    <div class="vip-card-title">TU NIVEL</div>
+                    <div id="vipNivel" class="vip-card-level">🥉 Bronce</div>
                 </div>
-                <div id="vipAcumulado" style="font-size:12px;color:#7b6b86;text-align:right;"></div>
+                <div class="vip-card-toggle">⌄</div>
             </div>
-            <div style="height:9px;background:#eee7f4;border-radius:999px;overflow:hidden;margin-top:12px;">
-                <div id="vipBarra" style="height:100%;width:0;background:linear-gradient(90deg,#6a0dad,#9b30ff);border-radius:999px;transition:width .35s ease;"></div>
+            <div class="vip-card-details">
+                <div id="vipAcumulado" style="font-size:11px;color:#7b6b86;margin-top:8px;"></div>
+                <div class="vip-card-progress">
+                    <div id="vipBarra" style="height:100%;width:0;background:linear-gradient(90deg,#6a0dad,#9b30ff);border-radius:999px;transition:width .35s ease;"></div>
+                </div>
+                <div id="vipProximo" style="font-size:11px;color:#6f6278;margin-top:6px;"></div>
             </div>
-            <div id="vipProximo" style="font-size:12px;color:#6f6278;margin-top:7px;"></div>
         </div>
 
         <!-- INVITA A UN AMIGO -->
@@ -1516,6 +1578,13 @@ function abrirApp() {
    NIVELES VIP
 ========================== */
 
+function toggleVipCard() {
+    const card = document.getElementById("vipCard");
+    if (!card) return;
+    const aberto = card.classList.toggle("expanded");
+    card.setAttribute("aria-expanded", aberto ? "true" : "false");
+}
+
 async function carregarNivelVip() {
     const card=document.getElementById("vipCard");
     if(!card || !uid) return;
@@ -1559,6 +1628,13 @@ async function carregarNivelVip() {
         card.style.display="none";
     }
 }
+
+document.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target?.id === "vipCard") {
+        e.preventDefault();
+        toggleVipCard();
+    }
+});
 
 /* ==========================
    INDICAÇÕES / INVITA A UN AMIGO
