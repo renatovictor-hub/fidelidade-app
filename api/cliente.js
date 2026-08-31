@@ -42,6 +42,7 @@ export default async function handler(req, res) {
             nome: cliente.nome || cliente.nombre || "",
             telefone: cliente.telefone || "",
             pontos: Number(cliente.pontos || 0),
+            pontos_acumulados: Number(cliente.pontos_acumulados ?? cliente.pontos ?? 0),
             referidos_recompensados: Number(cliente.referidos_recompensados || 0),
             pontos_indicacao_total: Number(cliente.pontos_indicacao_total || 0)
         });
