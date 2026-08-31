@@ -132,6 +132,13 @@
                     doc.body.appendChild(script);
                 }
 
+                if (!doc.getElementById('reviewsAdminScript')) {
+                    const script = doc.createElement('script');
+                    script.id = 'reviewsAdminScript';
+                    script.src = '/reviews-admin.js?v=20260831-1';
+                    doc.body.appendChild(script);
+                }
+
                 ['pointerdown','keydown','touchstart'].forEach(eventName => {
                     doc.addEventListener(eventName, reiniciarInatividade, { passive:true });
                 });

@@ -768,6 +768,27 @@ button {
             </div>
         </div>
 
+        <!-- GOOGLE REVIEW: independente de compra, aparece uma única vez por cliente -->
+        <div id="googleReviewMiniWrap" style="display:none;text-align:right;margin:-2px 0 9px;">
+            <button type="button" onclick="abrirGoogleReviewPopup()" style="border:1px solid #ead7a2;background:#fff8df;color:#6a0dad;border-radius:999px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer;box-shadow:0 3px 9px rgba(106,13,173,.06);">
+                ⭐ Evalúanos en Google
+            </button>
+        </div>
+
+        <!-- TU OPINIÓN: só aparece quando existe uma compra pendente de avaliação -->
+        <div id="opinionCard" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:1px solid #eadff4;border-radius:14px;padding:11px 12px;margin:0 0 10px;box-shadow:0 4px 12px rgba(106,13,173,.06);">
+            <div style="display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;">
+                <div style="flex:1 1 auto;min-width:0;">
+                    <div style="font-size:10px;color:#7b6b86;font-weight:800;">TU OPINIÓN</div>
+                    <div id="opinionCardTitle" style="font-size:14px;line-height:1.2;font-weight:900;color:#6a0dad;margin-top:2px;white-space:normal;overflow-wrap:anywhere;">⭐ Califica tu compra reciente</div>
+                    <div id="opinionCardText" style="font-size:11px;line-height:1.25;color:#777;margin-top:3px;white-space:normal;">Tu opinión nos ayuda a mejorar.</div>
+                </div>
+                <button type="button" onclick="abrirFeedbackManual()" style="flex:0 0 auto;width:auto;max-width:88px;border:0;border-radius:10px;padding:9px 12px;background:#6a0dad;color:white;font-size:10px;font-weight:800;cursor:pointer;">
+                    OPINAR
+                </button>
+            </div>
+        </div>
+
         <!-- REGALO DE CUMPLEAÑOS -->
         <div id="birthdayGiftCard" style="display:none;background:linear-gradient(135deg,#fff3cd,#ffe59a);border:1px solid #f0cf63;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(150,110,0,.10);">
             <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -847,6 +868,39 @@ button {
 
     </div>
 
+</div>
+
+<!-- GOOGLE REVIEW POPUP -->
+<div id="googleReviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10030;align-items:center;justify-content:center;padding:18px;">
+  <div style="width:100%;max-width:330px;background:#fff;border-radius:20px;padding:20px;box-shadow:0 18px 45px rgba(0,0,0,.28);text-align:center;">
+    <div style="font-size:30px;margin-bottom:5px;">⭐</div>
+    <div style="font-size:18px;font-weight:900;color:#6a0dad;">¿Nos calificas en Google?</div>
+    <div style="font-size:12px;color:#777;line-height:1.35;margin-top:6px;">
+      Tu reseña pública ayuda a otras personas a encontrarnos. Este aviso se mostrará una sola vez.
+    </div>
+    <button id="googleReviewGoBtn" type="button" onclick="irAGoogleReview()" style="width:100%;margin-top:14px;border:0;border-radius:12px;padding:12px;background:#6a0dad;color:#fff;font-weight:800;cursor:pointer;">
+      ABRIR GOOGLE
+    </button>
+    <button type="button" onclick="fecharGoogleReviewPopup()" style="margin-top:8px;border:0;background:transparent;color:#999;font-size:11px;cursor:pointer;">
+      Ahora no
+    </button>
+  </div>
+</div>
+
+<!-- FEEDBACK / RESEÑA -->
+<div id="feedbackModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10020;align-items:center;justify-content:center;padding:18px;">
+  <div style="width:100%;max-width:350px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 18px 45px rgba(0,0,0,.28);text-align:center;">
+    <div style="font-size:28px;margin-bottom:4px;">⭐</div>
+    <div style="font-size:19px;font-weight:900;color:#6a0dad;">¿Cómo estuvo tu experiencia?</div>
+    <div style="font-size:12px;color:#777;margin-top:4px;">Tu opinión nos ayuda a mejorar Uai Sô.</div>
+    <div id="feedbackStars" style="display:flex;justify-content:center;gap:8px;margin:16px 0 12px;">
+      <button type="button" onclick="seleccionarEstrellas(1)" data-star="1" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(2)" data-star="2" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(3)" data-star="3" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(4)" data-star="4" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(5)" data-star="5" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button>
+    </div>
+    <textarea id="feedbackComentario" placeholder="¿Quieres contarnos algo? (opcional)" style="width:100%;min-height:76px;resize:vertical;border:1px solid #ddd;border-radius:12px;padding:11px;font:inherit;font-size:13px;box-sizing:border-box;"></textarea>
+    <button id="feedbackEnviar" onclick="enviarFeedback()" style="width:100%;margin-top:12px;border:0;border-radius:12px;padding:12px;background:#6a0dad;color:#fff;font-weight:800;cursor:pointer;">ENVIAR OPINIÓN</button>
+    <a id="googleReviewBtn" href="#" target="_blank" rel="noopener" style="display:none;margin-top:9px;width:100%;box-sizing:border-box;border-radius:12px;padding:11px;background:#fff4cc;color:#6a0dad;text-decoration:none;font-weight:800;font-size:12px;">⭐ COMPARTIR RESEÑA EN GOOGLE</a>
+    <button onclick="fecharFeedback()" style="margin-top:8px;border:0;background:transparent;color:#999;font-size:11px;cursor:pointer;">Ahora no</button>
+  </div>
 </div>
 
 <!-- POPUP QR -->
@@ -1077,6 +1131,7 @@ document.addEventListener("visibilitychange", () => {
 
     if (document.visibilityState === "visible") {
         carregarPontos();
+        verificarPedidoFeedback();
     }
 
 });
@@ -1088,6 +1143,7 @@ window.addEventListener("focus", () => {
     carregarBeneficioCumpleanos();
     carregarBonusPontos();
     carregarIndicacoes();
+    verificarPedidoFeedback();
 });
 
 // Especialmente útil no Safari / PWA do iPhone
@@ -1095,6 +1151,7 @@ window.addEventListener("pageshow", () => {
     carregarPontos();
     carregarIndicacoes();
     carregarNivelVip();
+    verificarPedidoFeedback();
 });
 
 // Enquanto o app estiver aberto,
@@ -1103,6 +1160,7 @@ setInterval(() => {
 
     if (document.visibilityState === "visible") {
         carregarPontos();
+        verificarPedidoFeedback();
     }
 
 }, 15000);
@@ -1639,6 +1697,159 @@ function abrirApp() {
     carregarPontos();
 }
 
+
+/* ==========================
+   FEEDBACK / GOOGLE REVIEWS
+========================== */
+
+let feedbackEstrelas = 0;
+let feedbackConfig = null;
+let feedbackCompraRef = "";
+let googleReviewUrl = "";
+
+function seleccionarEstrellas(n) {
+    feedbackEstrelas = Number(n || 0);
+    document.querySelectorAll("#feedbackStars [data-star]").forEach(btn => {
+        btn.style.color = Number(btn.dataset.star) <= feedbackEstrelas ? "#ffbf00" : "#ccc";
+    });
+}
+
+function fecharFeedback() {
+    const modal = document.getElementById("feedbackModal");
+    if (modal) modal.style.display = "none";
+}
+
+function abrirGoogleReviewPopup() {
+    const modal = document.getElementById("googleReviewModal");
+    if (modal) modal.style.display = "flex";
+}
+
+function fecharGoogleReviewPopup() {
+    const modal = document.getElementById("googleReviewModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function irAGoogleReview() {
+    if (!googleReviewUrl) return alert("El enlace de Google todavía no está configurado.");
+
+    const wrap = document.getElementById("googleReviewMiniWrap");
+    if (wrap) wrap.style.display = "none";
+    fecharGoogleReviewPopup();
+
+    // Guardamos en servidor antes de salir a Google para no volver a insistir.
+    try {
+        await fetch("/api/cliente", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ uid, action:"google_review_clicked" })
+        });
+    } catch (_) {}
+
+    window.open(googleReviewUrl, "_blank", "noopener");
+}
+
+function abrirFeedbackManual() {
+    feedbackEstrelas = 0;
+    document.querySelectorAll("#feedbackStars [data-star]").forEach(btn => {
+        btn.style.color = "#ccc";
+    });
+
+    const comentario = document.getElementById("feedbackComentario");
+    if (comentario) comentario.value = "";
+
+    const modal = document.getElementById("feedbackModal");
+    if (modal) modal.style.display = "flex";
+}
+
+async function verificarPedidoFeedback() {
+    try {
+        const [uRes,cRes] = await Promise.all([
+            fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`, { cache:"no-store" }),
+            fetch(`https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/reviews.json?t=${Date.now()}`, { cache:"no-store" })
+        ]);
+        const u = await uRes.json();
+        const cfg = await cRes.json() || {};
+        feedbackConfig = cfg;
+        googleReviewUrl = String(cfg.google_url || "").trim();
+
+        const opinionCard = document.getElementById("opinionCard");
+        const googleWrap = document.getElementById("googleReviewMiniWrap");
+
+        if (opinionCard) opinionCard.style.display = "none";
+
+        // Google Review: independente de compra e só até o primeiro clique.
+        const googleDisponivel =
+            uRes.ok &&
+            cfg.ativo !== false &&
+            !!googleReviewUrl &&
+            u.google_review_clicked !== true;
+
+        if (googleWrap) googleWrap.style.display = googleDisponivel ? "block" : "none";
+
+        // Opinião privada: somente quando existe uma nova compra registrada.
+        if (!uRes.ok || cfg.ativo === false || !u.ultima_compra) return;
+
+        const compraRef = String(u.ultima_compra);
+        feedbackCompraRef = compraRef;
+
+        if (u.feedback_last_purchase && String(u.feedback_last_purchase) === compraRef) return;
+
+        const compraTs = new Date(compraRef).getTime();
+        if (!Number.isFinite(compraTs)) return;
+
+        const maxDias = Math.max(1, Number(cfg.dias_apos_compra || 3));
+        const idadeDias = (Date.now() - compraTs) / 86400000;
+        if (idadeDias < 0 || idadeDias > maxDias) return;
+
+        if (opinionCard) opinionCard.style.display = "block";
+
+        // Se o app já está aberto e acabou de receber pontos/compra,
+        // mostramos o card, mas não forçamos popup repetidamente.
+    } catch (e) {
+        console.error("Error feedback:", e);
+    }
+}
+
+async function enviarFeedback() {
+    if (feedbackEstrelas < 1 || feedbackEstrelas > 5) {
+        return alert("Selecciona de 1 a 5 estrellas.");
+    }
+
+    const comentario = document.getElementById("feedbackComentario")?.value.trim() || "";
+    const btn = document.getElementById("feedbackEnviar");
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "ENVIANDO...";
+    }
+
+    try {
+        const r = await fetch("/api/cliente", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                uid,
+                estrelas:feedbackEstrelas,
+                comentario,
+                compra_ref:feedbackCompraRef
+            })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "No se pudo guardar.");
+
+        if (btn) {
+            btn.textContent = "✅ GRACIAS POR TU OPINIÓN";
+        }
+        const card = document.getElementById("opinionCard");
+        if (card) card.style.display = "none";
+        setTimeout(fecharFeedback, 900);
+    } catch (e) {
+        alert(e.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "ENVIAR OPINIÓN";
+        }
+    }
+}
 
 /* ==========================
    NIVELES VIP
