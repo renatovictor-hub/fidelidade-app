@@ -327,52 +327,104 @@ button {
 }
 .client-qr-button i { font-size:20px; }
 
+.mini-tools-row {
+    position:relative;
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    min-height:58px;
+    margin:0 0 10px 0;
+    transition:min-height .22s ease;
+}
+.mini-tools-row.has-expanded {
+    min-height:164px;
+}
+.mini-tool-card {
+    position:relative;
+    flex:1 1 0;
+    width:calc(50% - 4px);
+    min-width:0;
+    box-sizing:border-box;
+    border-radius:14px;
+    padding:9px 11px;
+    cursor:pointer;
+    overflow:hidden;
+    transition:
+        width .22s ease,
+        left .22s ease,
+        right .22s ease,
+        padding .22s ease,
+        box-shadow .22s ease;
+}
 .vip-card-compact {
-    width:50%;
-    min-width:178px;
     background:#fff;
     border:1px solid #eadff4;
-    border-radius:14px;
-    padding:10px 12px;
-    margin:0 0 10px 0;
     box-shadow:0 4px 12px rgba(106,13,173,.07);
-    cursor:pointer;
-    transition:width .22s ease, padding .22s ease, box-shadow .22s ease;
+}
+.referral-card-compact {
+    background:linear-gradient(135deg,#f4eaff,#ead9ff);
+    border:1px solid #d8b9ff;
+    box-shadow:0 4px 12px rgba(106,13,173,.08);
+}
+.mini-tool-card.expanded {
+    position:absolute;
+    top:0;
+    width:100%;
+    z-index:20;
+    padding:13px 14px;
+    overflow:visible;
 }
 .vip-card-compact.expanded {
-    width:100%;
-    padding:14px 16px;
-    box-shadow:0 6px 16px rgba(106,13,173,.12);
+    left:0;
+    right:auto;
+    box-shadow:0 8px 20px rgba(106,13,173,.16);
 }
-.vip-card-header {
+.referral-card-compact.expanded {
+    right:0;
+    left:auto;
+    box-shadow:0 8px 20px rgba(106,13,173,.16);
+}
+.mini-card-header {
+    min-height:38px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:8px;
+    gap:7px;
 }
-.vip-card-title {
-    font-size:10px;
+.mini-card-main {
+    min-width:0;
+}
+.mini-card-kicker {
+    font-size:9px;
     color:#7b6b86;
-    font-weight:700;
+    font-weight:800;
+    letter-spacing:.15px;
 }
-.vip-card-level {
-    font-size:15px;
+.mini-card-level,
+.mini-card-title {
+    font-size:14px;
     font-weight:900;
     color:#6a0dad;
     margin-top:1px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
-.vip-card-toggle {
+.mini-card-toggle {
+    flex:none;
     color:#6a0dad;
     font-size:13px;
-    font-weight:800;
+    font-weight:900;
+    transition:transform .18s ease;
 }
-.vip-card-details {
+.mini-card-details {
     display:none;
+    padding-top:3px;
 }
-.vip-card-compact.expanded .vip-card-details {
+.mini-tool-card.expanded .mini-card-details {
     display:block;
 }
-.vip-card-compact.expanded .vip-card-toggle {
+.mini-tool-card.expanded .mini-card-toggle {
     transform:rotate(180deg);
 }
 .vip-card-progress {
@@ -380,10 +432,22 @@ button {
     background:#eee7f4;
     border-radius:999px;
     overflow:hidden;
-    margin-top:10px;
+    margin-top:9px;
+}
+.referral-mini-button {
+    width:100%;
+    margin:10px 0 0;
+    background:#6a0dad;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:10px;
+    font-weight:800;
+    font-size:11px;
 }
 @media (max-width:420px) {
-    .vip-card-compact { width:52%; min-width:0; }
+    .mini-tool-card { padding:8px 9px; }
+    .mini-card-level,.mini-card-title { font-size:13px; }
 }
 @media (max-width:370px) {
     .action-menu { gap:6px; }
@@ -669,37 +733,39 @@ button {
 
 
 
-        <!-- NIVEL VIP -->
-        <div id="vipCard" class="vip-card-compact" style="display:none;" onclick="toggleVipCard()" role="button" tabindex="0" aria-expanded="false">
-            <div class="vip-card-header">
-                <div>
-                    <div class="vip-card-title">TU NIVEL</div>
-                    <div id="vipNivel" class="vip-card-level">🥉 Bronce</div>
+        <!-- NIVEL VIP + INVITAR -->
+        <div id="miniToolsRow" class="mini-tools-row">
+            <div id="vipCard" class="mini-tool-card vip-card-compact" style="display:none;" onclick="toggleMiniCard('vip')" role="button" tabindex="0" aria-expanded="false">
+                <div class="mini-card-header">
+                    <div class="mini-card-main">
+                        <div class="mini-card-kicker">TU NIVEL</div>
+                        <div id="vipNivel" class="mini-card-level">🥉 Bronce</div>
+                    </div>
+                    <div class="mini-card-toggle">⌄</div>
                 </div>
-                <div class="vip-card-toggle">⌄</div>
-            </div>
-            <div class="vip-card-details">
-                <div id="vipAcumulado" style="font-size:11px;color:#7b6b86;margin-top:8px;"></div>
-                <div class="vip-card-progress">
-                    <div id="vipBarra" style="height:100%;width:0;background:linear-gradient(90deg,#6a0dad,#9b30ff);border-radius:999px;transition:width .35s ease;"></div>
+                <div class="mini-card-details">
+                    <div id="vipAcumulado" style="font-size:11px;color:#7b6b86;margin-top:5px;"></div>
+                    <div class="vip-card-progress">
+                        <div id="vipBarra" style="height:100%;width:0;background:linear-gradient(90deg,#6a0dad,#9b30ff);border-radius:999px;transition:width .35s ease;"></div>
+                    </div>
+                    <div id="vipProximo" style="font-size:11px;color:#6f6278;margin-top:6px;"></div>
                 </div>
-                <div id="vipProximo" style="font-size:11px;color:#6f6278;margin-top:6px;"></div>
             </div>
-        </div>
 
-        <!-- INVITA A UN AMIGO -->
-        <div id="referralCard" style="background:linear-gradient(135deg,#f4eaff,#ead9ff);border:1px solid #d8b9ff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(106,13,173,.10);">
-            <div style="display:flex;gap:12px;align-items:flex-start;">
-                <div style="font-size:34px;">🤝</div>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-size:17px;font-weight:800;color:#6a0dad;">Invita a un amigo</div>
-                    <div id="referralText" style="font-size:13px;color:#5e4c70;margin-top:4px;">Comparte tu enlace y gana puntos cuando tu amigo haga su primera compra.</div>
-                    <div id="referralStats" style="font-size:12px;color:#7d6690;margin-top:6px;"></div>
+            <div id="referralCard" class="mini-tool-card referral-card-compact" onclick="toggleMiniCard('referral')" role="button" tabindex="0" aria-expanded="false">
+                <div class="mini-card-header">
+                    <div class="mini-card-main">
+                        <div class="mini-card-kicker">BENEFICIO</div>
+                        <div class="mini-card-title">🤝 Invita a un amigo</div>
+                    </div>
+                    <div class="mini-card-toggle">⌄</div>
+                </div>
+                <div class="mini-card-details">
+                    <div id="referralText" style="font-size:12px;color:#5e4c70;margin-top:4px;">Comparte tu enlace y gana puntos cuando tu amigo haga su primera compra.</div>
+                    <div id="referralStats" style="font-size:11px;color:#7d6690;margin-top:6px;"></div>
+                    <button class="referral-mini-button" onclick="event.stopPropagation();compartirInvitacion()">📲 INVITAR AMIGO</button>
                 </div>
             </div>
-            <button onclick="compartirInvitacion()" style="margin-top:12px;width:100%;background:#6a0dad;color:white;border:none;border-radius:12px;padding:12px;font-weight:800;font-size:13px;">
-                📲 INVITAR AMIGO
-            </button>
         </div>
 
         <!-- REGALO DE CUMPLEAÑOS -->
@@ -1578,11 +1644,37 @@ function abrirApp() {
    NIVELES VIP
 ========================== */
 
-function toggleVipCard() {
-    const card = document.getElementById("vipCard");
-    if (!card) return;
-    const aberto = card.classList.toggle("expanded");
-    card.setAttribute("aria-expanded", aberto ? "true" : "false");
+function toggleMiniCard(tipo) {
+    const row = document.getElementById("miniToolsRow");
+    const vip = document.getElementById("vipCard");
+    const referral = document.getElementById("referralCard");
+    const alvo = tipo === "vip" ? vip : referral;
+    const outro = tipo === "vip" ? referral : vip;
+    if (!row || !alvo) return;
+
+    const vaiAbrir = !alvo.classList.contains("expanded");
+
+    [vip, referral].forEach(card => {
+        if (!card) return;
+        card.classList.remove("expanded");
+        card.setAttribute("aria-expanded", "false");
+    });
+
+    if (vaiAbrir) {
+        alvo.classList.add("expanded");
+        alvo.setAttribute("aria-expanded", "true");
+        if (outro) outro.style.visibility = "hidden";
+        row.classList.add("has-expanded");
+    } else {
+        row.classList.remove("has-expanded");
+    }
+
+    if (!vaiAbrir && outro) outro.style.visibility = "";
+    if (vaiAbrir) {
+        setTimeout(() => {
+            if (outro) outro.style.visibility = "";
+        }, 220);
+    }
 }
 
 async function carregarNivelVip() {
@@ -1630,9 +1722,14 @@ async function carregarNivelVip() {
 }
 
 document.addEventListener("keydown", (e) => {
-    if ((e.key === "Enter" || e.key === " ") && e.target?.id === "vipCard") {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (e.target?.id === "vipCard") {
         e.preventDefault();
-        toggleVipCard();
+        toggleMiniCard("vip");
+    }
+    if (e.target?.id === "referralCard") {
+        e.preventDefault();
+        toggleMiniCard("referral");
     }
 });
 
@@ -1656,6 +1753,8 @@ async function carregarIndicacoes() {
         const ativo = cfg && cfg.ativo !== false;
         const card = document.getElementById("referralCard");
         if (card) card.style.display = ativo ? "block" : "none";
+        const vip = document.getElementById("vipCard");
+        if (vip && !ativo) vip.style.width = "50%";
         if (!ativo) return;
 
         const amigo = Math.max(0, Number(cfg.pontos_amigo || 10));
