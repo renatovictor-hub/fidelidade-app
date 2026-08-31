@@ -73,7 +73,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       const config = String(req.query?.config || "").trim();
-      if (config === "cumpleanos" || config === "bonus_pontos" || config === "referidos") {
+      if (config === "cumpleanos" || config === "bonus_pontos" || config === "referidos" || config === "niveles_vip") {
         const snap = await db.ref(`config/${config}`).once("value");
         return res.status(200).json({ success:true, config: snap.val() || {} });
       }
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
     if (action === "save_config") {
       const config = String(req.body?.config || "").trim();
-      if (!["cumpleanos","bonus_pontos","referidos"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
+      if (!["cumpleanos","bonus_pontos","referidos","niveles_vip"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
 
       const value = req.body?.value && typeof req.body.value === "object" ? req.body.value : {};
       if (config === "cumpleanos") {
@@ -101,6 +101,19 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString()
         };
         await db.ref("config/cumpleanos").set(limpio);
+        return res.status(200).json({ success:true, config:limpio });
+      }
+
+      if (config === "niveles_vip") {
+        const prata = Math.max(1, Math.floor(Number(value.prata || 300)));
+        const ouro = Math.max(prata + 1, Math.floor(Number(value.ouro || 800)));
+        const diamante = Math.max(ouro + 1, Math.floor(Number(value.diamante || 1500)));
+        const limpio = {
+          ativo: value.ativo !== false,
+          prata, ouro, diamante,
+          updated_at: new Date().toISOString()
+        };
+        await db.ref("config/niveles_vip").set(limpio);
         return res.status(200).json({ success:true, config:limpio });
       }
 
