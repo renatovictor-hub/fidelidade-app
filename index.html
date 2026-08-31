@@ -768,15 +768,15 @@ button {
             </div>
         </div>
 
-        <!-- TU OPINIÓN -->
-        <div id="opinionCard" style="display:none;background:#fff;border:1px solid #eadff4;border-radius:14px;padding:10px 12px;margin:0 0 10px;box-shadow:0 4px 12px rgba(106,13,173,.06);">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                <div style="min-width:0;">
+        <!-- TU OPINIÓN: só aparece quando existe uma compra pendente de avaliação -->
+        <div id="opinionCard" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:1px solid #eadff4;border-radius:14px;padding:11px 12px;margin:0 0 10px;box-shadow:0 4px 12px rgba(106,13,173,.06);">
+            <div style="display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;">
+                <div style="flex:1 1 auto;min-width:0;">
                     <div style="font-size:10px;color:#7b6b86;font-weight:800;">TU OPINIÓN</div>
-                    <div id="opinionCardTitle" style="font-size:14px;font-weight:900;color:#6a0dad;margin-top:1px;">⭐ ¿Cómo estuvo tu experiencia?</div>
-                    <div id="opinionCardText" style="font-size:11px;color:#777;margin-top:3px;">Cuéntanos qué te pareció Uai Sô.</div>
+                    <div id="opinionCardTitle" style="font-size:14px;line-height:1.2;font-weight:900;color:#6a0dad;margin-top:2px;white-space:normal;overflow-wrap:anywhere;">⭐ Califica tu compra reciente</div>
+                    <div id="opinionCardText" style="font-size:11px;line-height:1.25;color:#777;margin-top:3px;white-space:normal;">Tu opinión nos ayuda a mejorar.</div>
                 </div>
-                <button type="button" onclick="abrirFeedbackManual()" style="flex:none;border:0;border-radius:10px;padding:9px 11px;background:#6a0dad;color:white;font-size:10px;font-weight:800;cursor:pointer;">
+                <button type="button" onclick="abrirFeedbackManual()" style="flex:0 0 auto;width:auto;max-width:88px;border:0;border-radius:10px;padding:9px 12px;background:#6a0dad;color:white;font-size:10px;font-weight:800;cursor:pointer;">
                     OPINAR
                 </button>
             </div>
@@ -1715,51 +1715,44 @@ async function verificarPedidoFeedback() {
         feedbackConfig = cfg;
 
         const card = document.getElementById("opinionCard");
-        const title = document.getElementById("opinionCardTitle");
-        const text = document.getElementById("opinionCardText");
-
-        if (!uRes.ok || cfg.ativo === false) {
-            if (card) card.style.display = "none";
-            return;
-        }
-
-        if (card) card.style.display = "block";
-
         const googleBtn = document.getElementById("googleReviewBtn");
-        if (googleBtn && cfg.google_url) {
-            googleBtn.href = cfg.google_url;
-            googleBtn.style.display = "block";
-        }
+        if (card) card.style.display = "none";
+        if (googleBtn) googleBtn.style.display = "none";
 
-        // Mesmo sem compra recente, o cliente sempre vê "Tu opinión" no app
-        // e pode abrir o formulário manualmente.
-        if (!u.ultima_compra) {
-            feedbackCompraRef = "";
-            if (title) title.innerText = "⭐ ¿Cómo estuvo tu experiencia?";
-            if (text) text.innerText = "Cuéntanos qué te pareció Uai Sô.";
-            return;
-        }
+        // Não existe solicitação permanente: opinião é vinculada a uma compra registrada.
+        if (!uRes.ok || cfg.ativo === false || !u.ultima_compra) return;
 
-        feedbackCompraRef = String(u.ultima_compra);
+        const compraRef = String(u.ultima_compra);
+        feedbackCompraRef = compraRef;
 
-        if (u.feedback_last_purchase && String(u.feedback_last_purchase) === String(u.ultima_compra)) {
-            if (title) title.innerText = "✅ Gracias por tu opinión";
-            if (text) text.innerText = "Ya registramos tu opinión de tu compra más reciente.";
-            return;
-        }
+        // Se a compra atual já foi avaliada, não mostramos novamente.
+        if (u.feedback_last_purchase && String(u.feedback_last_purchase) === compraRef) return;
 
-        const compraTs = new Date(u.ultima_compra).getTime();
+        const compraTs = new Date(compraRef).getTime();
         if (!Number.isFinite(compraTs)) return;
+
         const maxDias = Math.max(1, Number(cfg.dias_apos_compra || 3));
         const idadeDias = (Date.now() - compraTs) / 86400000;
         if (idadeDias < 0 || idadeDias > maxDias) return;
 
-        if (title) title.innerText = "⭐ Califica tu compra reciente";
-        if (text) text.innerText = "Tu opinión nos ayuda a mejorar.";
+        // Existe compra nova pendente: agora sim aparece na tela principal.
+        if (card) card.style.display = "block";
+
+        // Google Review é oferecido uma única vez pelo nosso app.
+        // Depois de clicar, gravamos localmente para não insistir novamente.
+        const googleJaOferecido = localStorage.getItem("google_review_offered") === "1";
+        if (googleBtn && cfg.google_url && !googleJaOferecido) {
+            googleBtn.href = cfg.google_url;
+            googleBtn.style.display = "block";
+            googleBtn.onclick = () => {
+                localStorage.setItem("google_review_offered", "1");
+                googleBtn.style.display = "none";
+            };
+        }
 
         setTimeout(() => {
             const modal = document.getElementById("feedbackModal");
-            if (modal) modal.style.display = "flex";
+            if (modal && card && card.style.display !== "none") modal.style.display = "flex";
         }, 800);
     } catch (e) {
         console.error("Error feedback:", e);
@@ -1795,6 +1788,8 @@ async function enviarFeedback() {
         if (btn) {
             btn.textContent = "✅ GRACIAS POR TU OPINIÓN";
         }
+        const card = document.getElementById("opinionCard");
+        if (card) card.style.display = "none";
         setTimeout(fecharFeedback, 900);
     } catch (e) {
         alert(e.message);
