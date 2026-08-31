@@ -72,6 +72,12 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     try {
+      const config = String(req.query?.config || "").trim();
+      if (config === "cumpleanos" || config === "bonus_pontos") {
+        const snap = await db.ref(`config/${config}`).once("value");
+        return res.status(200).json({ success:true, config: snap.val() || {} });
+      }
+
       const snap = await db.ref("push_historico").limitToLast(30).once("value");
       const historico = Object.entries(snap.val() || {}).map(([id,item]) => ({ id, ...item })).sort((a,b) => String(b.data || "").localeCompare(String(a.data || "")));
       return res.status(200).json({ historico });
@@ -79,6 +85,47 @@ export default async function handler(req, res) {
   }
 
   try {
+    const action = String(req.body?.action || "").trim();
+
+    if (action === "save_config") {
+      const config = String(req.body?.config || "").trim();
+      if (!["cumpleanos","bonus_pontos"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
+
+      const value = req.body?.value && typeof req.body.value === "object" ? req.body.value : {};
+      if (config === "cumpleanos") {
+        const limpio = {
+          regalo: String(value.regalo || "Regalo especial de cumpleaños").trim(),
+          dias_antes: Math.max(0, Math.min(30, Number(value.dias_antes || 0))),
+          dias_depois: Math.max(0, Math.min(30, Number(value.dias_depois || 0))),
+          ativo: value.ativo === true,
+          updated_at: new Date().toISOString()
+        };
+        await db.ref("config/cumpleanos").set(limpio);
+        return res.status(200).json({ success:true, config:limpio });
+      }
+
+      const dias = Array.isArray(value.dias) ? [...new Set(value.dias.map(Number).filter(n => n >= 0 && n <= 6))] : [];
+      if (!dias.length) return res.status(400).json({ error:"Selecciona por lo menos un día" });
+      const limpio = {
+        ativo: value.ativo === true,
+        multiplicador: Math.max(1, Math.min(5, Number(value.multiplicador || 1))),
+        inicio: /^\d{2}:\d{2}$/.test(String(value.inicio || "")) ? String(value.inicio) : "00:00",
+        fim: /^\d{2}:\d{2}$/.test(String(value.fim || "")) ? String(value.fim) : "23:59",
+        dias,
+        updated_at: new Date().toISOString()
+      };
+      await db.ref("config/bonus_pontos").set(limpio);
+      return res.status(200).json({ success:true, config:limpio });
+    }
+
+    if (action === "birthday_redeem") {
+      const uid = String(req.body?.uid || "").trim();
+      if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+      const ano = String(new Date().getFullYear());
+      await db.ref(`users/${uid}/cumpleanos_canjes/${ano}`).set(true);
+      await db.ref(`users/${uid}/updated_at`).set(new Date().toISOString());
+      return res.status(200).json({ success:true, ano });
+    }
     const titulo = String(req.body?.titulo || "").trim();
     const desc = String(req.body?.desc || "").trim();
     const link = String(req.body?.link || "https://fidelidad-uai-so.vercel.app/").trim();

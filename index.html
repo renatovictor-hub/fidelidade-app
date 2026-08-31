@@ -618,6 +618,18 @@ button {
             </div>
         </div>
 
+
+        <!-- BÔNUS DE PONTOS -->
+        <div id="bonusPontosCard" style="display:none;background:linear-gradient(135deg,#fff7d6,#ffe784);border:1px solid #f2cf4f;border-radius:18px;padding:14px 16px;margin-bottom:14px;box-shadow:0 5px 14px rgba(150,110,0,.10);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="font-size:32px;">⚡</div>
+                <div style="flex:1;">
+                    <div id="bonusPontosTitulo" style="font-size:16px;font-weight:800;color:#6a0dad;">¡Puntos bonus activos!</div>
+                    <div id="bonusPontosTexto" style="font-size:13px;color:#66530b;margin-top:3px;"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- BANNER -->
 
         <img
@@ -911,6 +923,7 @@ window.addEventListener("focus", () => {
     carregarPontos();
 
     carregarBeneficioCumpleanos();
+    carregarBonusPontos();
 });
 
 // Especialmente útil no Safari / PWA do iPhone
@@ -1001,13 +1014,38 @@ function gerarQrCliente() {
    INICIALIZAÇÃO
 ========================== */
 
-window.onload = () => {
+window.onload = async () => {
 
-    const nome =
+    let nome =
         localStorage.getItem("nome");
 
     const push =
         localStorage.getItem("push");
+
+    // Somente em Preview da Vercel: permite testar a interface sem instalar a PWA.
+    // Não altera o fluxo obrigatório do domínio de produção.
+    const params = new URLSearchParams(location.search);
+    const previewMode =
+        location.hostname.includes("renatovictor-1384s-projects.vercel.app") &&
+        params.get("preview") === "1";
+
+    if (previewMode) {
+        const previewUid = String(params.get("uid") || "").trim();
+
+        if (/^user_\d+$/.test(previewUid)) {
+            uid = previewUid;
+            try {
+                const r = await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`, { cache:"no-store" });
+                const cliente = await r.json();
+                if (r.ok && cliente && !cliente.error) {
+                    nome = cliente.nome || cliente.nombre || "Cliente de prueba";
+                }
+            } catch (_) {}
+        }
+
+        if (!nome) nome = "Cliente de prueba";
+        return abrirAppPreview(nome);
+    }
 
 
     document.body.addEventListener(
@@ -1091,6 +1129,21 @@ window.onload = () => {
     }
 };
 
+
+async function abrirAppPreview(nomePreview) {
+    document.querySelectorAll(".step-box").forEach(e => e.classList.remove("active"));
+    const main = document.getElementById("mainApp");
+    if (main) main.style.display = "block";
+
+    const greeting = document.getElementById("greeting");
+    if (greeting) greeting.innerText = `Hola, ${nomePreview}`;
+
+    await carregarPontos();
+    carregarBeneficioCumpleanos();
+    carregarBonusPontos();
+    carregarPromocoes();
+    carregarContadorUsers();
+}
 
 /* ==========================
    FUNÇÕES DE INTERAÇÃO
@@ -1463,6 +1516,48 @@ async function carregarBeneficioCumpleanos() {
         }
     } catch (e) {
         console.error("Error cumpleaños:", e);
+        card.style.display = "none";
+    }
+}
+
+/* ==========================
+   BÔNUS DE PONTOS
+========================== */
+
+async function carregarBonusPontos() {
+    const card = document.getElementById("bonusPontosCard");
+    if (!card) return;
+
+    try {
+        const r = await fetch(
+            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/config/bonus_pontos.json?t=${Date.now()}`,
+            { cache:"no-store" }
+        );
+        const cfg = await r.json();
+        if (!cfg || cfg.ativo !== true) {
+            card.style.display = "none";
+            return;
+        }
+
+        const agora = new Date(new Date().toLocaleString("en-US", { timeZone:"America/Cancun" }));
+        const dia = agora.getDay();
+        const hhmm = `${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
+        const dias = Array.isArray(cfg.dias) ? cfg.dias.map(Number) : [];
+        const inicio = String(cfg.inicio || "00:00");
+        const fim = String(cfg.fim || "23:59");
+        const dentro = inicio <= fim ? (hhmm >= inicio && hhmm <= fim) : (hhmm >= inicio || hhmm <= fim);
+
+        if (dias.includes(dia) && dentro) {
+            const mult = Number(cfg.multiplicador || 1);
+            document.getElementById("bonusPontosTitulo").innerText = `⚡ ¡Hoy ganas x${mult} puntos!`;
+            document.getElementById("bonusPontosTexto").innerText =
+                `Válido hoy de ${inicio} a ${fim}. Aprovecha tu compra.`;
+            card.style.display = "block";
+        } else {
+            card.style.display = "none";
+        }
+    } catch (e) {
+        console.error("Error bonus puntos:", e);
         card.style.display = "none";
     }
 }

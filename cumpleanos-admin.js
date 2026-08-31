@@ -1,5 +1,4 @@
 (() => {
-  const FB = "https://fidelidade-app-9671c-default-rtdb.firebaseio.com";
   if (document.getElementById("cumpleanosAdminCard")) return;
 
   const aside = document.querySelector("aside");
@@ -42,8 +41,10 @@
 
   async function cargarConfig(){
     try{
-      const r=await fetch(`${FB}/config/cumpleanos.json?t=${Date.now()}`,{cache:"no-store"});
-      const c=await r.json()||{};
+      const r=await fetch(`/api/sendpush?config=cumpleanos&t=${Date.now()}`,{cache:"no-store"});
+      const data=await r.json();
+      if(!r.ok) throw new Error(data.error||"Error al cargar");
+      const c=data.config||{};
       $("cumpleRegalo").value=c.regalo||"";
       $("cumpleAntes").value=Number(c.dias_antes??3);
       $("cumpleDepois").value=Number(c.dias_depois??7);
@@ -60,8 +61,9 @@
       ativo:$("cumpleAtivo").checked,
       updated_at:new Date().toISOString()
     };
-    const r=await fetch(`${FB}/config/cumpleanos.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)});
-    $("cumpleEstado").textContent=r.ok?"✅ Configuración guardada.":"❌ Error al guardar.";
+    const r=await fetch("/api/sendpush",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save_config",config:"cumpleanos",value:cfg})});
+    const data=await r.json().catch(()=>({}));
+    $("cumpleEstado").textContent=r.ok?"✅ Configuración guardada.":"❌ "+(data.error||"Error al guardar.");
   };
 
   function actualizarCliente(){
@@ -83,11 +85,9 @@
     if(typeof clienteSelecionado==="undefined"||!clienteSelecionado?.uid) return alert("Busca un cliente primero.");
     const ano=new Date().getFullYear();
     if(!confirm("¿Marcar el regalo de cumpleaños como canjeado?")) return;
-    const patch={};
-    patch[`cumpleanos_canjes/${ano}`]=true;
-    patch["updated_at"]=new Date().toISOString();
-    const r=await fetch(`${FB}/users/${clienteSelecionado.uid}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});
-    if(!r.ok) return alert("No se pudo registrar el canje.");
+    const r=await fetch("/api/sendpush",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"birthday_redeem",uid:clienteSelecionado.uid})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok) return alert(data.error||"No se pudo registrar el canje.");
     clienteSelecionado.cumpleanos_canjes={...(clienteSelecionado.cumpleanos_canjes||{}),[ano]:true};
     actualizarCliente();
     alert("✅ Regalo de cumpleaños marcado como canjeado.");
