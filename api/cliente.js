@@ -25,11 +25,28 @@ export default async function handler(req, res) {
     try {
         if (req.method === "POST") {
             const uid = String(req.body?.uid || "").trim();
+            const action = String(req.body?.action || "").trim();
+
+            if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+
+            if (action === "google_review_clicked") {
+                const agora = new Date().toISOString();
+                const userRef = admin.database().ref(`users/${uid}`);
+                const userSnap = await userRef.once("value");
+                if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
+
+                await userRef.update({
+                    google_review_clicked: true,
+                    google_review_clicked_at: agora
+                });
+
+                return res.status(200).json({ success:true });
+            }
+
             const estrelas = Math.floor(Number(req.body?.estrelas || 0));
             const comentario = String(req.body?.comentario || "").trim().slice(0, 1200);
             const compraRef = String(req.body?.compra_ref || "").trim().slice(0, 80);
 
-            if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
             if (estrelas < 1 || estrelas > 5) return res.status(400).json({ error:"Calificación inválida" });
 
             const userRef = admin.database().ref(`users/${uid}`);
@@ -79,7 +96,8 @@ export default async function handler(req, res) {
             referidos_recompensados: Number(cliente.referidos_recompensados || 0),
             pontos_indicacao_total: Number(cliente.pontos_indicacao_total || 0),
             ultima_compra: cliente.ultima_compra || "",
-            feedback_last_purchase: cliente.feedback_last_purchase || ""
+            feedback_last_purchase: cliente.feedback_last_purchase || "",
+            google_review_clicked: cliente.google_review_clicked === true
         });
     } catch (error) {
         console.error("Erro API cliente:", error);
