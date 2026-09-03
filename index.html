@@ -16,16 +16,25 @@
 
 <script>
 let OneSignalInstance = null;
+let OneSignalInitError = null;
 
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 OneSignalDeferred.push(async function(OS) {
-    OneSignalInstance = OS;
+    try {
+        await OS.init({
+            appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+            notifyButton: { enable: false }
+        });
 
-    await OS.init({
-        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-        notifyButton: { enable: false }
-    });
+        OneSignalInstance = OS;
+        OneSignalInitError = null;
+        window.dispatchEvent(new Event("uaiso:onesignal-ready"));
+    } catch (e) {
+        console.error("OneSignal init error:", e);
+        OneSignalInitError = e;
+        window.dispatchEvent(new Event("uaiso:onesignal-error"));
+    }
 });
 </script>
 
@@ -602,11 +611,14 @@ button {
         </p>
 
         <button
+            id="btnAtivarNotif"
             onclick="ativarNotif()"
             class="btn-notif"
         >
             ACTIVAR NOTIFICACIONES
         </button>
+
+        <div id="notifStatus" style="min-height:18px;margin-top:12px;font-size:12px;line-height:1.4;color:#777;"></div>
 
     </div>
 
@@ -1310,60 +1322,70 @@ window.onload = async () => {
     const retornoInterno = sessionStorage.getItem("uaiso_internal_return") === "1";
     if (retornoInterno) {
         sessionStorage.removeItem("uaiso_internal_return");
-        if (nome) return abrirApp();
+    }
+
+    // Fora do PWA instalado, o app continua obrigatório: navegador mostra apenas a instalação.
+    if (!isStandalone) {
+        show("stepInstall");
+
+        if (isIOS) {
+            const guide = document.getElementById("iosGuide");
+            const msg = document.getElementById("installMsg");
+            const btnAnd = document.getElementById("btnAndroid");
+
+            if (guide) guide.style.display = "block";
+            if (msg) msg.innerText = "Sigue los pasos para instalar la App en tu iPhone.";
+            if (btnAnd) btnAnd.style.display = "none";
+        }
+
+        return;
+    }
+
+    // Em uma reinstalação, a permissão do navegador pode continuar concedida,
+    // enquanto o localStorage ou a assinatura do OneSignal precisam ser refeitos.
+    const permisoActual = ("Notification" in window) ? Notification.permission : "default";
+    const pushGuardado = localStorage.getItem("push") === "true";
+
+    if (permisoActual === "granted") {
+        try {
+            const reparado = await garantirAssinaturaPush({ pedirPermissao:false });
+            if (reparado.ok) {
+                localStorage.setItem("push", "true");
+            }
+        } catch (e) {
+            console.warn("No se pudo reparar push automáticamente:", e);
+        }
+    }
+
+    const pushListo =
+        ("Notification" in window) &&
+        Notification.permission === "granted" &&
+        localStorage.getItem("push") === "true";
+
+    if (!pushListo) {
+        show("stepNotif");
+
+        if (Notification.permission === "denied") {
+            setNotifStatus(
+                "Las notificaciones están bloqueadas para Uai Sô. Actívalas en la configuración del sitio/app y vuelve a intentarlo.",
+                "#b42318"
+            );
+        } else if (pushGuardado && Notification.permission !== "granted") {
+            localStorage.removeItem("push");
+        }
+
+        return;
     }
 
     if (nome) {
         return abrirApp();
     }
 
-
-    if (isStandalone) {
-
-        if (!push) {
-            return show("stepNotif");
-        }
-
-        return show("stepNome");
-    }
+    return show("stepNome");
 
 
-    show("stepInstall");
-
-
-    if (isIOS) {
-
-        const guide =
-            document.getElementById(
-                "iosGuide"
-            );
-
-        const msg =
-            document.getElementById(
-                "installMsg"
-            );
-
-        if (guide) {
-            guide.style.display =
-                "block";
-        }
-
-        if (msg) {
-            msg.innerText =
-                "Sigue los pasos para instalar la App en tu iPhone.";
-        }
-
-        const btnAnd =
-            document.getElementById(
-                "btnAndroid"
-            );
-
-        if (btnAnd) {
-            btnAnd.style.display =
-                "none";
-        }
-    }
 };
+
 
 
 async function abrirAppPreview(nomePreview) {
@@ -1413,42 +1435,124 @@ async function instalar() {
 }
 
 
-async function ativarNotif() {
+function setNotifStatus(texto, cor="#777") {
+    const el = document.getElementById("notifStatus");
+    if (el) {
+        el.textContent = texto || "";
+        el.style.color = cor;
+    }
+}
 
-    if (!OneSignalInstance) {
-        return alert("Cargando...");
+async function esperarOneSignal(maxMs=10000) {
+    if (OneSignalInstance) return OneSignalInstance;
+
+    const inicio = Date.now();
+    while (!OneSignalInstance && !OneSignalInitError && (Date.now() - inicio) < maxMs) {
+        await new Promise(r => setTimeout(r, 120));
     }
 
-    await OneSignalInstance
-        .Notifications
-        .requestPermission();
+    return OneSignalInstance;
+}
 
-    if (
-        Notification.permission ===
-        "granted"
-    ) {
+async function garantirAssinaturaPush({ pedirPermissao=false } = {}) {
+    if (!("Notification" in window)) {
+        throw new Error("Este navegador no admite notificaciones.");
+    }
 
-        localStorage.setItem(
-            "push",
-            "true"
-        );
+    const OS = await esperarOneSignal(10000);
+    if (!OS) {
+        throw new Error("No se pudo iniciar el servicio de notificaciones. Cierra y abre la app e inténtalo otra vez.");
+    }
 
-        setTimeout(
-            () => {
+    if (Notification.permission === "denied") {
+        return { ok:false, denied:true };
+    }
 
-                tocarSomSucesso();
+    if (pedirPermissao && Notification.permission !== "granted") {
+        await OS.Notifications.requestPermission();
+    }
 
-                show("stepNome");
+    const permisoNavegador = Notification.permission === "granted";
+    const permisoOneSignal =
+        OS.Notifications?.permission === true ||
+        OS.Notifications?.permission === "granted";
 
-            },
-            1000
-        );
+    if (!permisoNavegador && !permisoOneSignal) {
+        return { ok:false, denied:Notification.permission === "denied" };
+    }
 
+    try {
+        if (OS.User?.PushSubscription?.optIn) {
+            await OS.User.PushSubscription.optIn();
+        }
+    } catch (e) {
+        console.warn("Push optIn warning:", e);
+    }
+
+    // Dá tempo ao SDK para reconstruir a assinatura após reinstalação.
+    await new Promise(r => setTimeout(r, 350));
+
+    return { ok:true };
+}
+
+function avancarDepoisNotificacao() {
+    localStorage.setItem("push", "true");
+    tocarSomSucesso();
+
+    if (localStorage.getItem("nome")) {
+        abrirApp();
     } else {
+        show("stepNome");
+    }
+}
 
-        alert(
-            "¡Aviso! Necesitas activar las notificaciones."
-        );
+async function ativarNotif() {
+    const btn = document.getElementById("btnAtivarNotif");
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "ACTIVANDO...";
+    }
+
+    setNotifStatus("Preparando notificaciones...");
+
+    try {
+        const r = await garantirAssinaturaPush({ pedirPermissao:true });
+
+        if (!r.ok) {
+            localStorage.removeItem("push");
+
+            if (r.denied) {
+                setNotifStatus(
+                    "Las notificaciones están bloqueadas para Uai Sô. Actívalas en la configuración del sitio/app y vuelve a intentarlo.",
+                    "#b42318"
+                );
+            } else {
+                setNotifStatus("Necesitamos tu permiso para continuar.", "#b42318");
+            }
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "ACTIVAR NOTIFICACIONES";
+            }
+            return;
+        }
+
+        setNotifStatus("✓ Notificaciones activadas", "#198754");
+
+        setTimeout(() => {
+            avancarDepoisNotificacao();
+        }, 300);
+
+    } catch (e) {
+        console.error("Error al activar notificaciones:", e);
+        localStorage.removeItem("push");
+        setNotifStatus(e.message || "No se pudieron activar las notificaciones.", "#b42318");
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "REINTENTAR NOTIFICACIONES";
+        }
     }
 }
 
