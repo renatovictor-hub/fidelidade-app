@@ -1557,6 +1557,31 @@ async function ativarNotif() {
 }
 
 
+async function sincronizarIdentidadePush() {
+    const currentUid = String(localStorage.getItem("uid") || uid || "").trim();
+    const nomeAtual = String(localStorage.getItem("nome") || "").trim();
+    const telefoneAtual = String(localStorage.getItem("telefone") || "").replace(/\D/g, "");
+
+    if (!/^user_\d+$/.test(currentUid) || telefoneAtual.length !== 10) return false;
+
+    try {
+        const OS = await esperarOneSignal(8000);
+        if (!OS) return false;
+
+        await OS.login(currentUid);
+
+        if (OS.User?.addTag) {
+            if (nomeAtual) await OS.User.addTag("user_name", nomeAtual);
+            await OS.User.addTag("telefone", telefoneAtual);
+        }
+
+        return true;
+    } catch (e) {
+        console.warn("No se pudo sincronizar identidad push:", e);
+        return false;
+    }
+}
+
 /* ==========================
    SALVAR NOME
 ========================== */
@@ -1642,33 +1667,23 @@ async function salvarNome() {
 
             localStorage.setItem("nascimento", nascimento);
 
-            await fetch(
-                `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
-                {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        nascimento: nascimento,
-                        updated_at: new Date().toISOString()
-                    })
-                }
-            );
+            const syncRes = await fetch("/api/cliente", {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({
+                    action:"sync_profile",
+                    uid,
+                    nascimento
+                })
+            });
 
-
-            if (OneSignalInstance) {
-
-                await OneSignalInstance.login(uid);
-
-                await OneSignalInstance.User.addTag(
-                    "user_name",
-                    verificarData.nome || nome
-                );
-
-                await OneSignalInstance.User.addTag(
-                    "telefone",
-                    telefoneLimpo
-                );
+            const syncData = await syncRes.json().catch(() => ({}));
+            if (!syncRes.ok) {
+                throw new Error(syncData.error || "No se pudo actualizar tu cuenta.");
             }
+
+            // Não bloqueia recuperação de conta se o SDK demorar; abre o app e volta a sincronizar depois.
+            sincronizarIdentidadePush();
 
 
             alert(
@@ -1697,51 +1712,33 @@ async function salvarNome() {
         localStorage.setItem("nascimento", nascimento);
 
 
-        if (OneSignalInstance) {
+        // 4. Cria usuário novo pela API do servidor.
+        const refAtual = String(localStorage.getItem("referral_uid") || "").trim();
+        const registerRes = await fetch("/api/cliente", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                action:"register",
+                uid,
+                nome,
+                telefone:telefoneLimpo,
+                nascimento,
+                referido_por:/^user_\d+$/.test(refAtual) && refAtual !== uid ? refAtual : null
+            })
+        });
 
-            await OneSignalInstance.login(uid);
+        const registerData = await registerRes.json().catch(() => ({}));
 
-            await OneSignalInstance.User.addTag(
-                "user_name",
-                nome
-            );
-
-            await OneSignalInstance.User.addTag(
-                "telefone",
-                telefoneLimpo
-            );
+        if (registerRes.status === 409 && registerData.uid) {
+            // Protege contra cadastro duplicado em duas abas/dispositivos.
+            uid = registerData.uid;
+            localStorage.setItem("uid", uid);
+            localStorage.setItem("nome", registerData.nome || nome);
+        } else if (!registerRes.ok) {
+            throw new Error(registerData.error || "No se pudo crear tu cuenta.");
         }
 
-
-        // 4. Cria usuário novo
-        await fetch(
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
-            {
-                method: "PATCH",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    nome: nome,
-                    telefone: telefoneLimpo,
-                    nascimento: nascimento,
-                    user_id: uid,
-                    pontos: 0,
-                    referido_por: (() => {
-                        const ref = String(localStorage.getItem("referral_uid") || "").trim();
-                        return /^user_\d+$/.test(ref) && ref !== uid ? ref : null;
-                    })(),
-                    referido_recompensado: false,
-                    created_at:
-                        new Date().toISOString(),
-                    updated_at:
-                        new Date().toISOString()
-                })
-            }
-        );
+        sincronizarIdentidadePush();
 
 
         localStorage.removeItem("referral_uid");
@@ -1807,6 +1804,7 @@ function abrirApp() {
 
     atualizarContador();
 
+    sincronizarIdentidadePush();
     carregarPontos();
     carregarBeneficioCumpleanos();
     carregarBonusPontos();
