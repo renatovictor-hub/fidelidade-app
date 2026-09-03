@@ -29,6 +29,58 @@ export default async function handler(req, res) {
 
             if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
 
+            if (action === "register") {
+                const nome = String(req.body?.nome || "").trim().slice(0, 100);
+                const telefone = String(req.body?.telefone || "").replace(/\D/g, "");
+                const nascimento = String(req.body?.nascimento || "").trim();
+                const referidoPor = String(req.body?.referido_por || "").trim();
+
+                if (!nome) return res.status(400).json({ error:"Nombre obligatorio" });
+                if (telefone.length !== 10) return res.status(400).json({ error:"Teléfono inválido" });
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(nascimento)) return res.status(400).json({ error:"Fecha de nacimiento inválida" });
+
+                const db = admin.database();
+                const duplicado = await db.ref("users").orderByChild("telefone").equalTo(telefone).once("value");
+                if (duplicado.exists()) {
+                    const [existUid, existUser] = Object.entries(duplicado.val() || {})[0] || [];
+                    return res.status(409).json({
+                        error:"Este teléfono ya está registrado",
+                        uid:existUid || "",
+                        nome:existUser?.nome || existUser?.nombre || ""
+                    });
+                }
+
+                const agora = new Date().toISOString();
+                const payload = {
+                    nome,
+                    telefone,
+                    nascimento,
+                    user_id: uid,
+                    pontos: 0,
+                    pontos_acumulados: 0,
+                    referido_por: /^user_\d+$/.test(referidoPor) && referidoPor !== uid ? referidoPor : null,
+                    referido_recompensado: false,
+                    created_at: agora,
+                    updated_at: agora
+                };
+
+                await db.ref(`users/${uid}`).set(payload);
+                return res.status(200).json({ success:true, uid, nome, telefone });
+            }
+
+            if (action === "sync_profile") {
+                const nascimento = String(req.body?.nascimento || "").trim();
+                const userRef = admin.database().ref(`users/${uid}`);
+                const userSnap = await userRef.once("value");
+                if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
+
+                const updates = { updated_at:new Date().toISOString() };
+                if (/^\d{4}-\d{2}-\d{2}$/.test(nascimento)) updates.nascimento = nascimento;
+
+                await userRef.update(updates);
+                return res.status(200).json({ success:true });
+            }
+
             if (action === "google_review_clicked") {
                 const agora = new Date().toISOString();
                 const userRef = admin.database().ref(`users/${uid}`);
