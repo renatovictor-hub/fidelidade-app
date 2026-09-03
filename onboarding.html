@@ -40,7 +40,7 @@ OneSignalDeferred.push(async function(OS) {
 <button id="installBtn" class="install">INSTALAR APP</button>
 <div id="iosGuide" class="ios"><b>En iPhone:</b><br>1. Toca <b>Compartir</b> ⬆️ en Safari.<br>2. Elige <b>Agregar a pantalla de inicio</b>.<br>3. Toca <b>Agregar</b> y abre Uai Sô desde el nuevo ícono.</div>
 <div id="installedMsg" class="installed">✓ App instalada. Abriendo Uai Sô…</div>
-<p class="note">Después de instalar, te pediremos tu nombre y permiso para recibir notificaciones. Así no pierdes promociones ni recompensas.</p>
+<p class="note">Después de instalar, abre Uai Sô desde el nuevo ícono. Primero activaremos las notificaciones y luego recuperaremos o crearemos tu cuenta.</p>
 <div class="steps"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
 </section>
 </main>
@@ -53,7 +53,17 @@ const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||wi
 const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
 const refParam=String(new URLSearchParams(location.search).get('ref')||'').trim();
 if(/^user_\d+$/.test(refParam)) localStorage.setItem('referral_uid',refParam);
-function abrirApp(){installed.style.display='block';btn.style.display='none';setTimeout(()=>location.replace('/index.html?installed=1'),350)}
+function abrirApp(){
+  installed.style.display='block';
+  btn.style.display='none';
+
+  // Se esta página foi aberta dentro de uma instalação antiga, entra no app.
+  // No navegador normal, após instalar, não redirecionamos para o instalador de novo:
+  // o cliente abre pelo ícone recém-criado.
+  if(standalone()){
+    setTimeout(()=>location.replace('/index.html'),120);
+  }
+}
 if(standalone()) abrirApp();
 
 window.addEventListener('beforeinstallprompt',e=>{
