@@ -16,25 +16,16 @@
 
 <script>
 let OneSignalInstance = null;
-let OneSignalInitError = null;
 
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 OneSignalDeferred.push(async function(OS) {
-    try {
-        await OS.init({
-            appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-            notifyButton: { enable: false }
-        });
+    OneSignalInstance = OS;
 
-        OneSignalInstance = OS;
-        OneSignalInitError = null;
-        window.dispatchEvent(new Event("uaiso:onesignal-ready"));
-    } catch (e) {
-        console.error("OneSignal init error:", e);
-        OneSignalInitError = e;
-        window.dispatchEvent(new Event("uaiso:onesignal-error"));
-    }
+    await OS.init({
+        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        notifyButton: { enable: false }
+    });
 });
 </script>
 
@@ -611,14 +602,11 @@ button {
         </p>
 
         <button
-            id="btnAtivarNotif"
             onclick="ativarNotif()"
             class="btn-notif"
         >
             ACTIVAR NOTIFICACIONES
         </button>
-
-        <div id="notifStatus" style="min-height:18px;margin-top:12px;font-size:12px;line-height:1.4;color:#777;"></div>
 
     </div>
 
@@ -1322,70 +1310,60 @@ window.onload = async () => {
     const retornoInterno = sessionStorage.getItem("uaiso_internal_return") === "1";
     if (retornoInterno) {
         sessionStorage.removeItem("uaiso_internal_return");
-    }
-
-    // Fora do PWA instalado, o app continua obrigatório: navegador mostra apenas a instalação.
-    if (!isStandalone) {
-        show("stepInstall");
-
-        if (isIOS) {
-            const guide = document.getElementById("iosGuide");
-            const msg = document.getElementById("installMsg");
-            const btnAnd = document.getElementById("btnAndroid");
-
-            if (guide) guide.style.display = "block";
-            if (msg) msg.innerText = "Sigue los pasos para instalar la App en tu iPhone.";
-            if (btnAnd) btnAnd.style.display = "none";
-        }
-
-        return;
-    }
-
-    // Em uma reinstalação, a permissão do navegador pode continuar concedida,
-    // enquanto o localStorage ou a assinatura do OneSignal precisam ser refeitos.
-    const permisoActual = ("Notification" in window) ? Notification.permission : "default";
-    const pushGuardado = localStorage.getItem("push") === "true";
-
-    if (permisoActual === "granted") {
-        try {
-            const reparado = await garantirAssinaturaPush({ pedirPermissao:false });
-            if (reparado.ok) {
-                localStorage.setItem("push", "true");
-            }
-        } catch (e) {
-            console.warn("No se pudo reparar push automáticamente:", e);
-        }
-    }
-
-    const pushListo =
-        ("Notification" in window) &&
-        Notification.permission === "granted" &&
-        localStorage.getItem("push") === "true";
-
-    if (!pushListo) {
-        show("stepNotif");
-
-        if (Notification.permission === "denied") {
-            setNotifStatus(
-                "Las notificaciones están bloqueadas para Uai Sô. Actívalas en la configuración del sitio/app y vuelve a intentarlo.",
-                "#b42318"
-            );
-        } else if (pushGuardado && Notification.permission !== "granted") {
-            localStorage.removeItem("push");
-        }
-
-        return;
+        if (nome) return abrirApp();
     }
 
     if (nome) {
         return abrirApp();
     }
 
-    return show("stepNome");
+
+    if (isStandalone) {
+
+        if (!push) {
+            return show("stepNotif");
+        }
+
+        return show("stepNome");
+    }
 
 
+    show("stepInstall");
+
+
+    if (isIOS) {
+
+        const guide =
+            document.getElementById(
+                "iosGuide"
+            );
+
+        const msg =
+            document.getElementById(
+                "installMsg"
+            );
+
+        if (guide) {
+            guide.style.display =
+                "block";
+        }
+
+        if (msg) {
+            msg.innerText =
+                "Sigue los pasos para instalar la App en tu iPhone.";
+        }
+
+        const btnAnd =
+            document.getElementById(
+                "btnAndroid"
+            );
+
+        if (btnAnd) {
+            btnAnd.style.display =
+                "none";
+        }
+    }
 };
-
 
 
 async function abrirAppPreview(nomePreview) {
@@ -1435,152 +1413,45 @@ async function instalar() {
 }
 
 
-function setNotifStatus(texto, cor="#777") {
-    const el = document.getElementById("notifStatus");
-    if (el) {
-        el.textContent = texto || "";
-        el.style.color = cor;
-    }
-}
-
-async function esperarOneSignal(maxMs=10000) {
-    if (OneSignalInstance) return OneSignalInstance;
-
-    const inicio = Date.now();
-    while (!OneSignalInstance && !OneSignalInitError && (Date.now() - inicio) < maxMs) {
-        await new Promise(r => setTimeout(r, 120));
-    }
-
-    return OneSignalInstance;
-}
-
-async function garantirAssinaturaPush({ pedirPermissao=false } = {}) {
-    if (!("Notification" in window)) {
-        throw new Error("Este navegador no admite notificaciones.");
-    }
-
-    const OS = await esperarOneSignal(10000);
-    if (!OS) {
-        throw new Error("No se pudo iniciar el servicio de notificaciones. Cierra y abre la app e inténtalo otra vez.");
-    }
-
-    if (Notification.permission === "denied") {
-        return { ok:false, denied:true };
-    }
-
-    if (pedirPermissao && Notification.permission !== "granted") {
-        await OS.Notifications.requestPermission();
-    }
-
-    const permisoNavegador = Notification.permission === "granted";
-    const permisoOneSignal =
-        OS.Notifications?.permission === true ||
-        OS.Notifications?.permission === "granted";
-
-    if (!permisoNavegador && !permisoOneSignal) {
-        return { ok:false, denied:Notification.permission === "denied" };
-    }
-
-    try {
-        if (OS.User?.PushSubscription?.optIn) {
-            await OS.User.PushSubscription.optIn();
-        }
-    } catch (e) {
-        console.warn("Push optIn warning:", e);
-    }
-
-    // Dá tempo ao SDK para reconstruir a assinatura após reinstalação.
-    await new Promise(r => setTimeout(r, 350));
-
-    return { ok:true };
-}
-
-function avancarDepoisNotificacao() {
-    localStorage.setItem("push", "true");
-    tocarSomSucesso();
-
-    if (localStorage.getItem("nome")) {
-        abrirApp();
-    } else {
-        show("stepNome");
-    }
-}
-
 async function ativarNotif() {
-    const btn = document.getElementById("btnAtivarNotif");
 
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = "ACTIVANDO...";
+    if (!OneSignalInstance) {
+        return alert("Cargando...");
     }
 
-    setNotifStatus("Preparando notificaciones...");
+    await OneSignalInstance
+        .Notifications
+        .requestPermission();
 
-    try {
-        const r = await garantirAssinaturaPush({ pedirPermissao:true });
+    if (
+        Notification.permission ===
+        "granted"
+    ) {
 
-        if (!r.ok) {
-            localStorage.removeItem("push");
+        localStorage.setItem(
+            "push",
+            "true"
+        );
 
-            if (r.denied) {
-                setNotifStatus(
-                    "Las notificaciones están bloqueadas para Uai Sô. Actívalas en la configuración del sitio/app y vuelve a intentarlo.",
-                    "#b42318"
-                );
-            } else {
-                setNotifStatus("Necesitamos tu permiso para continuar.", "#b42318");
-            }
+        setTimeout(
+            () => {
 
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = "ACTIVAR NOTIFICACIONES";
-            }
-            return;
-        }
+                tocarSomSucesso();
 
-        setNotifStatus("✓ Notificaciones activadas", "#198754");
+                show("stepNome");
 
-        setTimeout(() => {
-            avancarDepoisNotificacao();
-        }, 300);
+            },
+            1000
+        );
 
-    } catch (e) {
-        console.error("Error al activar notificaciones:", e);
-        localStorage.removeItem("push");
-        setNotifStatus(e.message || "No se pudieron activar las notificaciones.", "#b42318");
+    } else {
 
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = "REINTENTAR NOTIFICACIONES";
-        }
+        alert(
+            "¡Aviso! Necesitas activar las notificaciones."
+        );
     }
 }
 
-
-async function sincronizarIdentidadePush() {
-    const currentUid = String(localStorage.getItem("uid") || uid || "").trim();
-    const nomeAtual = String(localStorage.getItem("nome") || "").trim();
-    const telefoneAtual = String(localStorage.getItem("telefone") || "").replace(/\D/g, "");
-
-    if (!/^user_\d+$/.test(currentUid) || telefoneAtual.length !== 10) return false;
-
-    try {
-        const OS = await esperarOneSignal(8000);
-        if (!OS) return false;
-
-        await OS.login(currentUid);
-
-        if (OS.User?.addTag) {
-            if (nomeAtual) await OS.User.addTag("user_name", nomeAtual);
-            await OS.User.addTag("telefone", telefoneAtual);
-        }
-
-        return true;
-    } catch (e) {
-        console.warn("No se pudo sincronizar identidad push:", e);
-        return false;
-    }
-}
 
 /* ==========================
    SALVAR NOME
@@ -1667,23 +1538,33 @@ async function salvarNome() {
 
             localStorage.setItem("nascimento", nascimento);
 
-            const syncRes = await fetch("/api/cliente", {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({
-                    action:"sync_profile",
-                    uid,
-                    nascimento
-                })
-            });
+            await fetch(
+                `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nascimento: nascimento,
+                        updated_at: new Date().toISOString()
+                    })
+                }
+            );
 
-            const syncData = await syncRes.json().catch(() => ({}));
-            if (!syncRes.ok) {
-                throw new Error(syncData.error || "No se pudo actualizar tu cuenta.");
+
+            if (OneSignalInstance) {
+
+                await OneSignalInstance.login(uid);
+
+                await OneSignalInstance.User.addTag(
+                    "user_name",
+                    verificarData.nome || nome
+                );
+
+                await OneSignalInstance.User.addTag(
+                    "telefone",
+                    telefoneLimpo
+                );
             }
-
-            // Não bloqueia recuperação de conta se o SDK demorar; abre o app e volta a sincronizar depois.
-            sincronizarIdentidadePush();
 
 
             alert(
@@ -1712,33 +1593,51 @@ async function salvarNome() {
         localStorage.setItem("nascimento", nascimento);
 
 
-        // 4. Cria usuário novo pela API do servidor.
-        const refAtual = String(localStorage.getItem("referral_uid") || "").trim();
-        const registerRes = await fetch("/api/cliente", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                action:"register",
-                uid,
-                nome,
-                telefone:telefoneLimpo,
-                nascimento,
-                referido_por:/^user_\d+$/.test(refAtual) && refAtual !== uid ? refAtual : null
-            })
-        });
+        if (OneSignalInstance) {
 
-        const registerData = await registerRes.json().catch(() => ({}));
+            await OneSignalInstance.login(uid);
 
-        if (registerRes.status === 409 && registerData.uid) {
-            // Protege contra cadastro duplicado em duas abas/dispositivos.
-            uid = registerData.uid;
-            localStorage.setItem("uid", uid);
-            localStorage.setItem("nome", registerData.nome || nome);
-        } else if (!registerRes.ok) {
-            throw new Error(registerData.error || "No se pudo crear tu cuenta.");
+            await OneSignalInstance.User.addTag(
+                "user_name",
+                nome
+            );
+
+            await OneSignalInstance.User.addTag(
+                "telefone",
+                telefoneLimpo
+            );
         }
 
-        sincronizarIdentidadePush();
+
+        // 4. Cria usuário novo
+        await fetch(
+            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
+            {
+                method: "PATCH",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    nome: nome,
+                    telefone: telefoneLimpo,
+                    nascimento: nascimento,
+                    user_id: uid,
+                    pontos: 0,
+                    referido_por: (() => {
+                        const ref = String(localStorage.getItem("referral_uid") || "").trim();
+                        return /^user_\d+$/.test(ref) && ref !== uid ? ref : null;
+                    })(),
+                    referido_recompensado: false,
+                    created_at:
+                        new Date().toISOString(),
+                    updated_at:
+                        new Date().toISOString()
+                })
+            }
+        );
 
 
         localStorage.removeItem("referral_uid");
@@ -1804,7 +1703,6 @@ function abrirApp() {
 
     atualizarContador();
 
-    sincronizarIdentidadePush();
     carregarPontos();
     carregarBeneficioCumpleanos();
     carregarBonusPontos();
