@@ -27,10 +27,15 @@ frame.addEventListener('load',()=>{
     .offer-wa{width:100%;margin-top:10px;border:0;border-radius:11px;padding:11px 12px;background:#25d366;color:#fff;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none}
     .offer-countdown{display:inline-flex;align-items:center;gap:5px;margin:8px 0 0;padding:6px 8px;border-radius:9px;background:#f5effa;color:#6a0dad;font-size:9px;font-weight:800}
     .offer.expired .offer-countdown,.offer.expired .offer-wa{display:none!important}
+    .benefit-complete{background:#f6f3f7!important;border-color:#e5dfe8!important}
+    .benefit-complete .benefit-icon{background:#ece7ef!important}
+    .benefit-complete .benefit-main h3{color:#726a77!important}
   `;
   d.head.appendChild(style);
 
   let promoCache=[];
+  let clientState=null;
+
   async function getPromos(){
     try{
       const r=await fetch('https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json?t='+Date.now(),{cache:'no-store'});
@@ -38,15 +43,41 @@ frame.addEventListener('load',()=>{
       promoCache=Object.entries(raw).map(([id,p])=>({id,...(p||{})}));
     }catch(_){promoCache=[]}
   }
+  async function getClient(){
+    try{
+      const uid=new URLSearchParams(location.search).get('uid')||'';
+      if(!uid)return;
+      const r=await fetch('/api/cliente?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});
+      if(r.ok)clientState=await r.json();
+    }catch(_){clientState=null}
+  }
+
   function titleOf(p){return String(p?.titulo||p?.title||p?.nome||'').trim()}
-  function descOf(p){return String(p?.texto||p?.descricao||p?.descripcion||p?.mensagem||'').trim()}
-  function endOf(p){return p?.fim||p?.fecha_fin||p?.expires_at||p?.validade||''}
+  function descOf(p){return String(p?.desc||p?.texto||p?.descricao||p?.descripcion||p?.mensagem||'').trim()}
+  function endOf(p){
+    if(Number.isFinite(Number(p?.exp))&&Number(p.exp)>0)return Number(p.exp);
+    return p?.fim||p?.fecha_fin||p?.expires_at||p?.validade||'';
+  }
+  function endTs(p){
+    const end=endOf(p);
+    if(typeof end==='number')return end;
+    const n=Number(end);
+    if(Number.isFinite(n)&&n>100000000000)return n;
+    const ts=new Date(end).getTime();
+    return Number.isFinite(ts)?ts:NaN;
+  }
+  function isActive(p){
+    const ts=endTs(p);
+    if(Number.isFinite(ts))return ts>Date.now();
+    if(p?.ativa===false||p?.activo===false)return false;
+    return true;
+  }
   function matchPromo(card){
     const t=card.querySelector('h3')?.textContent.trim()||'';
     return promoCache.find(p=>titleOf(p)===t)||promoCache.find(p=>t&&titleOf(p).includes(t))||null;
   }
   function formatLeft(end){
-    const ts=new Date(end).getTime();if(!Number.isFinite(ts))return'';
+    const ts=typeof end==='number'?end:new Date(end).getTime();if(!Number.isFinite(ts))return'';
     const diff=ts-Date.now();if(diff<=0)return'';
     const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
     if(h>=24){const days=Math.floor(h/24),hrs=h%24;return `⏳ Termina en ${days}d ${hrs}h`;}
@@ -54,11 +85,39 @@ frame.addEventListener('load',()=>{
   }
   function openWhatsApp(p,card){
     const title=titleOf(p)||card.querySelector('h3')?.textContent.trim()||'Promoción Uai Sô';
-    const desc=descOf(p)||card.querySelector('p')?.textContent.trim()||'';
-    const name=d.getElementById('helloName')?.textContent.replace(/^Hola,\s*/,'').trim()||'Cliente';
-    const text=`Hola Uai Sô 👋 Soy ${name}. Quiero pedir la promoción: *${title}*${desc?`\n${desc}`:''}`;
-    w.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+    const text=`Hola! Quiero la promo: ${title}`;
+    w.open('https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(text),'_blank','noopener');
   }
+
+  function promoHtml(p,expired=false){
+    const img=p?.imagem||p?.image||p?.foto||'';
+    const title=titleOf(p)||'Promoción especial';
+    const desc=descOf(p)||'';
+    return `<article class="offer ${expired?'expired':''}">${img?`<img src="${String(img).replace(/"/g,'&quot;')}" onerror="this.style.display='none'">`:''}<div class="body"><h3>${title.replace(/</g,'&lt;')}</h3><p>${desc.replace(/</g,'&lt;')}</p><span class="tag">${expired?'FINALIZADA':'ACTIVA'}</span></div></article>`;
+  }
+
+  function rerenderPromos(){
+    const active=promoCache.filter(isActive).sort((a,b)=>endTs(a)-endTs(b));
+    const expired=promoCache.filter(p=>!isActive(p)).sort((a,b)=>endTs(b)-endTs(a));
+    const home=d.getElementById('homeOffers');
+    const prevBlock=d.getElementById('previousBlock');
+    const homePrev=d.getElementById('homePrevious');
+    if(home)home.innerHTML=active.length?active.slice(0,2).map(p=>promoHtml(p,false)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';
+    if(prevBlock&&homePrev){
+      prevBlock.style.display=expired.length?'block':'none';
+      homePrev.innerHTML=expired.slice(0,5).map(p=>promoHtml(p,true)).join('');
+    }
+    try{
+      w.activePromos=active;w.expiredPromos=expired;
+      if(typeof w.renderOfferTab==='function')w.renderOfferTab();
+    }catch(_){}
+    const offerList=d.getElementById('offersList');
+    const activeTab=d.querySelector('[data-offer-tab="active"]')?.classList.contains('active');
+    const previousTab=d.querySelector('[data-offer-tab="previous"]')?.classList.contains('active');
+    if(offerList&&activeTab)offerList.innerHTML=active.length?active.map(p=>promoHtml(p,false)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';
+    if(offerList&&previousTab)offerList.innerHTML=expired.length?expired.map(p=>promoHtml(p,true)).join(''):'<div class="empty">Todavía no hay promociones anteriores.</div>';
+  }
+
   function enhance(){
     d.querySelectorAll('.offer:not(.expired)').forEach(card=>{
       const p=matchPromo(card);
@@ -73,8 +132,24 @@ frame.addEventListener('load',()=>{
       }
     });
   }
-  getPromos().then(()=>{enhance();setInterval(enhance,15000)});
-  new MutationObserver(()=>enhance()).observe(d.body,{childList:true,subtree:true});
+
+  function showGoogleStatus(){
+    if(!clientState)return;
+    const benefits=d.getElementById('offersList');
+    const benefitsTab=d.querySelector('[data-offer-tab="benefits"]')?.classList.contains('active');
+    if(!benefits||!benefitsTab)return;
+    if(clientState.google_review_clicked===true&&!benefits.querySelector('[data-google-complete]')){
+      benefits.insertAdjacentHTML('beforeend','<div class="benefit benefit-complete" data-google-complete="1"><div class="benefit-head"><div class="benefit-icon">✓</div><div class="benefit-main"><h3>Google Review</h3><p>Gracias. Ya utilizaste la invitación para evaluar Uai Sô en Google.</p></div></div></div>');
+    }
+  }
+
+  const obs=new MutationObserver(()=>{enhance();showGoogleStatus()});
+  obs.observe(d.body,{childList:true,subtree:true});
+
+  Promise.all([getPromos(),getClient()]).then(()=>{
+    rerenderPromos();enhance();showGoogleStatus();
+    setInterval(()=>{rerenderPromos();enhance();showGoogleStatus()},15000);
+  });
 });
 </script>
 </body>
