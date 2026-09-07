@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Cache-Control", "no-store");
 
     if (req.method === "OPTIONS") return res.status(200).end();
 
@@ -93,6 +94,8 @@ export default async function handler(req, res) {
             uid,
             nome: cliente.nome || cliente.nombre || "",
             telefone: cliente.telefone || "",
+            nascimento: cliente.nascimento || cliente.cumpleanos || "",
+            created_at: cliente.created_at || "",
             pontos: Number(cliente.pontos || 0),
             pontos_acumulados: Number(cliente.pontos_acumulados ?? cliente.pontos ?? 0),
             referidos_recompensados: Number(cliente.referidos_recompensados || 0),
