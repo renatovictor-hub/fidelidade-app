@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#6a0dad">
+<title>Uai Sô Fidelidad 1.1</title>
+<link rel="manifest" href="/manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--p:#6a0dad;--p2:#9a45ea;--bg:#f7f5f9;--card:#fff;--text:#2e2932;--muted:#827889;--line:#ece6f0;--green:#24a148;--red:#dc3545;--yellow:#ffbf00;--shadow:0 8px 24px rgba(79,32,104,.08)}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text)}body{padding-bottom:92px}.app{width:min(100%,480px);margin:0 auto;min-height:100vh;padding:14px 15px 24px}.top{display:flex;align-items:center;justify-content:center;padding:8px 0 10px;position:relative}.top img{width:94px;height:auto}.top .version{position:absolute;right:0;top:11px;font-size:10px;font-weight:800;color:#9b8aa6;background:#eee7f4;padding:5px 7px;border-radius:999px}.screen{display:none}.screen.active{display:block}.counter{background:#f1e2ff;color:var(--p);font-size:13px;font-weight:800;text-align:center;padding:12px;border-radius:14px;margin:0 0 11px}.quick{display:flex;gap:8px;margin-bottom:16px}.quick a{flex:1;text-decoration:none;color:var(--p);background:#fff;border:1px solid #ddd5e2;border-radius:11px;padding:10px 6px;text-align:center;font-size:11px;font-weight:800}.hello{display:flex;align-items:flex-start;justify-content:space-between;margin:3px 3px 8px}.hello h2{margin:0;color:var(--p);font-size:20px;line-height:1.05}.hello p{margin:3px 0 0;color:var(--muted);font-size:11px}.avatar-btn{border:0;width:38px;height:38px;border-radius:50%;background:#eee2fb;color:var(--p);font-size:18px;font-weight:900;cursor:pointer}.points{display:flex;justify-content:space-between;gap:10px;align-items:stretch;background:linear-gradient(135deg,var(--p),#9846ef);color:#fff;border-radius:17px;padding:12px 12px 12px 15px;box-shadow:0 7px 18px rgba(106,13,173,.22);margin-bottom:10px}.points .label{font-size:10px;font-weight:800;opacity:.9}.points .num{font-size:28px;font-weight:900;line-height:1.02;margin-top:2px}.points .cap{font-size:10px;margin-top:4px;opacity:.92}.qr-mini{border:0;background:#fff;color:var(--p);border-radius:13px;min-width:104px;padding:8px;font-size:10px;font-weight:900;cursor:pointer}.qr-mini .ico{font-size:22px;display:block;margin-bottom:3px}.twins{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}.mini{background:#fff;border:1px solid #e6dced;border-radius:14px;padding:10px 11px;min-height:59px;box-shadow:0 3px 10px rgba(77,28,103,.04);cursor:pointer}.mini.purple{background:#f4e9ff;border-color:#dcc1fb}.mini small{display:block;font-size:9px;font-weight:800;color:#817388;margin-bottom:4px}.mini b{font-size:14px;color:var(--p)}.banner{width:100%;border-radius:18px;display:block;box-shadow:var(--shadow);margin:0 0 18px}.section-title{font-size:19px;color:var(--p);margin:18px 4px 10px;font-weight:900}.subhead{display:flex;justify-content:space-between;align-items:center;margin:4px 1px 12px}.subhead h1{font-size:22px;color:var(--p);margin:0}.subhead p{font-size:11px;color:var(--muted);margin:3px 0 0}.pill-row{display:flex;gap:7px;overflow:auto;padding-bottom:5px;margin-bottom:11px}.pill{white-space:nowrap;border:0;background:#ece8ef;padding:8px 12px;border-radius:999px;color:#6b6170;font-size:11px;font-weight:800}.pill.active{background:var(--p);color:#fff}.list{display:grid;gap:9px}.reward{background:#fff;border:1px solid var(--line);border-radius:15px;padding:10px;display:flex;gap:10px;align-items:center;box-shadow:0 3px 12px rgba(70,32,92,.04)}.reward img{width:66px;height:66px;border-radius:12px;object-fit:cover;background:#f0ebf3}.reward .body{min-width:0;flex:1}.reward h3{font-size:14px;margin:0 0 3px}.reward .pts{font-weight:900;color:var(--p);font-size:13px}.reward .desc{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.25}.reward button{border:0;background:var(--p);color:#fff;border-radius:10px;padding:9px 11px;font-weight:800;font-size:10px}.qr-card{background:linear-gradient(155deg,var(--p),#5f0796);border-radius:21px;color:#fff;text-align:center;padding:23px 17px;box-shadow:0 14px 30px rgba(106,13,173,.2)}.qr-card img.logo{width:115px;filter:brightness(0) invert(1);margin-bottom:15px}.qr-box{width:220px;height:220px;margin:0 auto 14px;background:#fff;border-radius:18px;display:grid;place-items:center;padding:14px}.qr-box canvas,.qr-box img{max-width:100%!important;max-height:100%!important}.qr-card h2{margin:5px 0 3px}.qr-card .id{font-size:11px;opacity:.82}.qr-card p{font-size:12px;line-height:1.35;opacity:.92}.share{width:100%;border:0;background:#fff;color:var(--p);padding:12px;border-radius:12px;font-weight:900}.offer{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 4px 13px rgba(61,22,82,.05)}.offer img{width:100%;height:150px;object-fit:cover;display:block;background:#eee}.offer .body{padding:12px}.offer h3{margin:0 0 4px;font-size:15px}.offer p{margin:0;color:var(--muted);font-size:11px;line-height:1.35}.offer .tag{display:inline-block;margin-top:8px;background:#efe1ff;color:var(--p);padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900}.profile-head{display:flex;gap:12px;align-items:center;margin-bottom:13px}.profile-avatar{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#eee1fa,#dcc2f6);color:var(--p);font-size:27px;font-weight:900}.profile-head h1{font-size:22px;color:var(--p);margin:0 0 3px}.level-chip{display:inline-block;background:#eee7f4;color:var(--p);padding:5px 8px;border-radius:999px;font-size:10px;font-weight:900}.progress{height:7px;background:#e8e1ec;border-radius:999px;overflow:hidden;margin-top:8px}.progress>div{height:100%;background:linear-gradient(90deg,var(--p),#b05df1);border-radius:inherit}.progress-txt{font-size:10px;color:#756b7b;margin-top:5px}.stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 3px;margin-bottom:16px;box-shadow:var(--shadow)}.stat{text-align:center;border-right:1px solid var(--line)}.stat:last-child{border-right:0}.stat b{display:block;font-size:18px}.stat span{font-size:9px;color:var(--muted)}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(64,25,82,.04)}.card h3{color:var(--p);font-size:15px;margin:0 0 10px}.data-row{display:flex;justify-content:space-between;gap:15px;padding:9px 0;border-bottom:1px solid #f0ebf3;font-size:11px}.data-row:last-child{border-bottom:0}.data-row span:first-child{color:#776d7c}.data-row b{text-align:right;font-weight:750}.mov-head{display:flex;justify-content:space-between;align-items:center}.linkbtn{border:0;background:transparent;color:var(--p);font-weight:900;font-size:10px;padding:0}.moves{display:grid}.move{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid #f0ebf3}.move:last-child{border-bottom:0}.move .icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#f1e5fb}.move .main b{font-size:11px;display:block}.move .main span{font-size:9px;color:var(--muted)}.move .amount{font-size:12px;font-weight:900}.move .amount.plus{color:var(--green)}.move .amount.minus{color:var(--red)}.empty{text-align:center;color:#9a909f;font-size:12px;padding:20px 10px}.bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,480px);height:76px;padding:7px 7px calc(7px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid #e8e1ec;display:grid;grid-template-columns:repeat(5,1fr);z-index:90;box-shadow:0 -8px 20px rgba(53,24,69,.05)}.nav{border:0;background:transparent;color:#776f7c;font-size:9px;font-weight:750;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}.nav .ico{font-size:19px;line-height:1}.nav.active{color:var(--p)}.nav.qr .bubble{width:48px;height:48px;margin-top:-25px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--p),#a547f0);color:#fff;border:5px solid var(--bg);box-shadow:0 6px 14px rgba(106,13,173,.25);font-size:20px}.nav.qr span:last-child{margin-top:-3px}.modal{display:none;position:fixed;inset:0;background:rgba(23,11,29,.62);z-index:120;align-items:flex-end;justify-content:center}.modal.open{display:flex}.sheet{width:min(100%,480px);max-height:78vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}.sheetbar{width:42px;height:4px;border-radius:999px;background:#d8d1dc;margin:0 auto 13px}.error{background:#fff1f2;color:#a31521;border:1px solid #f2c7cb;border-radius:14px;padding:12px;font-size:11px;margin:10px 0}.loading{height:70px;display:grid;place-items:center;color:#8f8296;font-size:11px}@media(max-width:370px){.app{padding-left:11px;padding-right:11px}.qr-box{width:200px;height:200px}.quick a{font-size:10px}.points .num{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><img src="/logo.png" alt="Uai Sô"><span class="version">v1.1</span></header>
+
+  <section id="screen-home" class="screen active">
+    <div id="counter" class="counter">🔥 +301 clientes conectados</div>
+    <div class="quick">
+      <a href="https://instagram.com/fooduaiso" target="_blank" rel="noopener">◎ Instagram</a>
+      <a href="#" onclick="return false">🍴 Nuestro Menú</a>
+    </div>
+    <div class="hello">
+      <div><h2 id="helloName">Hola</h2><p>¡Qué bueno verte de nuevo!</p></div>
+      <button class="avatar-btn" onclick="go('profile')">👤</button>
+    </div>
+    <div class="points">
+      <div><div class="label">⭐ Tus puntos</div><div class="num" id="homePoints">—</div><div class="cap">puntos disponibles</div></div>
+      <button class="qr-mini" onclick="go('qr')"><span class="ico">▦</span>MOSTRAR MI QR</button>
+    </div>
+    <div class="twins">
+      <div class="mini" onclick="go('profile')"><small>TU NIVEL</small><b id="homeLevel">🥉 Bronce</b></div>
+      <div class="mini purple" onclick="go('offers')"><small>BENEFICIO</small><b>🤝 Invita a un amigo</b></div>
+    </div>
+    <img src="/banner.jpg" class="banner" alt="Uai Sô Brazilian Style Food">
+    <div class="section-title">🔥 Promociones Activas</div>
+    <div id="homeOffers" class="list"><div class="loading">Cargando promociones…</div></div>
+  </section>
+
+  <section id="screen-rewards" class="screen">
+    <div class="subhead"><div><h1>Recompensas</h1><p>Canjea tus puntos por algo rico.</p></div></div>
+    <div class="pill-row"><button class="pill active">Todas</button><button class="pill">Comida</button><button class="pill">Bebidas</button><button class="pill">Especiales</button></div>
+    <div id="rewardsList" class="list"><div class="loading">Cargando recompensas…</div></div>
+  </section>
+
+  <section id="screen-qr" class="screen">
+    <div class="subhead"><div><h1>Mi QR</h1><p>Muéstralo al momento de tu compra.</p></div></div>
+    <div class="qr-card">
+      <img class="logo" src="/logo.png" alt="Uai Sô">
+      <div id="qrBig" class="qr-box"></div>
+      <h2 id="qrName">Cliente</h2>
+      <div class="id" id="qrId"></div>
+      <p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p>
+      <button class="share" onclick="shareQr()">↗ COMPARTIR MI QR</button>
+    </div>
+  </section>
+
+  <section id="screen-offers" class="screen">
+    <div class="subhead"><div><h1>Ofertas</h1><p>Promociones, beneficios y oportunidades.</p></div></div>
+    <div class="pill-row"><button class="pill active">Activas</button><button class="pill">Próximas</button><button class="pill">Mis beneficios</button></div>
+    <div id="offersList" class="list"><div class="loading">Cargando ofertas…</div></div>
+  </section>
+
+  <section id="screen-profile" class="screen">
+    <div class="profile-head">
+      <div id="profileAvatar" class="profile-avatar">U</div>
+      <div style="flex:1"><h1 id="profileName">Mi cuenta</h1><span id="profileLevel" class="level-chip">🥉 Bronce</span><div class="progress"><div id="profileProgress" style="width:0%"></div></div><div id="profileProgressTxt" class="progress-txt"></div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="statPoints">—</b><span>Puntos</span></div>
+      <div class="stat"><b id="statPurchases">—</b><span>Compras</span></div>
+      <div class="stat"><b id="statRewards">—</b><span>Recompensas</span></div>
+    </div>
+    <div class="card">
+      <h3>Mis datos</h3>
+      <div class="data-row"><span>📞 Teléfono</span><b id="profilePhone">—</b></div>
+      <div class="data-row"><span>🎂 Cumpleaños</span><b id="profileBirthday">—</b></div>
+      <div class="data-row"><span>📅 Miembro desde</span><b id="profileSince">—</b></div>
+      <div class="data-row"><span>🤝 Amigos premiados</span><b id="profileRefs">0</b></div>
+      <div class="data-row"><span>📱 Versión</span><b>1.1</b></div>
+    </div>
+    <div class="card">
+      <div class="mov-head"><h3 style="margin:0">Movimientos recientes</h3><button class="linkbtn" onclick="openMoves()">Ver todos</button></div>
+      <div id="recentMoves" class="moves"><div class="loading">Cargando movimientos…</div></div>
+    </div>
+  </section>
+</div>
+
+<nav class="bottom" aria-label="Navegación principal">
+  <button class="nav active" data-tab="home" onclick="go('home')"><span class="ico">⌂</span><span>Inicio</span></button>
+  <button class="nav" data-tab="rewards" onclick="go('rewards')"><span class="ico">🎁</span><span>Recompensas</span></button>
+  <button class="nav qr" data-tab="qr" onclick="go('qr')"><span class="bubble">▦</span><span>QR</span></button>
+  <button class="nav" data-tab="offers" onclick="go('offers')"><span class="ico">◇</span><span>Ofertas</span></button>
+  <button class="nav" data-tab="profile" onclick="go('profile')"><span class="ico">♙</span><span>Perfil</span></button>
+</nav>
+
+<div id="movesModal" class="modal" onclick="if(event.target===this)closeMoves()">
+  <div class="sheet"><div class="sheetbar"></div><div class="mov-head"><h3 style="margin:0;color:var(--p)">Todos los movimientos</h3><button class="linkbtn" onclick="closeMoves()">Cerrar</button></div><div id="allMoves" class="moves" style="margin-top:8px"></div></div>
+</div>
+
+<script>
+const FB='https://fidelidade-app-9671c-default-rtdb.firebaseio.com';
+const qs=new URLSearchParams(location.search);
+let uid=String(qs.get('uid')||localStorage.getItem('uid')||'').trim();
+let client=null, movements=[], rewards=[], promos=[], vipCfg={};
+
+function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function fmtDate(v,withTime=false){if(!v)return '—';const d=new Date(v);if(Number.isNaN(d.getTime()))return '—';return new Intl.DateTimeFormat('es-MX',withTime?{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'}).format(d)}
+function fmtBirthday(v){if(!v)return 'No registrado';const d=new Date(v+'T12:00:00');if(Number.isNaN(d.getTime()))return 'No registrado';return new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long'}).format(d)}
+function maskPhone(v){const s=String(v||'').replace(/\D/g,'');if(s.length<4)return '—';return `•••• •• ${s.slice(-4)}`}
+function initials(name){const p=String(name||'U').trim().split(/\s+/).filter(Boolean);return (p[0]?.[0]||'U')+(p[1]?.[0]||'')}
+
+function levelFor(total){const plata=Math.max(1,Number(vipCfg.prata||300));const oro=Math.max(plata+1,Number(vipCfg.ouro||800));const dia=Math.max(oro+1,Number(vipCfg.diamante||1500));if(total>=dia)return {name:'💎 Diamante',min:dia,next:null,nextName:null};if(total>=oro)return {name:'🥇 Oro',min:oro,next:dia,nextName:'Diamante'};if(total>=plata)return {name:'🥈 Plata',min:plata,next:oro,nextName:'Oro'};return {name:'🥉 Bronce',min:0,next:plata,nextName:'Plata'}}
+function updateLevel(){if(!client)return;const total=Math.max(0,Number(client.pontos_acumulados||client.pontos||0));const l=levelFor(total);document.getElementById('homeLevel').textContent=l.name;document.getElementById('profileLevel').textContent=l.name;if(!l.next){document.getElementById('profileProgress').style.width='100%';document.getElementById('profileProgressTxt').textContent='Nivel máximo alcanzado';return}const pct=Math.max(0,Math.min(100,((total-l.min)/(l.next-l.min))*100));document.getElementById('profileProgress').style.width=pct+'%';document.getElementById('profileProgressTxt').textContent=`${total} / ${l.next} puntos para ${l.nextName}`}
+
+function go(tab){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===`screen-${tab}`));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));window.scrollTo({top:0,behavior:'instant'});history.replaceState(null,'',location.pathname+location.search+'#'+tab)}
+function moveIcon(m){if(m.tipo==='debito')return '🎁';if(m.origem==='indicacao')return '🤝';if(m.origem==='cumpleanos')return '🎂';if(Number(m.multiplicador_bonus)>1)return '⭐';if(Number(m.valor_compra)>0)return '🛍';return '⭐'}
+function moveTitle(m){if(m.tipo==='debito')return m.descricao?`Canje · ${m.descricao}`:'Canje de recompensa';if(m.origem==='indicacao')return m.descricao||'Amigo indicado';if(m.origem==='cumpleanos')return 'Bonus de cumpleaños';if(Number(m.valor_compra)>0)return `Compra${m.valor_compra?` · $${Math.round(m.valor_compra)}`:''}`;return m.descricao||'Puntos acreditados'}
+function renderMoves(target,items){const el=document.getElementById(target);if(!items.length){el.innerHTML='<div class="empty">Todavía no hay movimientos.</div>';return}el.innerHTML=items.map(m=>`<div class="move"><div class="icon">${moveIcon(m)}</div><div class="main"><b>${esc(moveTitle(m))}</b><span>${fmtDate(m.data,true)}</span></div><div class="amount ${m.pontos<0?'minus':'plus'}">${m.pontos>0?'+':''}${m.pontos}</div></div>`).join('')}
+function openMoves(){renderMoves('allMoves',movements);document.getElementById('movesModal').classList.add('open')}
+function closeMoves(){document.getElementById('movesModal').classList.remove('open')}
+
+async function loadClient(){if(!/^user_\d+$/.test(uid)){document.body.innerHTML='<div class="app"><div class="error">No encontramos tu sesión. Abre esta pantalla desde Uai Sô.</div></div>';return false}const r=await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar tu cuenta');client=d;document.getElementById('helloName').textContent='Hola, '+(d.nome||'Cliente');document.getElementById('homePoints').textContent=Number(d.pontos||0);document.getElementById('profileName').textContent=d.nome||'Mi cuenta';document.getElementById('profileAvatar').textContent=initials(d.nome);document.getElementById('profilePhone').textContent=maskPhone(d.telefone);document.getElementById('profileBirthday').textContent=fmtBirthday(d.nascimento);document.getElementById('profileSince').textContent=d.created_at?fmtDate(d.created_at):'—';document.getElementById('profileRefs').textContent=Number(d.referidos_recompensados||0);document.getElementById('statPoints').textContent=Number(d.pontos||0);document.getElementById('qrName').textContent=d.nome||'Cliente';document.getElementById('qrId').textContent='ID: '+uid.replace('user_','#');return true}
+
+async function loadVip(){try{const r=await fetch(`${FB}/config/niveles_vip.json?t=${Date.now()}`,{cache:'no-store'});vipCfg=await r.json()||{}}catch{vipCfg={}}updateLevel()}
+async function loadMoves(){try{const r=await fetch(`/api/movimientos?uid=${encodeURIComponent(uid)}&limit=100&t=${Date.now()}`,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Error');movements=d.movimientos||[];document.getElementById('statPurchases').textContent=movements.filter(x=>x.tipo==='credito'&&Number(x.valor_compra)>0).length;document.getElementById('statRewards').textContent=movements.filter(x=>x.tipo==='debito').length;renderMoves('recentMoves',movements.slice(0,5))}catch(e){document.getElementById('recentMoves').innerHTML='<div class="empty">No se pudo cargar el historial.</div>'}}
+async function loadRewards(){try{const r=await fetch('/api/recompensas-publicas',{cache:'no-store'});const d=await r.json();rewards=d.recompensas||[];const el=document.getElementById('rewardsList');if(!rewards.length){el.innerHTML='<div class="empty">No hay recompensas activas.</div>';return}el.innerHTML=rewards.map(x=>`<div class="reward"><img src="${esc(x.imagem||'/logo.png')}" onerror="this.src='/logo.png'"><div class="body"><h3>${esc(x.nome)}</h3><div class="pts">${x.pontos} puntos</div><div class="desc">${esc(x.descricao||'')}</div></div><button onclick="location.href='/recompensas.html'">Canjear</button></div>`).join('')}catch{document.getElementById('rewardsList').innerHTML='<div class="empty">No se pudieron cargar las recompensas.</div>'}}
+function promoActive(p){if(p?.ativa===false||p?.activo===false)return false;const end=p?.fim||p?.fecha_fin||p?.expires_at||p?.validade;if(!end)return true;const d=new Date(end);return Number.isNaN(d.getTime())||d.getTime()>=Date.now()}
+function promoTitle(p){return p?.titulo||p?.title||p?.nome||'Promoción especial'}
+function promoDesc(p){return p?.texto||p?.descricao||p?.descripcion||p?.mensagem||''}
+function promoImg(p){return p?.imagem||p?.image||p?.foto||''}
+function renderPromoList(id,items,limit=99){const el=document.getElementById(id);const arr=items.filter(promoActive).slice(0,limit);if(!arr.length){el.innerHTML='<div class="empty">No hay promociones activas ahora.</div>';return}el.innerHTML=arr.map(p=>`<article class="offer">${promoImg(p)?`<img src="${esc(promoImg(p))}" onerror="this.style.display='none'">`:''}<div class="body"><h3>${esc(promoTitle(p))}</h3><p>${esc(promoDesc(p))}</p><span class="tag">ACTIVA</span></div></article>`).join('')}
+async function loadPromos(){try{const r=await fetch(`${FB}/promos.json?t=${Date.now()}`,{cache:'no-store'});const d=await r.json()||{};promos=Object.entries(d).map(([id,p])=>({id,...(p||{})}));renderPromoList('homeOffers',promos,2);renderPromoList('offersList',promos)}catch{document.getElementById('homeOffers').innerHTML='<div class="empty">No se pudieron cargar promociones.</div>';document.getElementById('offersList').innerHTML='<div class="empty">No se pudieron cargar ofertas.</div>'}}
+function buildQr(){const el=document.getElementById('qrBig');el.innerHTML='';new QRCode(el,{text:uid,width:190,height:190,colorDark:'#190022',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H})}
+async function shareQr(){const text=`Mi tarjeta Uai Sô Fidelidad: ${uid}`;try{if(navigator.share){await navigator.share({title:'Uai Sô Fidelidad',text});return}}catch{}try{await navigator.clipboard.writeText(text);alert('ID copiado.')}catch{alert(text)}}
+
+async function init(){try{const ok=await loadClient();if(!ok)return;buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos()]);const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
+init();
+</script>
+</body>
+</html>
