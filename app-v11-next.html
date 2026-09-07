@@ -35,6 +35,8 @@ frame.addEventListener('load',()=>{
 
   let promoCache=[];
   let clientState=null;
+  let syncing=false;
+  let syncTimer=null;
 
   async function getPromos(){
     try{
@@ -60,24 +62,44 @@ frame.addEventListener('load',()=>{
   }
   function endTs(p){
     const end=endOf(p);
-    if(typeof end==='number')return end;
+    if(typeof end==='number'){
+      if(end>0&&end<1000000000000)return end*1000;
+      return end;
+    }
     const n=Number(end);
-    if(Number.isFinite(n)&&n>100000000000)return n;
+    if(Number.isFinite(n)&&n>0){
+      if(n<1000000000000)return n*1000;
+      return n;
+    }
     const ts=new Date(end).getTime();
     return Number.isFinite(ts)?ts:NaN;
   }
   function isActive(p){
+    if(p?.ativa===false||p?.activo===false)return false;
     const ts=endTs(p);
     if(Number.isFinite(ts))return ts>Date.now();
-    if(p?.ativa===false||p?.activo===false)return false;
     return true;
+  }
+  function currentLists(){
+    const active=promoCache.filter(isActive).sort((a,b)=>{
+      const aa=endTs(a),bb=endTs(b);
+      if(!Number.isFinite(aa)&&!Number.isFinite(bb))return 0;
+      if(!Number.isFinite(aa))return 1;
+      if(!Number.isFinite(bb))return -1;
+      return aa-bb;
+    });
+    const expired=promoCache.filter(p=>!isActive(p)).sort((a,b)=>{
+      const aa=endTs(a),bb=endTs(b);
+      return (Number.isFinite(bb)?bb:0)-(Number.isFinite(aa)?aa:0);
+    });
+    return {active,expired};
   }
   function matchPromo(card){
     const t=card.querySelector('h3')?.textContent.trim()||'';
     return promoCache.find(p=>titleOf(p)===t)||promoCache.find(p=>t&&titleOf(p).includes(t))||null;
   }
-  function formatLeft(end){
-    const ts=typeof end==='number'?end:new Date(end).getTime();if(!Number.isFinite(ts))return'';
+  function formatLeft(p){
+    const ts=endTs(p);if(!Number.isFinite(ts))return'';
     const diff=ts-Date.now();if(diff<=0)return'';
     const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
     if(h>=24){const days=Math.floor(h/24),hrs=h%24;return `⏳ Termina en ${days}d ${hrs}h`;}
@@ -96,35 +118,46 @@ frame.addEventListener('load',()=>{
     return `<article class="offer ${expired?'expired':''}">${img?`<img src="${String(img).replace(/"/g,'&quot;')}" onerror="this.style.display='none'">`:''}<div class="body"><h3>${title.replace(/</g,'&lt;')}</h3><p>${desc.replace(/</g,'&lt;')}</p><span class="tag">${expired?'FINALIZADA':'ACTIVA'}</span></div></article>`;
   }
 
-  function rerenderPromos(){
-    const active=promoCache.filter(isActive).sort((a,b)=>endTs(a)-endTs(b));
-    const expired=promoCache.filter(p=>!isActive(p)).sort((a,b)=>endTs(b)-endTs(a));
-    const home=d.getElementById('homeOffers');
-    const prevBlock=d.getElementById('previousBlock');
-    const homePrev=d.getElementById('homePrevious');
-    if(home)home.innerHTML=active.length?active.slice(0,2).map(p=>promoHtml(p,false)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';
-    if(prevBlock&&homePrev){
-      prevBlock.style.display=expired.length?'block':'none';
-      homePrev.innerHTML=expired.slice(0,5).map(p=>promoHtml(p,true)).join('');
-    }
-    try{
-      w.activePromos=active;w.expiredPromos=expired;
-      if(typeof w.renderOfferTab==='function')w.renderOfferTab();
-    }catch(_){}
+  function renderOffersTab(active,expired){
     const offerList=d.getElementById('offersList');
+    if(!offerList)return;
     const activeTab=d.querySelector('[data-offer-tab="active"]')?.classList.contains('active');
     const previousTab=d.querySelector('[data-offer-tab="previous"]')?.classList.contains('active');
-    if(offerList&&activeTab)offerList.innerHTML=active.length?active.map(p=>promoHtml(p,false)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';
-    if(offerList&&previousTab)offerList.innerHTML=expired.length?expired.map(p=>promoHtml(p,true)).join(''):'<div class="empty">Todavía no hay promociones anteriores.</div>';
+    const benefitsTab=d.querySelector('[data-offer-tab="benefits"]')?.classList.contains('active');
+    if(activeTab){
+      offerList.innerHTML=active.length?active.map(p=>promoHtml(p,false)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';
+    }else if(previousTab){
+      offerList.innerHTML=expired.length?expired.map(p=>promoHtml(p,true)).join(''):'<div class="empty">Todavía no hay promociones anteriores.</div>';
+    }else if(benefitsTab&&typeof w.renderOfferTab==='function'){
+      try{w.renderOfferTab()}catch(_){}
+    }
+  }
+
+  function rerenderPromos(){
+    if(syncing)return;
+    syncing=true;
+    try{
+      const {active,expired}=currentLists();
+      const home=d.getElementById('homeOffers');
+      const prevBlock=d.getElementById('previousBlock');
+      const homePrev=d.getElementById('homePrevious');
+      if(home)home.innerHTML=active.length?active.slice(0,2).map(p=>promoHtml(p,false)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';
+      if(prevBlock&&homePrev){
+        prevBlock.style.display=expired.length?'block':'none';
+        homePrev.innerHTML=expired.slice(0,5).map(p=>promoHtml(p,true)).join('');
+      }
+      renderOffersTab(active,expired);
+    }finally{
+      syncing=false;
+    }
   }
 
   function enhance(){
     d.querySelectorAll('.offer:not(.expired)').forEach(card=>{
       const p=matchPromo(card);
       const body=card.querySelector('.body');if(!body)return;
-      const end=p?endOf(p):'';
       let timer=body.querySelector('.offer-countdown');
-      const left=end?formatLeft(end):'';
+      const left=p?formatLeft(p):'';
       if(left){if(!timer){timer=d.createElement('div');timer.className='offer-countdown';body.appendChild(timer)}timer.textContent=left}
       else if(timer)timer.remove();
       if(!body.querySelector('.offer-wa')){
@@ -143,12 +176,26 @@ frame.addEventListener('load',()=>{
     }
   }
 
-  const obs=new MutationObserver(()=>{enhance();showGoogleStatus()});
+  function scheduleSync(){
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(()=>{rerenderPromos();enhance();showGoogleStatus()},80);
+  }
+
+  d.querySelectorAll('[data-offer-tab]').forEach(btn=>{
+    btn.addEventListener('click',()=>setTimeout(()=>{rerenderPromos();enhance();showGoogleStatus()},0));
+  });
+
+  const obs=new MutationObserver(()=>{
+    if(!syncing)scheduleSync();
+  });
   obs.observe(d.body,{childList:true,subtree:true});
 
   Promise.all([getPromos(),getClient()]).then(()=>{
     rerenderPromos();enhance();showGoogleStatus();
-    setInterval(()=>{rerenderPromos();enhance();showGoogleStatus()},15000);
+    setInterval(async()=>{
+      await getPromos();
+      rerenderPromos();enhance();showGoogleStatus();
+    },15000);
   });
 });
 </script>
