@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#6a0dad">
+<title>Uai Sô Fidelidad 1.1</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f7f5f9}iframe{display:block;width:100%;height:100%;border:0;background:#f7f5f9}
+</style>
+</head>
+<body>
+<iframe id="app" title="Uai Sô Fidelidad v1.1"></iframe>
+<script>
+const src=new URL('/app-v11.html',location.origin);
+for(const [k,v] of new URLSearchParams(location.search)) src.searchParams.set(k,v);
+src.hash=location.hash||'#home';
+const frame=document.getElementById('app');
+frame.src=src.toString();
+
+frame.addEventListener('load',()=>{
+  const w=frame.contentWindow,d=frame.contentDocument;
+  if(!w||!d)return;
+
+  const style=d.createElement('style');
+  style.textContent=`
+    .offer-wa{width:100%;margin-top:10px;border:0;border-radius:11px;padding:11px 12px;background:#25d366;color:#fff;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none}
+    .offer-countdown{display:inline-flex;align-items:center;gap:5px;margin:8px 0 0;padding:6px 8px;border-radius:9px;background:#f5effa;color:#6a0dad;font-size:9px;font-weight:800}
+    .offer.expired .offer-countdown,.offer.expired .offer-wa{display:none!important}
+  `;
+  d.head.appendChild(style);
+
+  let promoCache=[];
+  async function getPromos(){
+    try{
+      const r=await fetch('https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json?t='+Date.now(),{cache:'no-store'});
+      const raw=await r.json()||{};
+      promoCache=Object.entries(raw).map(([id,p])=>({id,...(p||{})}));
+    }catch(_){promoCache=[]}
+  }
+  function titleOf(p){return String(p?.titulo||p?.title||p?.nome||'').trim()}
+  function descOf(p){return String(p?.texto||p?.descricao||p?.descripcion||p?.mensagem||'').trim()}
+  function endOf(p){return p?.fim||p?.fecha_fin||p?.expires_at||p?.validade||''}
+  function matchPromo(card){
+    const t=card.querySelector('h3')?.textContent.trim()||'';
+    return promoCache.find(p=>titleOf(p)===t)||promoCache.find(p=>t&&titleOf(p).includes(t))||null;
+  }
+  function formatLeft(end){
+    const ts=new Date(end).getTime();if(!Number.isFinite(ts))return'';
+    const diff=ts-Date.now();if(diff<=0)return'';
+    const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
+    if(h>=24){const days=Math.floor(h/24),hrs=h%24;return `⏳ Termina en ${days}d ${hrs}h`;}
+    return `⏳ Termina en ${h}h ${m}min`;
+  }
+  function openWhatsApp(p,card){
+    const title=titleOf(p)||card.querySelector('h3')?.textContent.trim()||'Promoción Uai Sô';
+    const desc=descOf(p)||card.querySelector('p')?.textContent.trim()||'';
+    const name=d.getElementById('helloName')?.textContent.replace(/^Hola,\s*/,'').trim()||'Cliente';
+    const text=`Hola Uai Sô 👋 Soy ${name}. Quiero pedir la promoción: *${title}*${desc?`\n${desc}`:''}`;
+    w.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+  }
+  function enhance(){
+    d.querySelectorAll('.offer:not(.expired)').forEach(card=>{
+      const p=matchPromo(card);
+      const body=card.querySelector('.body');if(!body)return;
+      const end=p?endOf(p):'';
+      let timer=body.querySelector('.offer-countdown');
+      const left=end?formatLeft(end):'';
+      if(left){if(!timer){timer=d.createElement('div');timer.className='offer-countdown';body.appendChild(timer)}timer.textContent=left}
+      else if(timer)timer.remove();
+      if(!body.querySelector('.offer-wa')){
+        const b=d.createElement('button');b.className='offer-wa';b.type='button';b.innerHTML='💬 PEDIR POR WHATSAPP';b.addEventListener('click',()=>openWhatsApp(p,card));body.appendChild(b);
+      }
+    });
+  }
+  getPromos().then(()=>{enhance();setInterval(enhance,15000)});
+  new MutationObserver(()=>enhance()).observe(d.body,{childList:true,subtree:true});
+});
+</script>
+</body>
+</html>
