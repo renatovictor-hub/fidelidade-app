@@ -30,6 +30,13 @@ frame.addEventListener('load',()=>{
     .benefit-complete{background:#f6f3f7!important;border-color:#e5dfe8!important}
     .benefit-complete .benefit-icon{background:#ece7ef!important}
     .benefit-complete .benefit-main h3{color:#726a77!important}
+    .reward{position:relative;flex-wrap:wrap}
+    .reward .body{padding-right:4px}
+    .reward-availability{display:inline-block;margin-top:6px;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900}
+    .reward-availability.ok{background:#e8f7ee;color:#198754}
+    .reward-availability.no{background:#f1eff2;color:#756d79}
+    .reward button.reward-ready{background:#6a0dad!important;color:#fff!important}
+    .reward button.reward-locked{background:#ece8ef!important;color:#817887!important;cursor:not-allowed!important}
   `;
   d.head.appendChild(style);
 
@@ -152,7 +159,7 @@ frame.addEventListener('load',()=>{
     }
   }
 
-  function enhance(){
+  function enhancePromos(){
     d.querySelectorAll('.offer:not(.expired)').forEach(card=>{
       const p=matchPromo(card);
       const body=card.querySelector('.body');if(!body)return;
@@ -164,6 +171,47 @@ frame.addEventListener('load',()=>{
         const b=d.createElement('button');b.className='offer-wa';b.type='button';b.innerHTML='💬 PEDIR POR WHATSAPP';b.addEventListener('click',()=>openWhatsApp(p,card));body.appendChild(b);
       }
     });
+  }
+
+  function enhanceRewards(){
+    const saldo=Math.max(0,Number(clientState?.pontos||0));
+    d.querySelectorAll('#rewardsList .reward').forEach(card=>{
+      const ptsEl=card.querySelector('.pts');
+      const custo=Math.max(0,Number(String(ptsEl?.textContent||'').replace(/\D/g,''))||0);
+      const body=card.querySelector('.body');
+      const btn=card.querySelector('button');
+      if(!body||!btn||!custo)return;
+      const falta=Math.max(0,custo-saldo);
+      let badge=body.querySelector('.reward-availability');
+      if(!badge){badge=d.createElement('div');badge.className='reward-availability';body.appendChild(badge)}
+      btn.onclick=null;
+      if(falta===0){
+        badge.className='reward-availability ok';badge.textContent='✓ Disponible para canjear';
+        btn.disabled=false;btn.className='reward-ready';btn.textContent='MOSTRAR QR';
+        btn.onclick=()=>{if(typeof w.go==='function')w.go('qr')};
+      }else{
+        badge.className='reward-availability no';badge.textContent=`Te faltan ${falta} puntos`;
+        btn.disabled=true;btn.className='reward-locked';btn.textContent=`FALTAN ${falta}`;
+      }
+    });
+  }
+
+  function fixMovementRenderer(){
+    if(typeof w.renderMoves!=='function')return;
+    w.renderMoves=function(target,items){
+      const el=d.getElementById(target);if(!el)return;
+      if(!items?.length){el.innerHTML='<div class="empty">Todavía no hay movimientos.</div>';return}
+      el.innerHTML=items.map(m=>{
+        const debito=m?.tipo==='debito'||Number(m?.pontos)<0;
+        const valor=Math.abs(Number(m?.pontos||0));
+        const icon=typeof w.moveIcon==='function'?w.moveIcon(m):'⭐';
+        const title=typeof w.moveTitle==='function'?w.moveTitle(m):(debito?'Canje de recompensa':'Puntos acreditados');
+        const date=typeof w.fmtDate==='function'?w.fmtDate(m.data,true):'';
+        const safe=typeof w.esc==='function'?w.esc(title):String(title||'');
+        return `<div class="move"><div class="icon">${icon}</div><div class="main"><b>${safe}</b><span>${date}</span></div><div class="amount ${debito?'minus':'plus'}">${debito?'-':'+'}${valor}</div></div>`;
+      }).join('');
+    };
+    if(typeof w.loadMoves==='function')w.loadMoves();
   }
 
   function showGoogleStatus(){
@@ -178,11 +226,15 @@ frame.addEventListener('load',()=>{
 
   function scheduleSync(){
     clearTimeout(syncTimer);
-    syncTimer=setTimeout(()=>{rerenderPromos();enhance();showGoogleStatus()},80);
+    syncTimer=setTimeout(()=>{rerenderPromos();enhancePromos();enhanceRewards();showGoogleStatus()},80);
   }
 
   d.querySelectorAll('[data-offer-tab]').forEach(btn=>{
-    btn.addEventListener('click',()=>setTimeout(()=>{rerenderPromos();enhance();showGoogleStatus()},0));
+    btn.addEventListener('click',()=>setTimeout(()=>{rerenderPromos();enhancePromos();showGoogleStatus()},0));
+  });
+  d.querySelector('[data-tab="rewards"]')?.addEventListener('click',async()=>{
+    await getClient();
+    setTimeout(enhanceRewards,80);
   });
 
   const obs=new MutationObserver(()=>{
@@ -191,10 +243,11 @@ frame.addEventListener('load',()=>{
   obs.observe(d.body,{childList:true,subtree:true});
 
   Promise.all([getPromos(),getClient()]).then(()=>{
-    rerenderPromos();enhance();showGoogleStatus();
+    fixMovementRenderer();
+    rerenderPromos();enhancePromos();enhanceRewards();showGoogleStatus();
     setInterval(async()=>{
-      await getPromos();
-      rerenderPromos();enhance();showGoogleStatus();
+      await Promise.all([getPromos(),getClient()]);
+      rerenderPromos();enhancePromos();enhanceRewards();showGoogleStatus();
     },15000);
   });
 });
