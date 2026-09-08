@@ -193,10 +193,50 @@ function openGoogle(){$('googleModal').classList.add('open')}function closeGoogl
 async function goGoogleReview(){const url=String(client?.reviews?.google_url||'').trim();if(!url)return alert('El enlace de Google no está configurado.');$('googleCard').classList.remove('show');client.google_review_clicked=true;closeGoogle();try{await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid,action:'google_review_clicked'})})}catch(_){}window.open(url,'_blank','noopener');renderOfferTab()}
 
 function cancunNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Cancun'}))}
-async function loadBonus(){try{const c=await(await fetch(`${FB}/config/bonus_pontos.json?t=${Date.now()}`,{cache:'no-store'})).json()||{};if(c.ativo!==true){bonusBenefit=null;return}const now=cancunNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);if(days.includes(day)&&inside){bonusBenefit={multiplicador:Number(c.multiplicador||2),inicio:ini,fim};$('bonusTitle').textContent=`Hoy ganas x${bonusBenefit.multiplicador} puntos`;$('bonusText').textContent=`Bonus activo de ${ini} a ${fim}.`;$('bonusCard').classList.add('show')}else bonusBenefit=null}catch{bonusBenefit=null}if(offerTab==='benefits')renderOfferTab()}
+async function loadBonus(){
+  const card=$('bonusCard');
+  card?.classList.remove('show');
+  bonusBenefit=null;
+  try{
+    const c=await(await fetch(`${FB}/config/bonus_pontos.json?t=${Date.now()}`,{cache:'no-store'})).json()||{};
+    if(c.ativo===true){
+      const now=cancunNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
+      if(days.includes(day)&&inside){
+        bonusBenefit={multiplicador:Number(c.multiplicador||2),inicio:ini,fim};
+        $('bonusTitle').textContent=`Hoy ganas x${bonusBenefit.multiplicador} puntos`;
+        $('bonusText').textContent=`Bonus activo de ${ini} a ${fim}.`;
+        card?.classList.add('show');
+      }
+    }
+  }catch{bonusBenefit=null}
+  if(offerTab==='benefits')renderOfferTab();
+}
 
 function parseBirth(v){const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?{month:Number(m[2]),day:Number(m[3])}:null}
-async function loadBirthday(){try{const [cfgR,userR]=await Promise.all([fetch(`${FB}/config/cumpleanos.json?t=${Date.now()}`,{cache:'no-store'}),fetch(`${FB}/users/${encodeURIComponent(uid)}.json?t=${Date.now()}`,{cache:'no-store'})]);const cfg=await cfgR.json()||{},user=await userR.json()||{},b=parseBirth(user.nascimento||client?.nascimento);if(cfg.ativo===false||!b){birthdayBenefit=null;return}const now=cancunNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));let found=null;for(const y of [now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1]){const bd=new Date(y,b.month-1,b.day,12,0,0),start=new Date(bd.getTime()-before*86400000),end=new Date(bd.getTime()+after*86400000);if(now>=start&&now<=end){found={year:y,date:bd};break}}if(!found||user.cumpleanos_canjes?.[String(found.year)]===true){birthdayBenefit=null;return}birthdayBenefit={regalo:String(cfg.regalo||'Regalo especial de cumpleaños'),year:found.year};$('birthdayTitle').textContent=birthdayBenefit.regalo;$('birthdayText').textContent=`Disponible dentro de tu periodo de cumpleaños ${found.year}. Muéstralo al personal para canjearlo.`;$('birthdayCard').classList.add('show')}catch{birthdayBenefit=null}if(offerTab==='benefits')renderOfferTab()}
+async function loadBirthday(){
+  const card=$('birthdayCard');
+  card?.classList.remove('show');
+  birthdayBenefit=null;
+  try{
+    const [cfgR,userR]=await Promise.all([fetch(`${FB}/config/cumpleanos.json?t=${Date.now()}`,{cache:'no-store'}),fetch(`${FB}/users/${encodeURIComponent(uid)}.json?t=${Date.now()}`,{cache:'no-store'})]);
+    const cfg=await cfgR.json()||{},user=await userR.json()||{},b=parseBirth(user.nascimento||client?.nascimento);
+    if(cfg.ativo!==false&&b){
+      const now=cancunNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));
+      let found=null;
+      for(const y of [now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1]){
+        const bd=new Date(y,b.month-1,b.day,12,0,0),start=new Date(bd.getTime()-before*86400000),end=new Date(bd.getTime()+after*86400000);
+        if(now>=start&&now<=end){found={year:y,date:bd};break}
+      }
+      if(found&&user.cumpleanos_canjes?.[String(found.year)]!==true){
+        birthdayBenefit={regalo:String(cfg.regalo||'Regalo especial de cumpleaños'),year:found.year};
+        $('birthdayTitle').textContent=birthdayBenefit.regalo;
+        $('birthdayText').textContent=`Disponible dentro de tu periodo de cumpleaños ${found.year}. Muéstralo al personal para canjearlo.`;
+        card?.classList.add('show');
+      }
+    }
+  }catch{birthdayBenefit=null}
+  if(offerTab==='benefits')renderOfferTab();
+}
 
 function benefitHtml(icon,title,text,button='',action=''){return`<div class="benefit"><div class="benefit-head"><div class="benefit-icon">${icon}</div><div class="benefit-main"><h3>${esc(title)}</h3><p>${esc(text)}</p></div></div>${button?`<button onclick="${action}">${esc(button)}</button>`:''}</div>`}
 function renderBenefits(){const l=levelFor(Math.max(0,Number(client?.pontos_acumulados||client?.pontos||0)));const arr=[];arr.push(benefitHtml('🏅',`Nivel ${l.name.replace(/^\S+\s/,'')}`,l.next?`Sigue acumulando puntos para llegar a ${l.nextName}.`:'Llegaste al nivel máximo.'));arr.push(benefitHtml('🤝','Invita a un amigo',`${Number(client?.referidos_recompensados||0)} amigos premiados · ${Number(client?.pontos_indicacao_total||0)} puntos ganados`,'INVITAR AMIGO','shareInvite()'));if(birthdayBenefit)arr.push(benefitHtml('🎂',birthdayBenefit.regalo,'Tu beneficio de cumpleaños está disponible.'));if(bonusBenefit)arr.push(benefitHtml('⚡',`Puntos x${bonusBenefit.multiplicador}`,'El bonus está activo ahora mismo.'));if(pendingFeedback())arr.push(benefitHtml('⭐','Califica tu compra reciente','Tu opinión privada nos ayuda a mejorar.','OPINAR','openFeedback()'));if(googleAvailable())arr.push(benefitHtml('⭐','Evalúanos en Google','Tu reseña pública ayuda a que más personas nos encuentren.','ABRIR GOOGLE','openGoogle()'));return arr.join('')||'<div class="empty">No tienes beneficios pendientes ahora.</div>'}

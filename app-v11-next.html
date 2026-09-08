@@ -249,8 +249,12 @@ frame.addEventListener('load',()=>{
     try{
       await Promise.all([getPromos(),getClient()]);
       if(typeof w.loadClient==='function')await w.loadClient();
-      if(typeof w.loadMoves==='function')await w.loadMoves();
-      if(typeof w.loadVip==='function')await w.loadVip();
+      await Promise.all([
+        typeof w.loadMoves==='function'?w.loadMoves():null,
+        typeof w.loadVip==='function'?w.loadVip():null,
+        typeof w.loadBonus==='function'?w.loadBonus():null,
+        typeof w.loadBirthday==='function'?w.loadBirthday():null
+      ]);
       renderPromoAreas(false);enhanceRewards();enhanceProfile();showGoogleStatus();updateCountdowns();
     }catch(e){console.warn('Live refresh v1.1:',e)}finally{liveRefreshing=false}
   }
