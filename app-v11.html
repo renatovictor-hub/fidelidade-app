@@ -106,7 +106,7 @@ button{font:inherit}
 
   <section id="screen-qr" class="screen">
     <div class="subhead"><div><h1>Mi QR</h1><p>Muéstralo al momento de tu compra.</p></div></div>
-    <div class="qr-card"><img class="logo" src="/logo.png" alt="Uai Sô"><div id="qrBig" class="qr-box"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
+    <div class="qr-card"><img class="logo" src="/logo.png" alt="Uai Sô"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
   </section>
 
   <section id="screen-offers" class="screen">
@@ -243,8 +243,26 @@ function renderBenefits(){const l=levelFor(Math.max(0,Number(client?.pontos_acum
 function setOfferTab(tab){offerTab=tab;document.querySelectorAll('[data-offer-tab]').forEach(x=>x.classList.toggle('active',x.dataset.offerTab===tab));renderOfferTab()}
 function renderOfferTab(){const el=$('offersList');if(!el)return;if(offerTab==='active'){el.innerHTML=activePromos.length?activePromos.map(p=>promoHtml(p)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';return}if(offerTab==='previous'){el.innerHTML=expiredPromos.length?expiredPromos.map(p=>promoHtml(p,true)).join(''):'<div class="empty">Todavía no hay promociones anteriores.</div>';return}el.innerHTML=renderBenefits()}
 
-function buildQr(){$('qrBig').innerHTML='';new QRCode($('qrBig'),{text:uid,width:190,height:190,colorDark:'#190022',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H})}
-async function shareQr(){const text=`Mi tarjeta Uai Sô Fidelidad: ${uid}`;if(navigator.share){try{return await navigator.share({title:'Uai Sô Fidelidad',text})}catch{}}try{await navigator.clipboard.writeText(text);alert('ID copiado.')}catch{alert(text)}}
+function buildQr(){
+  const box=$('qrBig');
+  box.innerHTML='';
+  try{
+    if(typeof QRCode!=='function')throw new Error('QR unavailable');
+    new QRCode(box,{text:uid,width:190,height:190,colorDark:'#190022',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+  }catch(_){
+    box.removeAttribute('role');
+    box.innerHTML='<div class="empty">No se pudo generar el QR. Revisa tu conexión e inténtalo nuevamente.</div>';
+  }
+}
+async function shareQr(){
+  const text=`Mi tarjeta Uai Sô Fidelidad: ${uid}`;
+  if(navigator.share){
+    try{await navigator.share({title:'Uai Sô Fidelidad',text});return}
+    catch(e){if(e?.name==='AbortError')return}
+  }
+  try{await navigator.clipboard.writeText(text);alert('ID copiado.')}
+  catch{alert(text)}
+}
 async function shareInvite(){const url=`${location.origin}/?ref=${encodeURIComponent(uid)}`,text='Te invito a Uai Sô Fidelidad. Regístrate con mi enlace y disfruta los beneficios.';if(navigator.share){try{return await navigator.share({title:'Uai Sô Fidelidad',text,url})}catch{}}try{await navigator.clipboard.writeText(url);alert('Enlace de invitación copiado.')}catch{alert(url)}}
 
 async function init(){try{await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
