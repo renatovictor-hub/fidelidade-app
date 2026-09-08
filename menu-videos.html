@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#190022">
+<title>Menú en video · Uai Sô</title>
+<style>
+:root{--purple:#6a0dad;--purple2:#9b30ff;--yellow:#ffc400;--ink:#fff;--panel:#fff;--text:#261d2b;--muted:#796f7e;--safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#130018;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink)}button{font:inherit}.app{position:relative;width:min(100%,520px);height:100dvh;margin:auto;background:#130018;overflow:hidden}
+.topbar{position:absolute;z-index:20;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:calc(10px + var(--safe-top)) 12px 10px;background:linear-gradient(180deg,rgba(10,0,14,.82),transparent)}
+.icon-btn{width:42px;height:42px;border:1px solid rgba(255,255,255,.28);border-radius:50%;background:rgba(20,7,25,.5);backdrop-filter:blur(12px);color:#fff;display:grid;place-items:center;font-size:20px;cursor:pointer}.brand{min-width:0;flex:1}.brand b{display:block;font-size:16px}.brand span{display:block;font-size:10px;color:rgba(255,255,255,.76)}.cart-btn{position:relative}.cart-count{position:absolute;right:-3px;top:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#ff3154;border:2px solid #fff;display:grid;place-items:center;font-size:9px;font-weight:900}.cart-count.hidden{display:none}
+.feed{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior-y:contain;scrollbar-width:none}.feed::-webkit-scrollbar{display:none}.dish{position:relative;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#2b1033}.dish video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#2a0a34}.dish::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,0,15,.2) 25%,rgba(13,0,17,.25) 48%,rgba(12,0,15,.93) 100%);pointer-events:none}.demo{position:absolute;z-index:3;top:calc(68px + var(--safe-top));left:14px;padding:6px 9px;border-radius:999px;background:rgba(255,196,0,.92);color:#2c1b00;font-size:9px;font-weight:900;letter-spacing:.05em}.sound{position:absolute;z-index:4;right:14px;top:calc(72px + var(--safe-top));width:39px;height:39px;border:0;border-radius:50%;background:rgba(12,0,16,.55);color:#fff;font-size:17px;backdrop-filter:blur(10px)}
+.content{position:absolute;z-index:4;left:0;right:0;bottom:0;padding:24px 16px calc(24px + var(--safe-bottom));display:grid;gap:12px}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.12em;color:#ffd84f}.dish h1{font-size:31px;line-height:1.02;margin:0;max-width:88%;text-shadow:0 2px 12px rgba(0,0,0,.35)}.desc{font-size:14px;line-height:1.38;color:rgba(255,255,255,.84);margin:0;max-width:92%}.meta{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);font-size:10px;font-weight:800}.actions{display:grid;grid-template-columns:1fr 1.35fr;gap:9px}.actions button{min-height:49px;border-radius:14px;font-weight:900;font-size:12px;cursor:pointer}.details{border:1px solid rgba(255,255,255,.55);background:rgba(22,4,28,.32);color:#fff;backdrop-filter:blur(10px)}.order{border:0;background:linear-gradient(135deg,var(--purple2),var(--purple));color:#fff;box-shadow:0 9px 22px rgba(106,13,173,.38)}
+.pager{position:absolute;z-index:7;right:10px;top:50%;transform:translateY(-50%);display:grid;gap:6px}.dot{width:4px;height:17px;border-radius:999px;background:rgba(255,255,255,.35);transition:.2s}.dot.active{height:30px;background:#fff}
+.sheet-wrap{display:none;position:absolute;z-index:50;inset:0;background:rgba(13,3,17,.58);align-items:flex-end}.sheet-wrap.open{display:flex}.sheet{width:100%;max-height:88dvh;overflow:auto;background:var(--panel);color:var(--text);border-radius:25px 25px 0 0;padding:10px 17px calc(18px + var(--safe-bottom));box-shadow:0 -18px 45px rgba(0,0,0,.28)}.handle{width:43px;height:4px;border-radius:999px;background:#d8d1dc;margin:2px auto 14px}.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.sheet-head h2{margin:0;color:var(--purple);font-size:22px}.close{width:39px;height:39px;border:0;border-radius:50%;background:#f0eaf3;color:var(--purple);font-size:23px}.sheet-copy{color:var(--muted);font-size:14px;line-height:1.45}.ingredients{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}.ingredients span{padding:7px 9px;border-radius:9px;background:#f4eff7;color:#5e4d65;font-size:11px;font-weight:700}.price-line{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-top:1px solid #eee6f1;font-weight:900}.primary{width:100%;min-height:50px;border:0;border-radius:14px;background:var(--purple);color:#fff;font-weight:900}.prototype-note{margin-top:10px;padding:10px;border-radius:11px;background:#fff7d8;color:#705700;font-size:10px;line-height:1.35}
+.cart-list{display:grid;gap:9px;margin:14px 0}.cart-empty{text-align:center;padding:30px 12px;color:#8d8391}.cart-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px;border:1px solid #eee7f1;border-radius:14px}.cart-row b{display:block;font-size:13px}.cart-row small{color:var(--muted)}.qty{display:flex;align-items:center;gap:10px}.qty button{width:31px;height:31px;border:0;border-radius:9px;background:#f0e8f4;color:var(--purple);font-size:18px;font-weight:900}.total{display:flex;justify-content:space-between;font-size:19px;font-weight:900;padding:14px 2px}.whatsapp{background:#25d366}.toast{position:absolute;z-index:70;left:50%;bottom:calc(22px + var(--safe-bottom));transform:translate(-50%,30px);opacity:0;background:#fff;color:#3d2848;border-radius:999px;padding:11px 16px;font-size:12px;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:.25s;pointer-events:none}.toast.show{transform:translate(-50%,0);opacity:1}
+@media(min-width:521px){body{background:#ede7f0}.app{box-shadow:0 0 45px rgba(45,8,62,.26)}}
+@media(prefers-reduced-motion:reduce){.feed{scroll-behavior:auto}.dot,.toast{transition:none}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <button class="icon-btn" type="button" onclick="backToApp()" aria-label="Volver">‹</button>
+    <div class="brand"><b>Uai Sô · Menú</b><span>Descubre cada plato en video</span></div>
+    <button class="icon-btn cart-btn" type="button" onclick="openCart()" aria-label="Abrir carrito">🛒<span id="cartCount" class="cart-count hidden">0</span></button>
+  </header>
+
+  <section id="feed" class="feed" aria-label="Menú en video"></section>
+  <div id="pager" class="pager" aria-hidden="true"></div>
+
+  <div id="detailsWrap" class="sheet-wrap" onclick="if(event.target===this)closeDetails()">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="detailName">
+      <div class="handle"></div><div class="sheet-head"><h2 id="detailName"></h2><button class="close" type="button" onclick="closeDetails()" aria-label="Cerrar">×</button></div>
+      <p id="detailDescription" class="sheet-copy"></p><div id="detailIngredients" class="ingredients"></div>
+      <div class="price-line"><span>Precio</span><strong id="detailPrice"></strong></div>
+      <button id="detailOrder" class="primary" type="button">PEDIR</button>
+      <div class="prototype-note">Prototipo: videos, productos, descripciones y precios serán reemplazados por el menú real antes del lanzamiento.</div>
+    </section>
+  </div>
+
+  <div id="cartWrap" class="sheet-wrap" onclick="if(event.target===this)closeCart()">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+      <div class="handle"></div><div class="sheet-head"><h2 id="cartTitle">Tu pedido</h2><button class="close" type="button" onclick="closeCart()" aria-label="Cerrar">×</button></div>
+      <div id="cartList" class="cart-list"></div><div id="cartTotal" class="total"></div>
+      <button id="sendOrder" class="primary whatsapp" type="button" onclick="sendWhatsApp()">ENVIAR PEDIDO POR WHATSAPP</button>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+</main>
+
+<script>
+const PRODUCTS=[
+  {id:'esfiha-carne',name:'Esfiha de carne',category:'ESFIHAS ABIERTAS',price:50,video:'/media/esfiha-carne-demo.mp4',description:'Massa macia, borda dourada e recheio temperado no estilo brasileiro.',ingredients:['Carne temperada','Tomate','Cebola','Limón','Masa artesanal']},
+  {id:'esfiha-queijo',name:'Esfiha de queso',category:'ESFIHAS ABIERTAS',price:50,video:'/media/esfiha-queijo-demo.mp4',description:'Queijo cremoso sobre nossa massa artesanal, assada até dourar.',ingredients:['Queso','Masa artesanal','Hierbas']},
+  {id:'combo-esfihas',name:'Combo Uai Sô',category:'PARA COMPARTIR',price:280,video:'/media/combo-esfihas-demo.mp4',description:'Uma seleção de esfihas para provar sabores diferentes e compartilhar.',ingredients:['6 esfihas','Sabores a elegir','Empaque para delivery']}
+];
+const MXN=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0});
+const qs=new URLSearchParams(location.search),uid=String(qs.get('uid')||'').trim();
+let cart=readCart(),activeIndex=0,muted=true,toastTimer;
+const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function renderFeed(){
+  $('feed').innerHTML=PRODUCTS.map((p,i)=>`<article class="dish" data-index="${i}" data-id="${esc(p.id)}"><video muted loop playsinline preload="metadata" poster="/banner.jpg" src="${esc(p.video)}"></video><span class="demo">VIDEO DEMO</span><button class="sound" type="button" onclick="toggleSound(${i})" aria-label="Activar sonido">🔇</button><div class="content"><div class="eyebrow">${esc(p.category)}</div><h1>${esc(p.name)}</h1><p class="desc">${esc(p.description)}</p><div class="meta"><span class="chip">Desde ${MXN.format(p.price)}</span><span class="chip">Hecho al momento</span></div><div class="actions"><button class="details" type="button" onclick="openDetails('${esc(p.id)}')">VER DETALLES</button><button class="order" type="button" onclick="addToCart('${esc(p.id)}')">PEDIR · ${MXN.format(p.price)}</button></div></div></article>`).join('');
+  $('pager').innerHTML=PRODUCTS.map((_,i)=>`<span class="dot ${i===0?'active':''}"></span>`).join('');
+  observeVideos();
+}
+function observeVideos(){
+  const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{const video=entry.target.querySelector('video');if(entry.isIntersecting&&entry.intersectionRatio>.65){activeIndex=Number(entry.target.dataset.index);updatePager();video.play().catch(()=>{})}else video.pause()}),{root:$('feed'),threshold:[.2,.65,.9]});
+  document.querySelectorAll('.dish').forEach(x=>observer.observe(x));
+}
+function updatePager(){document.querySelectorAll('.dot').forEach((x,i)=>x.classList.toggle('active',i===activeIndex))}
+function toggleSound(index){muted=!muted;document.querySelectorAll('.dish video').forEach(v=>v.muted=muted);document.querySelectorAll('.sound').forEach(b=>{b.textContent=muted?'🔇':'🔊';b.setAttribute('aria-label',muted?'Activar sonido':'Silenciar')});document.querySelector(`.dish[data-index="${index}"] video`)?.play().catch(()=>{})}
+
+function product(id){return PRODUCTS.find(x=>x.id===id)}
+function openDetails(id){const p=product(id);if(!p)return;$('detailName').textContent=p.name;$('detailDescription').textContent=p.description;$('detailIngredients').innerHTML=p.ingredients.map(x=>`<span>${esc(x)}</span>`).join('');$('detailPrice').textContent=MXN.format(p.price);$('detailOrder').onclick=()=>{addToCart(id);closeDetails()};$('detailsWrap').classList.add('open')}
+function closeDetails(){$('detailsWrap').classList.remove('open')}
+function readCart(){try{return JSON.parse(localStorage.getItem('uaiso_video_cart')||'{}')||{}}catch{return{}}}
+function saveCart(){localStorage.setItem('uaiso_video_cart',JSON.stringify(cart));renderCartBadge()}
+function addToCart(id){cart[id]=Math.max(0,Number(cart[id])||0)+1;saveCart();showToast('Agregado a tu pedido')}
+function changeQty(id,delta){cart[id]=Math.max(0,(Number(cart[id])||0)+delta);if(!cart[id])delete cart[id];saveCart();renderCart()}
+function cartItems(){return Object.entries(cart).map(([id,qty])=>({p:product(id),qty:Number(qty)||0})).filter(x=>x.p&&x.qty>0)}
+function renderCartBadge(){const count=cartItems().reduce((n,x)=>n+x.qty,0);$('cartCount').textContent=count>9?'9+':count;$('cartCount').classList.toggle('hidden',count===0)}
+function openCart(){renderCart();$('cartWrap').classList.add('open')}
+function closeCart(){$('cartWrap').classList.remove('open')}
+function renderCart(){const items=cartItems();$('cartList').innerHTML=items.length?items.map(({p,qty})=>`<div class="cart-row"><div><b>${esc(p.name)}</b><small>${MXN.format(p.price)} cada</small></div><div class="qty"><button type="button" onclick="changeQty('${esc(p.id)}',-1)" aria-label="Quitar uno">−</button><b>${qty}</b><button type="button" onclick="changeQty('${esc(p.id)}',1)" aria-label="Agregar uno">+</button></div></div>`).join(''):'<div class="cart-empty">Tu carrito está vacío.<br>Desliza el menú y elige algo rico.</div>';const total=items.reduce((n,x)=>n+x.p.price*x.qty,0);$('cartTotal').innerHTML=items.length?`<span>Total estimado</span><strong>${MXN.format(total)}</strong>`:'';$('sendOrder').hidden=!items.length}
+function sendWhatsApp(){const items=cartItems();if(!items.length)return;const total=items.reduce((n,x)=>n+x.p.price*x.qty,0),lines=items.map(x=>`• ${x.qty}x ${x.p.name} — ${MXN.format(x.p.price*x.qty)}`),client=/^user_\d+$/.test(uid)?`\nCliente fidelidad: #${uid.replace('user_','')}`:'';const text=`Hola! Quiero hacer este pedido:\n\n${lines.join('\n')}\n\nTotal estimado: ${MXN.format(total)}${client}`;window.open('https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(text),'_blank','noopener')}
+function showToast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').classList.add('show');toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1700)}
+function backToApp(){location.href=`/app-v11-next.html${/^user_\d+$/.test(uid)?'?uid='+encodeURIComponent(uid):''}#home`}
+document.addEventListener('visibilitychange',()=>{const video=document.querySelector(`.dish[data-index="${activeIndex}"] video`);if(document.visibilityState==='visible')video?.play().catch(()=>{});else document.querySelectorAll('video').forEach(v=>v.pause())});
+renderFeed();renderCartBadge();
+</script>
+</body>
+</html>

@@ -69,7 +69,7 @@ button{font:inherit}
     <div id="counter" class="counter">🔥 +301 clientes conectados</div>
     <div class="quick">
       <a href="https://instagram.com/fooduaiso" target="_blank" rel="noopener">◎ Instagram</a>
-      <a href="#" onclick="return false">🍴 Nuestro Menú</a>
+      <a href="/menu-videos.html" onclick="openVideoMenu(event)">🍴 Nuestro Menú</a>
     </div>
     <div class="hello"><h2 id="helloName">Hola</h2><p>¡Qué bueno verte de nuevo!</p></div>
     <div class="points">
@@ -264,6 +264,7 @@ async function shareQr(){
   catch{alert(text)}
 }
 async function shareInvite(){const url=`${location.origin}/?ref=${encodeURIComponent(uid)}`,text='Te invito a Uai Sô Fidelidad. Regístrate con mi enlace y disfruta los beneficios.';if(navigator.share){try{return await navigator.share({title:'Uai Sô Fidelidad',text,url})}catch{}}try{await navigator.clipboard.writeText(url);alert('Enlace de invitación copiado.')}catch{alert(url)}}
+function openVideoMenu(event){event?.preventDefault();const url=`/menu-videos.html?uid=${encodeURIComponent(uid)}`;if(window.top!==window.self)window.top.location.href=url;else location.href=url}
 
 async function init(){try{await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
 init();
