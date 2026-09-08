@@ -41,6 +41,7 @@ frame.addEventListener('load',()=>{
   let promoCache=[],clientState=null,lastTab='home',liveRefreshing=false;
   const badImages=new Set();
   const nativeRenderOfferTab=typeof w.renderOfferTab==='function'?w.renderOfferTab.bind(w):null;
+  const nativeLoadRewards=typeof w.loadRewards==='function'?w.loadRewards.bind(w):null;
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -193,11 +194,11 @@ frame.addEventListener('load',()=>{
   function enhanceRewards(){
     const saldo=Math.max(0,Number(clientState?.pontos||0));let disponibles=0;
     d.querySelectorAll('#rewardsList .reward').forEach(card=>{
-      const custo=Math.max(0,Number(String(card.querySelector('.pts')?.textContent||'').replace(/\D/g,''))||0),body=card.querySelector('.body'),btn=card.querySelector('button');
-      if(!body||!btn||!custo)return;
+      const rawCost=card.dataset.points??String(card.querySelector('.pts')?.textContent||'').replace(/\D/g,''),custo=Math.max(0,Number(rawCost)||0),body=card.querySelector('.body'),btn=card.querySelector('button');
+      if(!body||!btn||!rawCost)return;
       const falta=Math.max(0,custo-saldo);let badge=body.querySelector('.reward-availability');
       if(!badge){badge=d.createElement('div');badge.className='reward-availability';body.appendChild(badge)}
-      btn.onclick=null;
+      btn.onclick=null;btn.removeAttribute('onclick');
       if(!falta){
         disponibles++;badge.className='reward-availability ok';badge.textContent='✓ Disponible para canjear';btn.disabled=false;btn.className='reward-ready';btn.textContent='MOSTRAR QR';
         btn.onclick=()=>{lastTab='rewards';if(typeof w.go==='function')w.go('qr');addQrClose()};
@@ -206,6 +207,14 @@ frame.addEventListener('load',()=>{
       }
     });
     setNavBadge('rewards',disponibles);
+  }
+
+  if(nativeLoadRewards){
+    w.loadRewards=async function(){
+      const result=await nativeLoadRewards();
+      enhanceRewards();
+      return result;
+    };
   }
 
   function addQrClose(){
@@ -263,7 +272,7 @@ frame.addEventListener('load',()=>{
     w.renderOfferTab=function(){const{active,expired}=currentLists();setNavBadge('offers',active.length);renderOffersTab(active,expired);showGoogleStatus();updateCountdowns()};
   }
 
-  d.querySelector('[data-tab="rewards"]')?.addEventListener('click',async()=>{lastTab='rewards';await refreshLive();setTimeout(enhanceRewards,80)});
+  d.querySelector('[data-tab="rewards"]')?.addEventListener('click',async()=>{lastTab='rewards';await refreshLive();if(typeof w.loadRewards==='function')await w.loadRewards();else enhanceRewards()});
   d.querySelector('[data-tab="profile"]')?.addEventListener('click',async()=>{lastTab='profile';await refreshLive();setTimeout(enhanceProfile,50)});
   d.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.tab&&btn.dataset.tab!=='qr')lastTab=btn.dataset.tab}));
   w.addEventListener('focus',refreshLive);
