@@ -34,6 +34,8 @@ function isOutsideServiceHours(deliveryAt) {
 }
 
 function destinationWaypoint(destination) {
+    const placeId = String(destination?.placeId || "").trim();
+    if (/^[A-Za-z0-9_-]{10,200}$/.test(placeId)) return { placeId };
     const latitude = Number(destination?.latitude);
     const longitude = Number(destination?.longitude);
     if (Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180) {
@@ -42,6 +44,48 @@ function destinationWaypoint(destination) {
     const address = String(destination?.address || "").trim().slice(0, 240);
     if (address.length < 8) return null;
     return { address: /canc[uú]n|quintana roo|m[eé]xico/i.test(address) ? address : `${address}, Cancún, Quintana Roo, México` };
+}
+
+async function handlePlaceAutocomplete(req, res) {
+    const input = String(req.body?.input || "").trim().slice(0, 120);
+    if (input.length < 3) return res.status(200).json({ suggestions: [] });
+    const apiKey = String(process.env.GOOGLE_MAPS_API_KEY || "").trim();
+    if (!apiKey) return res.status(200).json({ suggestions: [], unavailable: true });
+    const sessionToken = String(req.body?.sessionToken || "").trim().slice(0, 80);
+
+    try {
+        const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": apiKey,
+                "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text"
+            },
+            body: JSON.stringify({
+                input,
+                ...(sessionToken ? { sessionToken } : {}),
+                includedRegionCodes: ["mx"],
+                languageCode: "es",
+                regionCode: "mx",
+                locationBias: { circle: { center: RESTAURANT, radius: 50000 } }
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            console.error("Google Places error:", response.status, data?.error?.status || "unknown");
+            return res.status(502).json({ suggestions: [], error: "No pudimos buscar direcciones." });
+        }
+        const suggestions = (data?.suggestions || []).map(item => item?.placePrediction).filter(Boolean).slice(0, 5).map(place => ({
+            placeId: String(place.placeId || ""),
+            text: String(place.text?.text || ""),
+            main: String(place.structuredFormat?.mainText?.text || place.text?.text || ""),
+            secondary: String(place.structuredFormat?.secondaryText?.text || "")
+        })).filter(item => item.placeId && item.text);
+        return res.status(200).json({ suggestions });
+    } catch (error) {
+        console.error("Place autocomplete error:", error?.message || error);
+        return res.status(500).json({ suggestions: [], error: "No pudimos buscar direcciones." });
+    }
 }
 
 async function handleDeliveryQuote(req, res) {
@@ -95,6 +139,10 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && req.body?.action === "delivery_quote") {
         return handleDeliveryQuote(req, res);
+    }
+
+    if (req.method === "POST" && req.body?.action === "place_autocomplete") {
+        return handlePlaceAutocomplete(req, res);
     }
 
     try {
