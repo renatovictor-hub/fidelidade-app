@@ -98,7 +98,7 @@ async function handleDeliveryQuote(req, res) {
         const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "routes.distanceMeters,routes.duration" },
-            body: JSON.stringify({ origin: { location: { latLng: RESTAURANT } }, destination, travelMode: "DRIVE", routingPreference: "TRAFFIC_AWARE", languageCode: "es-MX", units: "METRIC" })
+            body: JSON.stringify({ origin: { location: { latLng: RESTAURANT } }, destination, travelMode: "DRIVE", routingPreference: "TRAFFIC_UNAWARE", languageCode: "es-MX", units: "METRIC" })
         });
         const data = await response.json();
         if (!response.ok) {
