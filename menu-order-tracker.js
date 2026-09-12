@@ -19,10 +19,10 @@
     .choice-card span{display:flex;align-items:center;justify-content:center;gap:7px;min-height:52px;padding:9px 10px;white-space:normal}
     .location-action{display:flex;align-items:center;justify-content:center;gap:7px;min-height:50px;padding:9px 10px;line-height:1.2;white-space:normal}
     .add-small,.qty button,.mini-qty button,.close,.icon-btn{display:flex;align-items:center;justify-content:center;padding:0}
-    .sheet{padding-bottom:calc(96px + var(--safe-bottom));scroll-padding-bottom:calc(110px + var(--safe-bottom));overscroll-behavior:contain}
+    .sheet{padding-bottom:calc(30px + var(--safe-bottom));scroll-padding-bottom:calc(40px + var(--safe-bottom));overscroll-behavior:contain}
     #cartWrap .sheet{padding-bottom:calc(18px + var(--safe-bottom))}
     #sendOrder{position:sticky;bottom:calc(10px + var(--safe-bottom));z-index:8;display:flex;align-items:center;justify-content:center;margin-top:8px;box-shadow:0 10px 28px rgba(106,13,173,.30)}
-    #checkoutForm>button[type="submit"]{position:sticky;bottom:calc(10px + var(--safe-bottom));z-index:8;display:flex;align-items:center;justify-content:center;margin-top:12px;box-shadow:0 10px 28px rgba(37,211,102,.28)}
+    #checkoutForm>button[type="submit"]{position:static!important;display:flex;align-items:center;justify-content:center;width:100%;margin:18px 0 calc(8px + var(--safe-bottom));box-shadow:0 10px 28px rgba(37,211,102,.28)}
     .primary{min-height:54px;padding:12px 16px;font-size:14px;letter-spacing:.01em}
     @media(max-height:760px){
       .content{gap:8px!important;padding-top:16px!important;padding-bottom:calc(14px + var(--safe-bottom))!important}
