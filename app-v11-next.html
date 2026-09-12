@@ -55,7 +55,7 @@ frame.addEventListener('load',()=>{
   const badImages=new Set();
   const nativeRenderOfferTab=typeof w.renderOfferTab==='function'?w.renderOfferTab.bind(w):null;
   const nativeLoadRewards=typeof w.loadRewards==='function'?w.loadRewards.bind(w):null;
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function getPromos(){try{const r=await fetch('https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Promotions unavailable');const raw=await r.json()||{};promoCache=Object.entries(raw).map(([id,p])=>({id,...(p||{})}));promosReady=true;return true}catch(_){return false}}
   async function getClient(){try{const uid=new URLSearchParams(location.search).get('uid')||'';if(!uid)return;const r=await fetch('/api/cliente?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});if(r.ok)clientState=await r.json()}catch(_){}}
@@ -76,27 +76,68 @@ frame.addEventListener('load',()=>{
   function hydratePromos(scope){if(!scope)return;scope.querySelectorAll('img[data-v11-img]').forEach(img=>{const ok=()=>{if(img.isConnected&&img.naturalWidth>0)img.classList.add('is-loaded')};const fail=()=>{badImages.add(img.getAttribute('src')||'');img.remove()};if(img.complete){img.naturalWidth>0?ok():fail()}else{img.addEventListener('load',ok,{once:true});img.addEventListener('error',fail,{once:true})}});scope.querySelectorAll('.offer-wa').forEach(btn=>{btn.onclick=()=>{const card=btn.closest('.offer');openWhatsApp(matchPromo(card),card)}})}
   function renderStable(el,html,key){if(!el)return false;const shouldHaveWa=key.includes('active')&&!key.includes('previous');const stale=shouldHaveWa&&html.includes('offer-wa')&&!el.querySelector('.offer-wa');if(el.dataset.v11RenderKey===key&&!stale)return false;el.innerHTML=html;el.dataset.v11RenderKey=key;hydratePromos(el);return true}
   function renderOffersTab(active,expired){const el=d.getElementById('offersList');if(!el)return;const activeTab=d.querySelector('[data-offer-tab="active"]')?.classList.contains('active');const previousTab=d.querySelector('[data-offer-tab="previous"]')?.classList.contains('active');const benefitsTab=d.querySelector('[data-offer-tab="benefits"]')?.classList.contains('active');if(activeTab){const html=active.length?active.map(x=>promoHtml(x)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';renderStable(el,html,listKey('active',active));return}if(previousTab){const html=expired.length?expired.map(x=>promoHtml(x,true)).join(''):'<div class="empty">Todavía no hay promociones anteriores.</div>';renderStable(el,html,listKey('previous',expired));return}if(benefitsTab&&nativeRenderOfferTab){el.dataset.v11RenderKey='';nativeRenderOfferTab()}}
-  function renderPromoAreas(force=false){const{active,expired}=currentLists();setNavBadge('offers',active.length);const home=d.getElementById('homeOffers'),prevBlock=d.getElementById('previousBlock'),homePrev=d.getElementById('homePrevious');if(force&&home)home.dataset.v11RenderKey='';if(force&&homePrev)homePrev.dataset.v11RenderKey='';if(home){const list=active.slice(0,2),html=list.length?list.map(x=>promoHtml(x)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';renderStable(home,html,listKey('home-active',list))}if(prevBlock){prevBlock.style.display='none'}if(homePrev){homePrev.innerHTML=''}renderOffersTab(active,expired)}
-  function updateCountdowns(){d.querySelectorAll('.offer-countdown[data-exp]').forEach(el=>{const ts=Number(el.dataset.exp||0);if(!ts)return;const diff=ts-Date.now();if(diff<=0){refreshLive();return}const h=Math.floor(diff/36e5),m=Math.floor(diff%36e5/6e4),s=Math.floor(diff%6e4/1000),txt=h>=24?`⏳ Termina en ${Math.floor(h/24)}d ${h%24}h`:`⏳ Termina en ${h}h ${m}m ${s}s`;if(el.textContent!==txt)el.textContent=txt})}
+  function renderPromoAreas(force=false){
+    const{active,expired}=currentLists();
+    setNavBadge('offers',active.length);
+    const home=d.getElementById('homeOffers'),prevBlock=d.getElementById('previousBlock'),homePrev=d.getElementById('homePrevious');
+    if(force&&home)home.dataset.v11RenderKey='';
+    if(force&&homePrev)homePrev.dataset.v11RenderKey='';
+    if(home){const list=active.slice(0,2),html=list.length?list.map(x=>promoHtml(x)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';renderStable(home,html,listKey('home-active',list))}
+    if(prevBlock&&homePrev){const list=expired.slice(0,3);prevBlock.style.display=list.length?'block':'none';renderStable(homePrev,list.map(x=>promoHtml(x,true)).join(''),listKey('home-previous',list))}
+    renderOffersTab(active,expired);
+  }
+  function updateCountdowns(){d.querySelectorAll('.offer-countdown[data-exp]').forEach(el=>{const ts=Number(el.dataset.exp||0);if(!ts)return;const diff=ts-Date.now();if(diff<=0){refreshLive(false);return}const h=Math.floor(diff/36e5),m=Math.floor(diff%36e5/6e4),s=Math.floor(diff%6e4/1000),txt=h>=24?`⏳ Termina en ${Math.floor(h/24)}d ${h%24}h`:`⏳ Termina en ${h}h ${m}m ${s}s`;if(el.textContent!==txt)el.textContent=txt})}
   function enhanceRewards(){const saldo=Math.max(0,Number(clientState?.pontos||0));let disponibles=0;d.querySelectorAll('#rewardsList .reward').forEach(card=>{const rawCost=card.dataset.points??String(card.querySelector('.pts')?.textContent||'').replace(/\D/g,''),custo=Math.max(0,Number(rawCost)||0),body=card.querySelector('.body'),btn=card.querySelector('button');if(!body||!btn||!rawCost)return;const falta=Math.max(0,custo-saldo);let badge=body.querySelector('.reward-availability');if(!badge){badge=d.createElement('div');badge.className='reward-availability';body.appendChild(badge)}btn.onclick=null;btn.removeAttribute('onclick');if(!falta){disponibles++;badge.className='reward-availability ok';badge.textContent='✓ Disponible para canjear';btn.disabled=false;btn.className='reward-ready';btn.textContent='MOSTRAR QR';btn.onclick=()=>{lastTab='rewards';if(typeof w.go==='function')w.go('qr');addQrClose()}}else{badge.className='reward-availability no';badge.textContent=`Te faltan ${falta} puntos`;btn.disabled=true;btn.className='reward-locked';btn.textContent=`FALTAN ${falta}`}});setNavBadge('rewards',disponibles)}
   if(nativeLoadRewards){w.loadRewards=async function(){const result=await nativeLoadRewards();enhanceRewards();return result}}
   function addQrClose(){const qr=d.getElementById('screen-qr');if(!qr||qr.querySelector('.qr-close-v11'))return;const b=d.createElement('button');b.className='qr-close-v11';b.type='button';b.setAttribute('aria-label','Cerrar QR');b.innerHTML='×';b.onclick=()=>{if(typeof w.go==='function')w.go(lastTab||'home')};qr.appendChild(b)}
   function enhanceProfile(){if(!clientState)return;const stats=d.querySelector('#screen-profile .stats');if(stats){const first=stats.querySelector('.stat span');if(first)first.textContent='Disponibles'}const dataCard=[...d.querySelectorAll('#screen-profile .card')].find(x=>x.querySelector('h3')?.textContent.trim()==='Mis datos');if(dataCard){let row=dataCard.querySelector('[data-accumulated-row]');if(!row){row=d.createElement('div');row.className='data-row';row.setAttribute('data-accumulated-row','1');const version=[...dataCard.querySelectorAll('.data-row')].find(x=>x.textContent.includes('Versión'));if(version)dataCard.insertBefore(row,version);else dataCard.appendChild(row)}row.innerHTML=`<span>⭐ Puntos acumulados</span><b>${Math.max(0,Number(clientState.pontos_acumulados||clientState.pontos||0))}</b>`}const progress=d.getElementById('profileProgressTxt');if(progress&&!progress.parentElement.querySelector('.profile-points-note')){const note=d.createElement('div');note.className='profile-points-note';note.textContent='El nivel se calcula con tus puntos acumulados; los puntos disponibles pueden bajar cuando canjeas recompensas.';progress.insertAdjacentElement('afterend',note)}}
   function fixMovementRenderer(){if(typeof w.renderMoves!=='function')return;w.renderMoves=function(target,items){const el=d.getElementById(target);if(!el)return;if(!items?.length){el.innerHTML='<div class="empty">Todavía no hay movimientos.</div>';return}el.innerHTML=items.map(m=>{const deb=m?.tipo==='debito'||Number(m?.pontos)<0,v=Math.abs(Number(m?.pontos||0)),icon=typeof w.moveIcon==='function'?w.moveIcon(m):'⭐',title=typeof w.moveTitle==='function'?w.moveTitle(m):(deb?'Canje de recompensa':'Puntos acreditados'),date=typeof w.fmtDate==='function'?w.fmtDate(m.data,true):'',safe=typeof w.esc==='function'?w.esc(title):esc(title);return `<div class="move"><div class="icon">${icon}</div><div class="main"><b>${safe}</b><span>${date}</span></div><div class="amount ${deb?'minus':'plus'}">${deb?'-':'+'}${v}</div></div>`}).join('')};if(typeof w.loadMoves==='function')w.loadMoves()}
   function showGoogleStatus(){if(!clientState)return;const benefits=d.getElementById('offersList'),tab=d.querySelector('[data-offer-tab="benefits"]')?.classList.contains('active');if(!benefits||!tab)return;if(clientState.google_review_clicked===true&&!benefits.querySelector('[data-google-complete]'))benefits.insertAdjacentHTML('beforeend','<div class="benefit benefit-complete" data-google-complete="1"><div class="benefit-head"><div class="benefit-icon">✓</div><div class="benefit-main"><h3>Google Review</h3><p>Gracias. Ya utilizaste la invitación para evaluar Uai Sô en Google.</p></div></div></div>')}
-  async function refreshLive(){if(liveRefreshing)return;liveRefreshing=true;pull.classList.add('loading');pull.classList.add('show');pull.textContent='⟳ Actualizando...';try{const[promosUpdated]=await Promise.all([getPromos(),getClient()]);if(typeof w.loadClient==='function')await w.loadClient();await Promise.all([typeof w.loadMoves==='function'?w.loadMoves():null,typeof w.loadVip==='function'?w.loadVip():null,typeof w.loadBonus==='function'?w.loadBonus():null,typeof w.loadBirthday==='function'?w.loadBirthday():null,typeof w.loadRewards==='function'?w.loadRewards():null]);if(promosUpdated||promosReady)renderPromoAreas(true);enhanceRewards();enhanceProfile();showGoogleStatus();updateCountdowns();pull.textContent='✓ Actualizado';setTimeout(()=>{pull.classList.remove('show','loading');pull.textContent='↓ Desliza para actualizar'},650)}catch(e){console.warn('Live refresh v1.1:',e);pull.textContent='No se pudo actualizar';setTimeout(()=>{pull.classList.remove('show','loading');pull.textContent='↓ Desliza para actualizar'},900)}finally{liveRefreshing=false}}
+
+  async function refreshLive(showIndicator=false){
+    if(liveRefreshing)return;
+    liveRefreshing=true;
+    if(showIndicator){pull.classList.add('loading','show');pull.textContent='⟳ Actualizando...'}
+    try{
+      const[promosUpdated]=await Promise.all([getPromos(),getClient()]);
+      if(typeof w.loadClient==='function')await w.loadClient();
+      await Promise.all([
+        typeof w.loadMoves==='function'?w.loadMoves():null,
+        typeof w.loadVip==='function'?w.loadVip():null,
+        typeof w.loadBonus==='function'?w.loadBonus():null,
+        typeof w.loadBirthday==='function'?w.loadBirthday():null,
+        typeof w.loadRewards==='function'?w.loadRewards():null
+      ]);
+      if(promosUpdated||promosReady)renderPromoAreas(true);
+      enhanceRewards();enhanceProfile();showGoogleStatus();updateCountdowns();
+      if(showIndicator){pull.textContent='✓ Actualizado';setTimeout(()=>{pull.classList.remove('show','loading');pull.textContent='↓ Desliza para actualizar'},650)}
+    }catch(e){
+      console.warn('Live refresh v1.1:',e);
+      if(showIndicator){pull.textContent='No se pudo actualizar';setTimeout(()=>{pull.classList.remove('show','loading');pull.textContent='↓ Desliza para actualizar'},900)}
+    }finally{liveRefreshing=false}
+  }
+
   if(typeof w.renderOfferTab==='function'){w.renderOfferTab=function(){const{active,expired}=currentLists();setNavBadge('offers',active.length);renderOffersTab(active,expired);showGoogleStatus();updateCountdowns()}}
-  d.querySelector('[data-tab="rewards"]')?.addEventListener('click',async()=>{lastTab='rewards';await refreshLive();if(typeof w.loadRewards==='function')await w.loadRewards();else enhanceRewards()});
-  d.querySelector('[data-tab="profile"]')?.addEventListener('click',async()=>{lastTab='profile';await refreshLive();setTimeout(enhanceProfile,50)});
+  d.querySelector('[data-tab="rewards"]')?.addEventListener('click',async()=>{lastTab='rewards';await refreshLive(false);if(typeof w.loadRewards==='function')await w.loadRewards();else enhanceRewards()});
+  d.querySelector('[data-tab="profile"]')?.addEventListener('click',async()=>{lastTab='profile';await refreshLive(false);setTimeout(enhanceProfile,50)});
   d.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.tab&&btn.dataset.tab!=='qr')lastTab=btn.dataset.tab}));
-  w.addEventListener('focus',refreshLive);w.addEventListener('pageshow',refreshLive);d.addEventListener('visibilitychange',()=>{if(d.visibilityState==='visible')refreshLive()});
+  w.addEventListener('focus',()=>refreshLive(false));
+  w.addEventListener('pageshow',()=>refreshLive(false));
+  d.addEventListener('visibilitychange',()=>{if(d.visibilityState==='visible')refreshLive(false)});
 
   let touchStartY=0,touchDistance=0,pulling=false;
   d.addEventListener('touchstart',e=>{const top=(d.scrollingElement?.scrollTop||d.documentElement.scrollTop||0);if(top<=2&&e.touches?.length===1){touchStartY=e.touches[0].clientY;touchDistance=0;pulling=true}}, {passive:true});
   d.addEventListener('touchmove',e=>{if(!pulling||!e.touches?.length)return;touchDistance=Math.max(0,e.touches[0].clientY-touchStartY);if(touchDistance>18){pull.classList.add('show');pull.textContent=touchDistance>=80?'↻ Suelta para actualizar':'↓ Desliza para actualizar'}}, {passive:true});
-  d.addEventListener('touchend',()=>{if(!pulling)return;const shouldRefresh=touchDistance>=80;pulling=false;touchStartY=0;touchDistance=0;if(shouldRefresh)refreshLive();else{pull.classList.remove('show');pull.textContent='↓ Desliza para actualizar'}}, {passive:true});
+  d.addEventListener('touchend',()=>{if(!pulling)return;const shouldRefresh=touchDistance>=80;pulling=false;touchStartY=0;touchDistance=0;if(shouldRefresh)refreshLive(true);else{pull.classList.remove('show');pull.textContent='↓ Desliza para actualizar'}}, {passive:true});
 
-  Promise.all([getPromos(),getClient()]).then(()=>{fixMovementRenderer();if(promosReady)renderPromoAreas(true);enhanceRewards();addQrClose();enhanceProfile();showGoogleStatus();updateCountdowns();setTimeout(()=>{if(promosReady)renderPromoAreas(true)},1200);setInterval(refreshLive,15000);setInterval(updateCountdowns,1000)});
+  Promise.all([getPromos(),getClient()]).then(()=>{
+    fixMovementRenderer();
+    if(promosReady)renderPromoAreas(true);
+    enhanceRewards();addQrClose();enhanceProfile();showGoogleStatus();updateCountdowns();
+    setTimeout(()=>{if(promosReady)renderPromoAreas(true)},1200);
+    setInterval(()=>refreshLive(false),15000);
+    setInterval(updateCountdowns,1000);
+  });
 });
 </script>
 <script src="/order-status-client.js?v=20260912-1"></script>
