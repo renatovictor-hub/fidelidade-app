@@ -1,6 +1,6 @@
 (() => {
     const API = '/api/recompensas';
-    const REDEEM_API = '/api/resgatar-recompensa';
+    const REDEEM_API = '/api/recompensas?action=redeem';
 
     function criarEstilos() {
         if (document.getElementById('recompensasAdminStyles')) return;
@@ -83,10 +83,7 @@
                 div.querySelector('.reward-desc').textContent = descricao || 'Sin descripción';
 
                 const redeem = div.querySelector('.reward-redeem');
-                if (redeem) {
-                    redeem.addEventListener('click', () => window.resgatarRecompensa(item.id, nome, pontos, redeem));
-                }
-
+                if (redeem) redeem.addEventListener('click', () => window.resgatarRecompensa(item.id, nome, pontos, redeem));
                 div.querySelector('.reward-toggle').addEventListener('click', () => window.alternarRecompensa(item.id, !ativa));
                 div.querySelector('.reward-delete').addEventListener('click', () => window.eliminarRecompensa(item.id, nome));
                 lista.appendChild(div);
@@ -100,107 +97,53 @@
         const nomeInput = document.getElementById('recompensaNome');
         const pontosInput = document.getElementById('recompensaPontos');
         const descInput = document.getElementById('recompensaDesc');
-
         const nome = String(nomeInput?.value || '').trim();
         const pontos = Math.floor(Number(pontosInput?.value));
         const descricao = String(descInput?.value || '').trim();
-
         if (!nome) return alert('Ingresa el nombre de la recompensa.');
         if (!Number.isFinite(pontos) || pontos <= 0) return alert('Ingresa una cantidad válida de puntos.');
-
         const botao = document.querySelector('button[onclick="salvarRecompensa()"]');
         const textoOriginal = botao?.textContent || 'CREAR RECOMPENSA';
-
         try {
-            if (botao) {
-                botao.disabled = true;
-                botao.textContent = 'GUARDANDO...';
-            }
-
-            await api(API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, pontos, descricao })
-            });
-
+            if (botao) { botao.disabled = true; botao.textContent = 'GUARDANDO...'; }
+            await api(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, pontos, descricao }) });
             if (nomeInput) nomeInput.value = '';
             if (pontosInput) pontosInput.value = '';
             if (descInput) descInput.value = '';
-
             await window.carregarRecompensas();
             alert('✅ Recompensa creada.');
-        } catch (e) {
-            alert(`No se pudo crear la recompensa.\n\n${e.message}`);
-        } finally {
-            if (botao) {
-                botao.disabled = false;
-                botao.textContent = textoOriginal;
-            }
-        }
+        } catch (e) { alert(`No se pudo crear la recompensa.\n\n${e.message}`); }
+        finally { if (botao) { botao.disabled = false; botao.textContent = textoOriginal; } }
     };
 
     window.resgatarRecompensa = async function resgatarRecompensa(id, nome, pontos, botao) {
         const cliente = clienteActual();
-
-        if (!cliente?.uid) {
-            return alert('Primero busca o escanea al cliente que va a canjear la recompensa.');
-        }
-
+        if (!cliente?.uid) return alert('Primero busca o escanea al cliente que va a canjear la recompensa.');
         const saldo = Number(cliente.pontos || 0);
-        if (saldo < pontos) {
-            return alert(`Puntos insuficientes.\n\nSaldo actual: ${saldo} pts\nNecesarios: ${pontos} pts`);
-        }
-
+        if (saldo < pontos) return alert(`Puntos insuficientes.\n\nSaldo actual: ${saldo} pts\nNecesarios: ${pontos} pts`);
         const clienteNome = cliente.nome || 'Cliente';
-        if (!confirm(`¿Confirmar canje?\n\n${clienteNome}\n${nome}\nCosto: ${pontos} puntos\nSaldo después: ${saldo - pontos} puntos`)) {
-            return;
-        }
-
+        if (!confirm(`¿Confirmar canje?\n\n${clienteNome}\n${nome}\nCosto: ${pontos} puntos\nSaldo después: ${saldo - pontos} puntos`)) return;
         const textoOriginal = botao?.textContent || '🎁 CANJEAR';
-
         try {
-            if (botao) {
-                botao.disabled = true;
-                botao.textContent = 'CANJEANDO...';
-            }
-
+            if (botao) { botao.disabled = true; botao.textContent = 'CANJEANDO...'; }
             const data = await api(REDEEM_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: cliente.uid, recompensaId: id })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: cliente.uid, recompensaId: id, action:'redeem' })
             });
-
             cliente.pontos = Number(data.saldo_novo || 0);
-
             const saldoEl = document.getElementById('clientePontos');
             if (saldoEl) saldoEl.textContent = cliente.pontos;
-
-            if (typeof carregarHistoricoCliente === 'function') {
-                await carregarHistoricoCliente(cliente.uid);
-            }
-
+            if (typeof carregarHistoricoCliente === 'function') await carregarHistoricoCliente(cliente.uid);
             alert(`✅ Recompensa canjeada.\n\n${nome}\n-${data.pontos_descontados} puntos\nNuevo saldo: ${data.saldo_novo} puntos`);
-        } catch (e) {
-            alert(`No se pudo realizar el canje.\n\n${e.message}`);
-        } finally {
-            if (botao) {
-                botao.disabled = false;
-                botao.textContent = textoOriginal;
-            }
-        }
+        } catch (e) { alert(`No se pudo realizar el canje.\n\n${e.message}`); }
+        finally { if (botao) { botao.disabled = false; botao.textContent = textoOriginal; } }
     };
 
     window.alternarRecompensa = async function alternarRecompensa(id, ativa) {
         try {
-            await api(API, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, ativa })
-            });
+            await api(API, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ativa }) });
             await window.carregarRecompensas();
-        } catch (e) {
-            alert(`No se pudo actualizar la recompensa.\n\n${e.message}`);
-        }
+        } catch (e) { alert(`No se pudo actualizar la recompensa.\n\n${e.message}`); }
     };
 
     window.eliminarRecompensa = async function eliminarRecompensa(id, nome) {
@@ -208,14 +151,9 @@
         try {
             await api(`${API}?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
             await window.carregarRecompensas();
-        } catch (e) {
-            alert(`No se pudo eliminar la recompensa.\n\n${e.message}`);
-        }
+        } catch (e) { alert(`No se pudo eliminar la recompensa.\n\n${e.message}`); }
     };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', window.carregarRecompensas, { once: true });
-    } else {
-        window.carregarRecompensas();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.carregarRecompensas, { once: true });
+    else window.carregarRecompensas();
 })();
