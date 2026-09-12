@@ -5,23 +5,34 @@
 <title>Uai Sô Fidelidad</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
+<script>
+(function(){
+    try{
+        const params=new URLSearchParams(location.search);
+        const ref=String(params.get('ref')||'').trim();
+        if(/^user_\d+$/.test(ref)) localStorage.setItem('referral_uid',ref);
+
+        const savedUid=String(localStorage.getItem('uid')||'').trim();
+        const savedName=String(localStorage.getItem('nome')||'').trim();
+        if(savedName && /^user_\d+$/.test(savedUid)){
+            const target=new URL('/app-v11-next.html',location.origin);
+            target.searchParams.set('uid',savedUid);
+            location.replace(target.toString());
+        }
+    }catch(_){}
+})();
+</script>
+
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<!-- QR CODE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<!-- ONESIGNAL -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 <script>
 let OneSignalInstance = null;
-
 window.OneSignalDeferred = window.OneSignalDeferred || [];
-
 OneSignalDeferred.push(async function(OS) {
     OneSignalInstance = OS;
-
     await OS.init({
         appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
         notifyButton: { enable: false }
@@ -30,61 +41,28 @@ OneSignalDeferred.push(async function(OS) {
 </script>
 
 <style>
-
 :root { 
     --roxo: #6a0dad; 
     --amarelo: #ffcc00; 
     --gradiente: linear-gradient(135deg, #6a0dad, #9b30ff);
     --branco: #ffffff;
 }
-
-body {
-    margin:0;
-    font-family:'Segoe UI', Roboto, sans-serif;
-    background:#f9f9f9;
-    text-align:center;
-    color:#333;
-}
-
-.container {
-    max-width:400px;
-    margin:auto;
-    padding:20px;
-    min-height:100vh;
-}
-
-.header-app {
-    padding:15px 0;
-}
-
-.logo {
-    width:100px;
-    filter:drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-}
-
-.step-box {
-    display:none;
-    padding:30px 20px;
-    border-radius:25px;
-    background:var(--branco);
-    border:1px solid #eee;
-    box-shadow:0 10px 25px rgba(0,0,0,0.05);
-    margin-top:20px;
-}
-
-.active { display:block !important; }
-button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:none; font-weight:bold; font-size:16px; cursor:pointer; transition:0.3s; }
-.btn-next { background:var(--gradiente); color:var(--branco); box-shadow:0 4px 15px rgba(106,13,173,0.3); }
-.btn-notif { background:var(--amarelo); color:#000; box-shadow:0 4px 15px rgba(255,204,0,0.3); }
-.ios-guide { display:none; background:#f4f4f4; padding:20px; border-radius:20px; margin-top:15px; text-align:left; font-size:14px; border:1px dashed var(--roxo); }
+body {margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#f9f9f9;text-align:center;color:#333;}
+.container {max-width:400px;margin:auto;padding:20px;min-height:100vh;}
+.header-app {padding:15px 0;}
+.logo {width:100px;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.1));}
+.step-box {display:none;padding:30px 20px;border-radius:25px;background:var(--branco);border:1px solid #eee;box-shadow:0 10px 25px rgba(0,0,0,0.05);margin-top:20px;}
+.active {display:block !important;}
+button {width:100%;padding:16px;margin-top:15px;border-radius:14px;border:none;font-weight:bold;font-size:16px;cursor:pointer;transition:0.3s;}
+.btn-next {background:var(--gradiente);color:var(--branco);box-shadow:0 4px 15px rgba(106,13,173,0.3);}
+.btn-notif {background:var(--amarelo);color:#000;box-shadow:0 4px 15px rgba(255,204,0,0.3);}
+.ios-guide {display:none;background:#f4f4f4;padding:20px;border-radius:20px;margin-top:15px;text-align:left;font-size:14px;border:1px dashed var(--roxo);}
 </style>
 </head>
-
 <body>
 <audio id="audioSuccess" src="installsound.mp3" preload="auto"></audio>
-
 <div class="container">
-    <div class="header-app"><img src="logo.png" class="logo"></div>
+    <div class="header-app"><img src="logo.png" class="logo" alt="Uai Sô"></div>
 
     <div id="stepInstall" class="step-box">
         <h2 style="color:var(--roxo)">¡Bienvenido!</h2>
@@ -101,7 +79,7 @@ button { width:100%; padding:16px; margin-top:15px; border-radius:14px; border:n
         <h2 style="color:#2ecc71"><i class="fas fa-check-circle"></i> ¡Instalado con éxito!</h2>
         <p>Para empezar a usar <b>Uai Sô</b> y ganar puntos:</p>
         <div style="margin:20px 0;position:relative;display:inline-block;">
-            <img src="logo.png" style="width:80px;border-radius:18px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+            <img src="logo.png" alt="Uai Sô" style="width:80px;border-radius:18px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
         </div>
         <div style="background:#fff9e6;padding:15px;border-radius:15px;border:1px solid #ffe680;margin-top:10px;">
             <p style="font-size:15px;margin:0;color:#856404;"><b>1. Salga de esta página</b> (cierre el navegador).<br><b>2. Busque nuestro ícono</b> en su pantalla de inicio.</p>
@@ -136,27 +114,42 @@ localStorage.setItem('uid',uid);
 
 function tocarSomSucesso(){const audio=document.getElementById('audioSuccess');if(audio){audio.currentTime=0;audio.play().catch(()=>{});}}
 function show(id){document.querySelectorAll('.step-box').forEach(e=>e.classList.remove('active'));document.getElementById(id)?.classList.add('active');}
-function abrirApp(){
-    const target=new URL('/app-v11-next.html',location.origin);
-    target.searchParams.set('uid',uid);
-    location.replace(target.toString());
-}
+function abrirApp(){const target=new URL('/app-v11-next.html',location.origin);target.searchParams.set('uid',uid);location.replace(target.toString());}
 
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(!isIOS&&!isStandalone){const btn=document.getElementById('btnAndroid');if(btn)btn.style.display='block';}});
 window.addEventListener('appinstalled',()=>{if(!somJaTocouInstalacao){tocarSomSucesso();somJaTocouInstalacao=true;}show('stepSuccess');deferredPrompt=null;});
 
 window.onload=async()=>{
     let nome=localStorage.getItem('nome');
-    const push=localStorage.getItem('push');
-    const referralUidGuardado=localStorage.getItem('referral_uid');
-    const referralBanner=document.getElementById('referralSignupBanner');
-    if(referralBanner&&/^user_\d+$/.test(String(referralUidGuardado||'')))referralBanner.style.display='block';
-
+    let push=localStorage.getItem('push');
     const params=new URLSearchParams(location.search);
     const directUid=String(params.get('uid')||'').trim();
     if(/^user_\d+$/.test(directUid)){uid=directUid;localStorage.setItem('uid',uid);}
 
+    const referralUidGuardado=localStorage.getItem('referral_uid');
+    const referralBanner=document.getElementById('referralSignupBanner');
+    if(referralBanner&&/^user_\d+$/.test(String(referralUidGuardado||'')))referralBanner.style.display='block';
+
+    if(!nome && /^user_\d+$/.test(uid)){
+        try{
+            const r=await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'});
+            const d=await r.json();
+            if(r.ok && d && (d.nome||d.nombre)){
+                nome=String(d.nome||d.nombre).trim();
+                localStorage.setItem('nome',nome);
+                if(d.telefone)localStorage.setItem('telefone',String(d.telefone));
+                if(d.nascimento)localStorage.setItem('nascimento',String(d.nascimento));
+                return abrirApp();
+            }
+        }catch(_){}
+    }
+
     if(nome && /^user_\d+$/.test(uid)) return abrirApp();
+
+    if(typeof Notification!=='undefined' && Notification.permission==='granted'){
+        localStorage.setItem('push','true');
+        push='true';
+    }
 
     if(isStandalone){if(!push)return show('stepNotif');return show('stepNome');}
     show('stepInstall');
