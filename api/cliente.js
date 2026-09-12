@@ -46,10 +46,19 @@ function destinationWaypoint(destination) {
     return { address: /canc[uú]n|quintana roo|m[eé]xico/i.test(address) ? address : `${address}, Cancún, Quintana Roo, México` };
 }
 
+function browserReferrer(req) {
+    const origin = String(req.headers?.origin || "").trim();
+    const referer = String(req.headers?.referer || "").trim();
+    const candidate = origin || referer;
+    if (/^https:\/\/fidelidad-uai-so\.vercel\.app(?:\/|$)/i.test(candidate)) return "https://fidelidad-uai-so.vercel.app/";
+    if (/^https:\/\/fidelidad-uai-so-git-feat-vi-0142bf-renatovictor-1384s-projects\.vercel\.app(?:\/|$)/i.test(candidate)) return "https://fidelidad-uai-so-git-feat-vi-0142bf-renatovictor-1384s-projects.vercel.app/";
+    return "https://fidelidad-uai-so.vercel.app/";
+}
+
 async function handlePlaceAutocomplete(req, res) {
     const input = String(req.body?.input || "").trim().slice(0, 120);
     if (input.length < 3) return res.status(200).json({ suggestions: [] });
-    const apiKey = String(process.env.GOOGLE_MAPS_API_KEY || "").trim();
+    const apiKey = String(process.env.GOOGLE_MAPS_BROWSER_KEY || "").trim();
     if (!apiKey) return res.status(200).json({ suggestions: [], unavailable: true });
     const sessionToken = String(req.body?.sessionToken || "").trim().slice(0, 80);
 
@@ -58,6 +67,7 @@ async function handlePlaceAutocomplete(req, res) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Referer": browserReferrer(req),
                 "X-Goog-Api-Key": apiKey,
                 "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text"
             },
@@ -89,7 +99,7 @@ async function handlePlaceAutocomplete(req, res) {
 }
 
 async function handleDeliveryQuote(req, res) {
-    const apiKey = String(process.env.GOOGLE_MAPS_API_KEY || "").trim();
+    const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
     if (!apiKey) return res.status(503).json({ error: "El cálculo automático todavía no está habilitado.", code: "GOOGLE_MAPS_NOT_CONFIGURED" });
     const destination = destinationWaypoint(req.body?.destination);
     if (!destination) return res.status(400).json({ error: "Indica una ubicación o dirección válida." });
