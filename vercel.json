@@ -6,6 +6,12 @@
       "permanent": false
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/movimientos",
+      "destination": "/api/historico?public=1"
+    }
+  ],
   "crons": [
     {
       "path": "/api/sendpush?job=birthdays",

@@ -139,6 +139,13 @@
                     doc.body.appendChild(script);
                 }
 
+                if (!doc.getElementById('pedidosAdminScript')) {
+                    const script = doc.createElement('script');
+                    script.id = 'pedidosAdminScript';
+                    script.src = '/pedidos-admin.js?v=20260912-1';
+                    doc.body.appendChild(script);
+                }
+
                 ['pointerdown','keydown','touchstart'].forEach(eventName => {
                     doc.addEventListener(eventName, reiniciarInatividade, { passive:true });
                 });
