@@ -5,6 +5,11 @@
   style.id='uaiso-menu-mobile-fixes';
   style.textContent=`
     button{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;min-height:100%;overflow:hidden}
+    .app{height:var(--uaiso-app-height,100dvh)!important;min-height:var(--uaiso-app-height,100dvh)!important;max-height:var(--uaiso-app-height,100dvh)!important}
+    .feed,.catalog{height:100%!important;max-height:100%!important}
+    .dish{height:var(--uaiso-app-height,100dvh)!important;min-height:var(--uaiso-app-height,100dvh)!important;max-height:var(--uaiso-app-height,100dvh)!important}
+    .content{bottom:0!important;padding-bottom:calc(20px + var(--safe-bottom))!important}
     .view-switch button,.choice-card span,.location-action,.primary,.add-small,.qty button,.mini-qty button,.close,.icon-btn{
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
       line-height:1.15;
@@ -19,6 +24,10 @@
     #sendOrder{position:sticky;bottom:calc(10px + var(--safe-bottom));z-index:8;display:flex;align-items:center;justify-content:center;margin-top:8px;box-shadow:0 10px 28px rgba(106,13,173,.30)}
     #checkoutForm>button[type="submit"]{position:sticky;bottom:calc(10px + var(--safe-bottom));z-index:8;display:flex;align-items:center;justify-content:center;margin-top:12px;box-shadow:0 10px 28px rgba(37,211,102,.28)}
     .primary{min-height:54px;padding:12px 16px;font-size:14px;letter-spacing:.01em}
+    @media(max-height:760px){
+      .content{gap:8px!important;padding-top:16px!important;padding-bottom:calc(14px + var(--safe-bottom))!important}
+      .dish h1{font-size:27px!important}.desc{font-size:13px!important;line-height:1.3!important}.actions button{min-height:48px!important}.chip{padding:5px 8px!important}
+    }
     @media(max-width:360px){
       .choice-card span,.location-action{font-size:11px}
       .view-switch{width:min(226px,calc(100vw - 112px))}
@@ -26,6 +35,32 @@
     }
   `;
   document.head.appendChild(style);
+
+  // Android PWAs can report an incorrect 100dvh for the first render and only
+  // correct it after the app is backgrounded/resumed. Use the real visual
+  // viewport and refresh it several times during startup/resume instead.
+  let lastViewportHeight=0;
+  function syncViewportHeight(){
+    const vv=window.visualViewport;
+    const inner=Number(window.innerHeight)||0;
+    const visual=Number(vv?.height)||0;
+    let height=visual>0?visual:inner;
+    if(inner>0&&height>0)height=Math.min(inner,height);
+    if(!height)return;
+    height=Math.round(height);
+    if(Math.abs(height-lastViewportHeight)<1)return;
+    lastViewportHeight=height;
+    document.documentElement.style.setProperty('--uaiso-app-height',height+'px');
+  }
+  function burstViewportSync(){[0,40,120,300,700,1400,2600].forEach(ms=>setTimeout(syncViewportHeight,ms));}
+  syncViewportHeight();
+  burstViewportSync();
+  window.addEventListener('resize',syncViewportHeight,{passive:true});
+  window.addEventListener('orientationchange',burstViewportSync,{passive:true});
+  window.addEventListener('pageshow',burstViewportSync,{passive:true});
+  window.visualViewport?.addEventListener('resize',syncViewportHeight,{passive:true});
+  window.visualViewport?.addEventListener('scroll',syncViewportHeight,{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')burstViewportSync()});
 
   const original=window.submitOrder;
   if(typeof original!=='function')return;
