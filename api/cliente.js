@@ -1,4 +1,6 @@
 import admin from "firebase-admin";
+import { requireAdmin } from "./_admin-auth.js";
+import { enviarNotificacao } from "./_onesignal.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -12,6 +14,163 @@ if (!admin.apps.length) {
 }
 
 const RESTAURANT = { latitude: 21.119855, longitude: -86.87269 };
+const ORDER_STATUS = {
+    received: { label:"Pedido enviado", push:"Recibimos tu pedido. En breve lo confirmaremos." },
+    accepted: { label:"Pedido aceptado", push:"✅ Tu pedido fue aceptado." },
+    preparing: { label:"En preparación", push:"🍳 Tu pedido ya está en preparación." },
+    waiting_driver: { label:"Esperando repartidor", push:"📦 Tu pedido está listo y estamos esperando al repartidor." },
+    out_for_delivery: { label:"Salió para entrega", push:"🛵 Tu pedido salió para entrega y va en camino." },
+    delivered: { label:"Entregado", push:"🎉 Tu pedido fue entregado. ¡Buen provecho!" },
+    cancelled: { label:"Cancelado", push:"Tu pedido fue cancelado. Contáctanos si necesitas ayuda." }
+};
+const ACTIVE_ORDER_STATUS = new Set(["received","accepted","preparing","waiting_driver","out_for_delivery"]);
+
+function cleanOrderText(value, max = 220) {
+    return String(value ?? "").trim().slice(0, max);
+}
+
+function cleanOrderMoney(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : 0;
+}
+
+function cleanOrderItems(items) {
+    if (!Array.isArray(items)) return [];
+    return items.slice(0, 50).map(item => ({
+        name: cleanOrderText(item?.name, 100),
+        qty: Math.max(1, Math.min(99, Math.floor(Number(item?.qty) || 1))),
+        unitPrice: cleanOrderMoney(item?.unitPrice),
+        details: cleanOrderText(item?.details, 300)
+    })).filter(item => item.name);
+}
+
+function publicOrder(id, order) {
+    return {
+        id,
+        code: order.code || id,
+        uid: order.uid || "",
+        status: order.status || "received",
+        statusLabel: ORDER_STATUS[order.status]?.label || order.status || "",
+        createdAt: order.createdAt || "",
+        updatedAt: order.updatedAt || "",
+        fulfillment: order.fulfillment || "delivery",
+        scheduledAt: order.scheduledAt || "",
+        subtotal: Number(order.subtotal || 0),
+        deliveryFee: Number(order.deliveryFee || 0),
+        total: Number(order.total || 0),
+        address: order.address || "",
+        references: order.references || "",
+        payment: order.payment || "",
+        items: Array.isArray(order.items) ? order.items : [],
+        history: order.history || {},
+        name: order.name || "",
+        phone: order.phone || ""
+    };
+}
+
+async function notifyOrderStatus(order) {
+    const meta = ORDER_STATUS[order.status];
+    if (!meta) return;
+    await enviarNotificacao({
+        uid: order.uid || "",
+        telefone: order.phone || "",
+        titulo: `${meta.label} · ${order.code || "Uai Sô"}`,
+        mensagem: meta.push,
+        url: "https://fidelidad-uai-so.vercel.app/"
+    }).catch(() => null);
+}
+
+async function handleOrderCreate(req, res) {
+    const body = req.body || {};
+    const uid = cleanOrderText(body.uid, 80);
+    if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+    const items = cleanOrderItems(body.items);
+    if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
+
+    const db = admin.database();
+    const orderRef = db.ref("pedidos").push();
+    const now = new Date().toISOString();
+    const code = `US-${now.slice(2,10).replace(/-/g,"")}-${orderRef.key.slice(-4).toUpperCase()}`;
+    let profile = {};
+    if (uid) {
+        const snap = await db.ref(`users/${uid}`).once("value");
+        if (snap.exists()) profile = snap.val() || {};
+    }
+    const status = "received";
+    const order = {
+        code,
+        uid,
+        name: cleanOrderText(body.name || profile.nome || profile.nombre, 80),
+        phone: cleanOrderText(body.phone || profile.telefone, 30),
+        status,
+        createdAt: now,
+        updatedAt: now,
+        fulfillment: body.fulfillment === "pickup" ? "pickup" : "delivery",
+        scheduledAt: cleanOrderText(body.scheduledAt, 40),
+        subtotal: cleanOrderMoney(body.subtotal),
+        deliveryFee: cleanOrderMoney(body.deliveryFee),
+        total: cleanOrderMoney(body.total),
+        address: cleanOrderText(body.address, 260),
+        references: cleanOrderText(body.references, 180),
+        payment: cleanOrderText(body.payment, 80),
+        route: body.route && typeof body.route === "object" ? {
+            distanceKm: Number(body.route.distanceKm || 0),
+            durationMinutes: Number(body.route.durationMinutes || 0)
+        } : null,
+        items,
+        history: { received: { at: now, label: ORDER_STATUS.received.label } }
+    };
+
+    await orderRef.set(order);
+    if (uid) await db.ref(`users/${uid}/ultimo_pedido`).set({ id:orderRef.key, code, status, updatedAt:now });
+    return res.status(201).json({ success:true, order:publicOrder(orderRef.key, order) });
+}
+
+async function handleOrdersGet(req, res) {
+    const db = admin.database();
+    if (String(req.query.admin || "") === "1") {
+        if (!requireAdmin(req, res)) return;
+        const snap = await db.ref("pedidos").orderByChild("createdAt").limitToLast(100).once("value");
+        const raw = snap.val() || {};
+        const orders = Object.entries(raw).map(([id, order]) => publicOrder(id, order)).sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+        return res.status(200).json({ orders, statuses:ORDER_STATUS });
+    }
+
+    const uid = cleanOrderText(req.query.uid, 80);
+    if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+    const snap = await db.ref("pedidos").orderByChild("uid").equalTo(uid).limitToLast(30).once("value");
+    const raw = snap.val() || {};
+    const orders = Object.entries(raw).map(([id, order]) => publicOrder(id, order)).sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return res.status(200).json({ orders, active:orders.find(order => ACTIVE_ORDER_STATUS.has(order.status)) || null });
+}
+
+async function handleOrderStatus(req, res) {
+    if (!requireAdmin(req, res)) return;
+    const id = cleanOrderText(req.body?.id, 100);
+    const status = cleanOrderText(req.body?.status, 40);
+    if (!id || !ORDER_STATUS[status]) return res.status(400).json({ error:"Pedido o estado inválido" });
+
+    const db = admin.database();
+    const ref = db.ref(`pedidos/${id}`);
+    const snap = await ref.once("value");
+    if (!snap.exists()) return res.status(404).json({ error:"Pedido no encontrado" });
+    const current = snap.val() || {};
+    const now = new Date().toISOString();
+    await ref.update({
+        status,
+        updatedAt: now,
+        [`history/${status}`]: { at:now, label:ORDER_STATUS[status].label }
+    });
+    if (current.uid) await db.ref(`users/${current.uid}/ultimo_pedido`).set({ id, code:current.code || id, status, updatedAt:now });
+    const order = {
+        ...current,
+        status,
+        updatedAt: now,
+        history: { ...(current.history || {}), [status]:{ at:now, label:ORDER_STATUS[status].label } }
+    };
+    await notifyOrderStatus(order);
+    return res.status(200).json({ success:true, order:publicOrder(id, order) });
+}
 
 export function calculateDeliveryFee(distanceKm) {
     const km = Math.max(0, Number(distanceKm) || 0);
@@ -127,13 +286,13 @@ async function handleDeliveryQuote(req, res) {
 
 export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.setHeader("Cache-Control", "no-store");
 
     if (req.method === "OPTIONS") return res.status(200).end();
 
-    if (!["GET","POST"].includes(req.method)) {
+    if (!["GET","POST","PATCH"].includes(req.method)) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
@@ -143,6 +302,18 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && req.body?.action === "place_autocomplete") {
         return handlePlaceAutocomplete(req, res);
+    }
+
+    if (req.method === "POST" && req.body?.action === "order_create") {
+        return handleOrderCreate(req, res);
+    }
+
+    if (req.method === "PATCH" && req.body?.action === "order_status") {
+        return handleOrderStatus(req, res);
+    }
+
+    if (req.method === "GET" && String(req.query.action || "") === "orders") {
+        return handleOrdersGet(req, res);
     }
 
     try {
