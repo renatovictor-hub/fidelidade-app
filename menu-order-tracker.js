@@ -7,10 +7,30 @@
   function labelPayment(value,change){return value==='cash'?(change?`Efectivo · Cambio para $${change}`:'Efectivo · Sin cambio'):'Transferencia';}
   function selectedRequired(p){return (Number(p?.choice?.required)||0)*Math.max(1,Number(detailState?.qty)||1);}
 
+  function injectResidentialFields(){
+    if(document.getElementById('residentialDelivery'))return;
+    const plaza=document.getElementById('insidePlaza')?.closest('label');
+    if(!plaza)return;
+    const wrap=document.createElement('div');
+    wrap.id='residentialAccessBlock';
+    wrap.innerHTML=`<label class="check-row"><input id="residentialDelivery" type="checkbox"><span>La entrega es en un residencial / condominio</span></label><div id="residentialDetails" class="conditional hidden"><label class="check-row"><input id="residentialQr" type="checkbox"><span>El residencial exige QR para entrar</span></label><label class="field"><span>Instrucciones de entrada al residencial</span><textarea id="residentialInstructions" maxlength="220" placeholder="Ej.: Entrada de proveedores por Av. X, caseta 2, dejar nombre al guardia..."></textarea></label></div>`;
+    plaza.insertAdjacentElement('afterend',wrap);
+    const toggle=()=>document.getElementById('residentialDetails')?.classList.toggle('hidden',!document.getElementById('residentialDelivery')?.checked);
+    document.getElementById('residentialDelivery').addEventListener('change',toggle);
+    toggle();
+  }
+  injectResidentialFields();
+
   if(typeof window.setDeliveryStatus==='function'){
     const nativeSetDeliveryStatus=window.setDeliveryStatus;
     window.setDeliveryStatus=function(text,type=''){
-      const clean=String(text??'').replace(/ · aprox\. \d+ min/g,'');
+      let clean=String(text??'').replace(/ · aprox\. \d+ min/g,'');
+      if(type==='success'){
+        const distance=clean.match(/^([0-9.,]+ km)/)?.[1]||'';
+        const fee=clean.match(/Envío\s+(\$[0-9.,]+)/i)?.[1]||'';
+        let middle=clean.replace(/^([0-9.,]+ km)\s*·\s*/,'').replace(/Envío\s+\$[0-9.,]+\s*/i,'').replace(/^\s*·\s*/,'').replace(/\s*·\s*$/,'').trim();
+        clean=[distance,middle,fee?`Total envío ${fee}`:''].filter(Boolean).join(' · ');
+      }
       return nativeSetDeliveryStatus(clean,type);
     };
   }
@@ -177,11 +197,17 @@
     const waWindow=window.open('about:blank','_blank');
     try{
       const items=cartItems().map(x=>({name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,details:whatsappDetails(x.line),line:x.line}));
-      const address=document.getElementById('deliveryAddress')?.value.trim()||'',references=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
+      const address=document.getElementById('deliveryAddress')?.value.trim()||'',baseReferences=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
+      const isResidential=!!document.getElementById('residentialDelivery')?.checked,needsQr=isResidential&&!!document.getElementById('residentialQr')?.checked,residentialInstructions=isResidential?(document.getElementById('residentialInstructions')?.value.trim()||''):'';
+      const accessParts=[];
+      if(isResidential)accessParts.push('Residencial/condominio');
+      if(needsQr)accessParts.push('Requiere QR para entrar');
+      if(residentialInstructions)accessParts.push(`Acceso: ${residentialInstructions}`);
+      const references=[baseReferences,...accessParts].filter(Boolean).join(' · ');
       const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
       const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
-      const order=data.order||{},lines=items.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format(i.unitPrice*i.qty)}${i.details?`\n${i.details}`:''}`),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}\nReferencias: ${references||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
+      const order=data.order||{},lines=items.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format(i.unitPrice*i.qty)}${i.details?`\n${i.details}`:''}`),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)} · Total envío ${MXN.format(fee)}`:'',residentialText=isResidential?`\nResidencial: Sí${needsQr?' · Requiere QR':''}${residentialInstructions?`\nInstrucciones de acceso: ${residentialInstructions}`:''}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}${residentialText}\nReferencias: ${baseReferences||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
       const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
       localStorage.setItem('uaiso_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
