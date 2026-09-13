@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uai Sô Admin Preview</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#f0f2f5}iframe{display:block;width:100%;height:100%;border:0;background:#f0f2f5}</style>
+</head>
+<body>
+<iframe id="dashboardFrame" src="/dashboard.html?v=20260825-3" title="Dashboard Uai Sô"></iframe>
+<script>
+const frame=document.getElementById('dashboardFrame');
+frame.addEventListener('load',()=>{
+  const d=frame.contentDocument;if(!d)return;
+  const scripts=[
+    ['/recompensas-admin.js?v=20260825-2','recompensasAdminScript'],
+    ['/notificacoes-admin.js?v=20260825-1','notificacoesAdminScript'],
+    ['/cumpleanos-admin.js?v=20260826-1','cumpleanosAdminScript'],
+    ['/bonus-pontos-admin.js?v=20260831-1','bonusPontosAdminScript'],
+    ['/referidos-admin.js?v=20260831-1','referidosAdminScript'],
+    ['/niveles-vip-admin.js?v=20260831-1','nivelesVipAdminScript'],
+    ['/reviews-admin.js?v=20260831-1','reviewsAdminScript'],
+    ['/pedidos-admin.js?v=20260913-1','pedidosAdminScript']
+  ];
+  scripts.forEach(([src,id])=>{if(d.getElementById(id))return;const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s);});
+});
+</script>
+</body>
+</html>
