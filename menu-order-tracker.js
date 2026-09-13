@@ -1,9 +1,159 @@
 (() => {
-  const original=window.submitOrder;
-  if(typeof original!=='function')return;
+  const originalSubmit=window.submitOrder;
+  if(typeof originalSubmit!=='function')return;
   let sending=false;
+
   function getUid(){return String(new URLSearchParams(location.search).get('uid')||'').trim();}
   function labelPayment(value,change){return value==='cash'?(change?`Efectivo · Cambio para $${change}`:'Efectivo · Sin cambio'):'Transferencia';}
+  function selectedRequired(p){return (Number(p?.choice?.required)||0)*Math.max(1,Number(detailState?.qty)||1);}
+
+  function normalizeDetailState(){
+    if(!detailState)return;
+    if(!Number.isFinite(Number(detailState.qty))||Number(detailState.qty)<1)detailState.qty=1;
+    if(!detailState.extraQty||typeof detailState.extraQty!=='object')detailState.extraQty={};
+  }
+
+  const nativeOpenDetails=window.openDetails;
+  window.openDetails=function(id){
+    nativeOpenDetails(id);
+    if(!detailState)return;
+    detailState.qty=1;
+    detailState.extraQty={};
+    renderDetailOptions();
+  };
+
+  window.changeProductQty=function(delta){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),oldQty=detailState.qty;
+    detailState.qty=Math.max(1,Math.min(20,oldQty+Number(delta||0)));
+    const maxChoices=selectedRequired(p);
+    let total=selectedChoiceCount();
+    if(total>maxChoices){
+      for(const option of [...(p?.choice?.options||[])].reverse()){
+        if(total<=maxChoices)break;
+        const current=Number(detailState.choices[option.id])||0;
+        const remove=Math.min(current,total-maxChoices);
+        const next=current-remove;
+        if(next)detailState.choices[option.id]=next;else delete detailState.choices[option.id];
+        total-=remove;
+      }
+    }
+    Object.keys(detailState.extraQty).forEach(id=>{detailState.extraQty[id]=Math.min(detailState.qty,Number(detailState.extraQty[id])||0);});
+    renderDetailOptions();
+  };
+
+  window.changeFlavor=function(id,delta){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),required=selectedRequired(p),current=Math.max(0,Number(detailState.choices[id])||0),total=selectedChoiceCount();
+    if(delta>0&&total>=required)return;
+    const next=Math.max(0,current+delta);
+    if(next)detailState.choices[id]=next;else delete detailState.choices[id];
+    renderDetailOptions();
+  };
+
+  window.changeExtraQty=function(id,delta){
+    if(!detailState)return;
+    normalizeDetailState();
+    const current=Math.max(0,Number(detailState.extraQty[id])||0);
+    detailState.extraQty[id]=Math.max(0,Math.min(detailState.qty,current+Number(delta||0)));
+    if(!detailState.extraQty[id])delete detailState.extraQty[id];
+    renderDetailOptions();
+  };
+
+  window.detailTotal=function(){
+    if(!detailState)return 0;
+    normalizeDetailState();
+    const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1);
+    let total=(Number(p?.price)||0)*qty;
+    (p?.choice?.options||[]).forEach(x=>total+=(Number(detailState.choices[x.id])||0)*(Number(x.price)||0));
+    (p?.extras||[]).forEach(x=>total+=(Number(detailState.extraQty[x.id])||0)*(Number(x.price)||0));
+    return total;
+  };
+
+  window.updateDetailTotal=function(){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),required=selectedRequired(p),selected=selectedChoiceCount(),complete=!p.choice||selected===required,qty=detailState.qty;
+    $('detailPrice').textContent=MXN.format(detailTotal());
+    $('detailOrder').disabled=!complete;
+    $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}`:`ELIGE ${required-selected} MÁS`;
+  };
+
+  window.renderDetailOptions=function(){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),blocks=[];
+    blocks.push(`<div class="option-block"><div class="option-title"><strong>Cantidad</strong><span>${detailState.qty} ${detailState.qty===1?'pieza':'piezas'}</span></div><div class="mini-qty" style="justify-content:flex-end"><button type="button" onclick="changeProductQty(-1)" ${detailState.qty<=1?'disabled':''} aria-label="Quitar una pieza">−</button><b>${detailState.qty}</b><button type="button" onclick="changeProductQty(1)" ${detailState.qty>=20?'disabled':''} aria-label="Agregar una pieza">+</button></div></div>`);
+    if(p.choice){
+      const count=selectedChoiceCount(),required=selectedRequired(p),complete=count===required;
+      blocks.push(`<div class="option-block"><div class="option-title"><strong>Elige ${required} sabores</strong><span class="${complete?'complete':''}">${count} de ${required}</span></div><div class="flavor-list">${p.choice.options.map(x=>{const qty=Number(detailState.choices[x.id])||0,full=count>=required;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>${x.price?`+ ${MXN.format(x.price)} por pieza`:'Sin costo extra'}</small></div><div class="mini-qty"><button type="button" onclick="changeFlavor('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeFlavor('${esc(x.id)}',1)" ${full?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
+    }
+    if(p.extras?.length){
+      blocks.push(`<div class="option-block"><div class="option-title"><strong>Extras</strong><span>Hasta ${detailState.qty} por extra</span></div><div class="flavor-list">${p.extras.map(x=>{const qty=Number(detailState.extraQty[x.id])||0;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>+ ${MXN.format(x.price)} c/u</small></div><div class="mini-qty"><button type="button" onclick="changeExtraQty('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeExtraQty('${esc(x.id)}',1)" ${qty>=detailState.qty?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
+    }
+    $('detailOptions').innerHTML=blocks.join('');
+    updateDetailTotal();
+  };
+
+  window.addConfiguredToCart=function(){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1),required=selectedRequired(p);
+    if(p.choice&&selectedChoiceCount()!==required)return;
+    const choices=(p.choice?.options||[]).map(x=>({id:x.id,name:x.name,qty:Number(detailState.choices[x.id])||0,price:Number(x.price)||0})).filter(x=>x.qty);
+    const extras=(p.extras||[]).map(x=>({id:x.id,name:x.name,price:Number(x.price)||0,qty:Number(detailState.extraQty[x.id])||0})).filter(x=>x.qty);
+    const note=String($('detailNote').value||'').trim(),totalPrice=detailTotal(),unitPrice=totalPrice/qty;
+    const signature=JSON.stringify({productId:p.id,qty,choices:choices.map(x=>[x.id,x.qty]),extras:extras.map(x=>[x.id,x.qty]),note});
+    const batchChoices=choices.map(x=>({...x})),batchExtras=extras.map(x=>({...x}));
+    let line=cart.find(x=>x.signature===signature);
+    if(line){
+      line.qty+=qty;
+      line.choices=(line.choices||[]).map(x=>{const b=batchChoices.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
+      batchChoices.filter(b=>!line.choices.some(x=>x.id===b.id)).forEach(b=>line.choices.push({...b}));
+      line.extras=(line.extras||[]).map(x=>{const b=batchExtras.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
+      batchExtras.filter(b=>!line.extras.some(x=>x.id===b.id)).forEach(b=>line.extras.push({...b}));
+    }else{
+      cart.push({lineId:`${Date.now()}_${Math.random().toString(36).slice(2,7)}`,signature,productId:p.id,qty,unitPrice,choices,extras,note,batchQty:qty,batchChoices,batchExtras});
+    }
+    saveCart();closeDetails();showToast(`${qty} ${qty===1?'pieza agregada':'piezas agregadas'}`);
+  };
+
+  const nativeChangeQty=window.changeQty;
+  window.changeQty=function(lineId,delta){
+    const line=cart.find(x=>x.lineId===lineId);
+    if(!line||!line.batchQty)return nativeChangeQty(lineId,delta);
+    const direction=delta>0?1:-1,batch=Math.max(1,Number(line.batchQty)||1),next=Math.max(0,(Number(line.qty)||0)+direction*batch);
+    if(direction>0){
+      line.qty=next;
+      (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.choices||(line.choices=[])).push({...b});});
+      (line.batchExtras||[]).forEach(b=>{let x=(line.extras||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.extras||(line.extras=[])).push({...b});});
+    }else{
+      line.qty=next;
+      (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=Math.max(0,(Number(x.qty)||0)-(Number(b.qty)||0));});
+      (line.batchExtras||[]).forEach(b=>{let x=(line.extras||[]).find(y=>y.id===b.id);if(x)x.qty=Math.max(0,(Number(x.qty)||0)-(Number(b.qty)||0));});
+      line.choices=(line.choices||[]).filter(x=>Number(x.qty)>0);line.extras=(line.extras||[]).filter(x=>Number(x.qty)>0);
+    }
+    cart=cart.filter(x=>Number(x.qty)>0);saveCart();renderCart();
+  };
+
+  window.lineDetails=function(line){
+    const parts=[];
+    if(line.choices?.length)parts.push(line.choices.map(x=>`${x.qty} ${x.name}`).join(', '));
+    if(line.extras?.length)parts.push(line.extras.map(x=>`${Number(x.qty)||1} ${x.name}`).join(', '));
+    if(line.note)parts.push(`Nota: ${line.note}`);
+    return parts.join(' · ');
+  };
+
+  function whatsappDetails(line){
+    const rows=[];
+    (line.choices||[]).forEach(x=>{if(Number(x.qty)>0)rows.push(`- ${x.qty} ${x.name}`);});
+    (line.extras||[]).forEach(x=>{if(Number(x.qty)>0)rows.push(`- ${x.qty} ${x.name}`);});
+    if(line.note)rows.push(`- Nota: ${line.note}`);
+    return rows.join('\n');
+  }
+
   window.submitOrder=async function(){
     if(sending)return;
     const form=document.getElementById('checkoutForm');
@@ -18,13 +168,13 @@
     sending=true;if(btn){btn.disabled=true;btn.textContent='CREANDO PEDIDO...';}
     const waWindow=window.open('about:blank','_blank');
     try{
-      const items=cartItems().map(x=>({name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,details:lineDetails(x.line)}));
+      const items=cartItems().map(x=>({name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,details:whatsappDetails(x.line),line:x.line}));
       const address=document.getElementById('deliveryAddress')?.value.trim()||'',references=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
-      const payload={action:'order_create',uid:getUid(),name,phone,items,fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
+      const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
       const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
-      const order=data.order||{},lines=items.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format(i.unitPrice*i.qty)}${i.details?`\n  ${i.details}`:''}`),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km · aprox. ${deliveryQuote.durationMinutes} min${quoteExtrasText(deliveryQuote)}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}\nReferencias: ${references||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
-      const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
+      const order=data.order||{},lines=items.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format(i.unitPrice*i.qty)}${i.details?`\n${i.details}`:''}`),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km · aprox. ${deliveryQuote.durationMinutes} min${quoteExtrasText(deliveryQuote)}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}\nReferencias: ${references||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
+      const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
       localStorage.setItem('uaiso_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
       try{cart=[];}catch(_){}
