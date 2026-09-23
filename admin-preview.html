@@ -23,7 +23,8 @@ frame.addEventListener('load',()=>{
     ['/pedidos-admin.js?v=20260913-2','pedidosAdminScript'],
     ['/dashboard-ux-v2.js?v=20260913-1','dashboardUxV2Script'],
     ['/dashboard-navigation-v3.js?v=20260913-1','dashboardNavigationV3Script'],
-    ['/dashboard-overview-v4.js?v=20260923-1','dashboardOverviewV4Script']
+    ['/dashboard-overview-v4.js?v=20260923-1','dashboardOverviewV4Script'],
+    ['/dashboard-core-modules-v5.js?v=20260923-1','dashboardCoreModulesV5Script']
   ];
   scripts.forEach(([src,id])=>{if(d.getElementById(id))return;const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s);});
 });
