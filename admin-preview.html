@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#f0f2f5}iframe{display:block;width:100%;height:100%;border:0;background:#f0f2f5}</style>
 </head>
 <body>
-<iframe id="dashboardFrame" src="/dashboard.html?v=20260913-ux3" title="Dashboard Uai Sô"></iframe>
+<iframe id="dashboardFrame" src="/dashboard.html?v=20260924-full-v7" title="Dashboard Uai Sô"></iframe>
 <script>
 const frame=document.getElementById('dashboardFrame');
 frame.addEventListener('load',()=>{
@@ -21,12 +21,12 @@ frame.addEventListener('load',()=>{
     ['/niveles-vip-admin.js?v=20260831-1','nivelesVipAdminScript'],
     ['/reviews-admin.js?v=20260831-1','reviewsAdminScript'],
     ['/pedidos-admin.js?v=20260913-2','pedidosAdminScript'],
-    ['/dashboard-ux-v2.js?v=20260913-1','dashboardUxV2Script'],
-    ['/dashboard-navigation-v3.js?v=20260913-1','dashboardNavigationV3Script'],
-    ['/dashboard-overview-v4.js?v=20260923-1','dashboardOverviewV4Script'],
-    ['/dashboard-core-modules-v5.js?v=20260923-1','dashboardCoreModulesV5Script'],
-    ['/dashboard-growth-modules-v6.js?v=20260924-1','dashboardGrowthModulesV6Script'],
-    ['/dashboard-final-modules-v7.js?v=20260924-1','dashboardFinalModulesV7Script']
+    ['/dashboard-ux-v2.js?v=20260924-2','dashboardUxV2Script'],
+    ['/dashboard-navigation-v3.js?v=20260924-3','dashboardNavigationV3Script'],
+    ['/dashboard-overview-v4.js?v=20260924-4','dashboardOverviewV4Script'],
+    ['/dashboard-core-modules-v5.js?v=20260924-5','dashboardCoreModulesV5Script'],
+    ['/dashboard-growth-modules-v6.js?v=20260924-6','dashboardGrowthModulesV6Script'],
+    ['/dashboard-final-modules-v7.js?v=20260924-7','dashboardFinalModulesV7Script']
   ];
   scripts.forEach(([src,id])=>{if(d.getElementById(id))return;const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s);});
 });
