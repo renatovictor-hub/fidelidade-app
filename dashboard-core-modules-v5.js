@@ -54,6 +54,12 @@
     .ux-history-head h3{margin:0;font-size:20px!important}.ux-history-close{width:42px!important;height:42px!important;min-height:42px!important;border:0!important;border-radius:12px!important;background:#f2edf5!important;color:#5f4c67!important;font-size:20px!important;cursor:pointer}
     .ux-history-body{padding:16px 18px;overflow:auto;font-size:13px;line-height:1.5}
     .ux-history-body .movimiento{font-size:13px!important}
+    .ux-action-form{display:grid;gap:12px}.ux-action-form label{font-size:13px;font-weight:800;color:#4d4053}.ux-action-form input,.ux-action-form textarea{font-size:14px!important;min-height:44px}
+    .ux-action-form textarea{min-height:100px;resize:vertical}.ux-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .ux-action-grid button,.ux-action-form>button{min-height:44px;font-size:13px!important}
+    .ux-reward-choice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid #ece4ef;border-radius:12px;margin-bottom:8px;background:#fff}
+    .ux-reward-choice b{display:block;color:#3c2f43}.ux-reward-choice small{color:#706574}.ux-reward-choice button{width:auto!important;min-width:100px!important}
+    .ux-opinion-item{padding:11px 0;border-bottom:1px solid #eee7f1}.ux-opinion-item:last-child{border-bottom:0}.ux-opinion-item small{color:#766b7a}
     @media(max-width:900px){
       body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{grid-template-columns:1fr!important}
       .ux-client-hero{grid-template-columns:1fr}.ux-crm-layout{grid-template-columns:1fr}.ux-crm-detail{position:static}.ux-crm-head,.ux-crm-row{grid-template-columns:minmax(130px,1.4fr) .6fr .7fr .8fr}.ux-crm-head span:nth-child(5),.ux-crm-row>div:nth-child(5){display:none}
@@ -313,75 +319,164 @@ let crmData={customers:[],summary:{}};
     return true;
   }
 
+  function openActionModal(title,html){
+    const overlay=document.getElementById('uxHistoryOverlay');
+    document.getElementById('uxHistoryTitle').textContent=title;
+    document.getElementById('uxHistoryBody').innerHTML=html;
+    overlay.classList.add('show');
+  }
+
+  async function fetchClientHistory(uid){
+    const res=await fetch('/api/historico?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||data.details||'Error al cargar historial');
+    return Array.isArray(data.transacoes)?data.transacoes:[];
+  }
+
+  function renderHistoryHtml(items){
+    if(!items.length)return '<div class="ux-crm-empty">Sin movimientos.</div>';
+    return items.map(item=>{
+      const dt=item.data?new Date(item.data).toLocaleString('es-MX'):'';
+      const sign=String(item.tipo||'').toLowerCase()==='debito'?'-':'+';
+      return '<div class="historico-item">'+
+        '<div class="historico-top"><strong>'+sign+Number(item.pontos||0)+' puntos</strong><span style="color:#777">'+esc(dt)+'</span></div>'+
+        '<div style="color:#555">Compra: '+money(item.valor_compra||0)+' MXN</div>'+
+        '<div style="color:#777;font-size:12px;margin-top:2px">Saldo: '+Number(item.saldo_anterior||0)+' → '+Number(item.saldo_novo||0)+'</div>'+
+      '</div>';
+    }).join('');
+  }
+
+  async function directAddPoints(x){
+    openActionModal('Agregar puntos · '+(x.nome||'Cliente'),
+      '<div class="ux-action-form">'+
+        '<div><label>Valor de la compra (MXN)</label><input id="uxDirectPurchase" type="number" min="1" step="0.01" placeholder="Ej. 350"></div>'+
+        '<div id="uxDirectPointsPreview" class="ux-crm-insight">Ingresa el valor de la compra.</div>'+
+        '<button class="btn-primary" id="uxDirectPointsConfirm">CONFIRMAR PUNTOS</button>'+
+      '</div>');
+    const input=document.getElementById('uxDirectPurchase');
+    const preview=document.getElementById('uxDirectPointsPreview');
+    input.addEventListener('input',()=>{
+      const amount=Number(input.value||0);
+      preview.textContent=amount>0?'⭐ '+Math.floor(amount/10)+' puntos para '+(x.nome||'cliente'):'Ingresa el valor de la compra.';
+    });
+    document.getElementById('uxDirectPointsConfirm').onclick=async()=>{
+      const amount=Number(input.value||0);
+      if(!amount||amount<=0)return alert('Ingresa un valor de compra válido.');
+      await selectUnderlyingClient(x.uid);
+      const hidden=document.getElementById('valorCompra');
+      if(hidden)hidden.value=String(amount);
+      if(typeof calcularPontosCompra==='function')calcularPontosCompra();
+      if(typeof creditarPontos!=='function')return alert('No se pudo abrir la función de puntos.');
+      await creditarPontos();
+      document.getElementById('uxHistoryOverlay').classList.remove('show');
+      await loadCRM(true);
+      crmSelected=x.uid;renderCRM();renderCRMDetail(x.uid);
+    };
+  }
+
+  async function directReward(x){
+    openActionModal('Recompensa · '+(x.nome||'Cliente'),'<div class="ux-crm-empty">Cargando recompensas…</div>');
+    try{
+      const res=await fetch('/api/recompensas?t='+Date.now(),{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+      const items=(Array.isArray(data.recompensas)?data.recompensas:[]).filter(i=>i.ativa!==false);
+      const body=document.getElementById('uxHistoryBody');
+      body.innerHTML=items.length?items.map(i=>
+        '<div class="ux-reward-choice"><div><b>'+esc(i.nome||'Recompensa')+'</b><small>'+Number(i.pontos||0)+' pts · '+esc(i.descricao||'Sin descripción')+'</small></div>'+
+        '<button class="btn-success" data-redeem-id="'+esc(i.id)+'" data-redeem-points="'+Number(i.pontos||0)+'" data-redeem-name="'+esc(i.nome||'Recompensa')+'">CANJEAR</button></div>'
+      ).join(''):'<div class="ux-crm-empty">No hay recompensas activas.</div>';
+      body.querySelectorAll('[data-redeem-id]').forEach(btn=>{
+        btn.onclick=async()=>{
+          await selectUnderlyingClient(x.uid);
+          if(typeof window.resgatarRecompensa!=='function')return alert('No se pudo abrir el canje.');
+          await window.resgatarRecompensa(btn.dataset.redeemId,btn.dataset.redeemName,Number(btn.dataset.redeemPoints),btn);
+          document.getElementById('uxHistoryOverlay').classList.remove('show');
+          await loadCRM(true);crmSelected=x.uid;renderCRM();renderCRMDetail(x.uid);
+        };
+      });
+    }catch(err){
+      document.getElementById('uxHistoryBody').innerHTML='<div class="ux-crm-empty">No se pudieron cargar las recompensas.</div>';
+    }
+  }
+
+  function directOffer(x){
+    openActionModal('Enviar oferta · '+(x.nome||'Cliente'),
+      '<div class="ux-action-form">'+
+        '<div><label>Título</label><input id="uxOfferTitle" placeholder="Ej. Tenemos algo para ti"></div>'+
+        '<div><label>Mensaje</label><textarea id="uxOfferMessage" placeholder="Escribe la oferta para este cliente"></textarea></div>'+
+        '<button class="btn-primary" id="uxOfferSend">ENVIAR PUSH</button>'+
+      '</div>');
+    document.getElementById('uxOfferSend').onclick=async()=>{
+      const title=document.getElementById('uxOfferTitle').value.trim();
+      const msg=document.getElementById('uxOfferMessage').value.trim();
+      if(!title||!msg)return alert('Completa título y mensaje.');
+      const btn=document.getElementById('uxOfferSend');
+      try{
+        btn.disabled=true;btn.textContent='ENVIANDO...';
+        const res=await fetch('/api/sendpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          titulo:title,desc:msg,link:'https://fidelidad-uai-so.vercel.app/',imagem:'',segmento:'cliente',valorSegmento:x.telefone||x.uid
+        })});
+        const data=await res.json();
+        if(!res.ok||!data.success)throw new Error(data.error||'Error');
+        alert('✅ Oferta enviada a '+(x.nome||'cliente')+'.');
+        document.getElementById('uxHistoryOverlay').classList.remove('show');
+      }catch(err){alert('No se pudo enviar la oferta.\n\n'+err.message)}
+      finally{btn.disabled=false;btn.textContent='ENVIAR PUSH'}
+    };
+  }
+
+  async function directOpinions(x){
+    openActionModal('Opiniones · '+(x.nome||'Cliente'),'<div class="ux-crm-empty">Cargando opiniones…</div>');
+    try{
+      const res=await fetch('/api/sendpush?feedback=1&t='+Date.now(),{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+      const uid=String(x.uid||''),tel=String(x.telefone||'').replace(/\D/g,'');
+      const items=(Array.isArray(data.feedback)?data.feedback:[]).filter(item=>{
+        const itemUid=String(item.uid||item.user_id||item.cliente_uid||'');
+        const itemTel=String(item.telefone||item.phone||'').replace(/\D/g,'');
+        return (uid&&itemUid===uid)||(tel&&itemTel===tel);
+      });
+      document.getElementById('uxHistoryBody').innerHTML=items.length?items.map(item=>
+        '<div class="ux-opinion-item"><b>'+('★'.repeat(Number(item.estrelas||0)))+'</b> <small>'+esc(item.data?new Date(item.data).toLocaleDateString('es-MX'):'')+'</small>'+
+        '<div style="margin-top:4px">'+esc(item.comentario||'Sin comentario')+'</div></div>'
+      ).join(''):'<div class="ux-crm-empty">Este cliente todavía no tiene opiniones.</div>';
+    }catch(err){
+      document.getElementById('uxHistoryBody').innerHTML='<div class="ux-crm-empty">No se pudieron cargar las opiniones.</div>';
+    }
+  }
+
   async function handleCRMAction(e){
     const b=e.target.closest('[data-crm-action]');
     if(!b)return;
     const x=crmData.customers.find(c=>c.uid===b.dataset.uid);
     if(!x)return;
-
     const action=b.dataset.crmAction;
-    if(action==='whatsapp'){
-      const digits=String(x.telefone||'').replace(/\D/g,'');
-      if(!digits){alert('Este cliente no tiene teléfono.');return}
-      const phone=digits.length===10?'52'+digits:digits;
-      window.open('https://wa.me/'+phone,'_blank','noopener');
-      return;
-    }
 
-    await selectUnderlyingClient(x.uid);
-
-    if(action==='points'){
-      [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent)==='fidelidad')?.click();
-      setTimeout(()=>{
-        const sections=sectionLabels('fidelidad');
-        const target=sections.find(s=>norm(s.label).includes('agregar puntos'));
-        if(target){
-          currentSection.fidelidad=target.key;
-          renderToolbar('fidelidad');
-          applyMobileSection('fidelidad',target.key);
-        }
-      },100);
-      return;
-    }
-
-    if(action==='reward'){
-      [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent)==='recompensas')?.click();
-      return;
-    }
-
-    if(action==='offer'){
-      [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent).includes('ofertas'))?.click();
-      setTimeout(()=>{
-        const seg=document.getElementById('pushSegmento');
-        if(seg){
-          seg.value='cliente';
-          seg.dispatchEvent(new Event('change'));
-        }
-        const val=document.getElementById('pushValorSegmento');
-        if(val)val.value=x.telefone||x.uid;
-      },250);
-      return;
-    }
+    if(action==='points')return directAddPoints(x);
+    if(action==='reward')return directReward(x);
+    if(action==='offer')return directOffer(x);
+    if(action==='opinions')return directOpinions(x);
 
     if(action==='history'){
-      await selectUnderlyingClient(x.uid);
-      const body=document.getElementById('uxHistoryBody');
-      const src=document.getElementById('clienteHistorico');
-      document.getElementById('uxHistoryTitle').textContent='Historial · '+(x.nome||x.telefone||'Cliente');
-      body.innerHTML=src?.innerHTML||'<div class="ux-crm-empty">Sin movimientos.</div>';
-      document.getElementById('uxHistoryOverlay').classList.add('show');
+      openActionModal('Historial · '+(x.nome||x.telefone||'Cliente'),'<div class="ux-crm-empty">Cargando historial…</div>');
+      try{
+        const items=await fetchClientHistory(x.uid);
+        document.getElementById('uxHistoryBody').innerHTML=renderHistoryHtml(items);
+      }catch(err){
+        document.getElementById('uxHistoryBody').innerHTML='<div class="ux-crm-empty">No se pudo cargar el historial.</div>';
+      }
       return;
     }
 
-    if(action==='opinions'){
-      const sections=sectionLabels('clientes');
-      const target=sections.find(s=>norm(s.label).includes('opiniones'));
-      if(target){
-        currentSection.clientes=target.key;
-        renderToolbar('clientes');
-        applyMobileSection('clientes',target.key);
-      }
-      setTimeout(()=>document.getElementById('reviewsFiltroCliente')?.click(),150);
+    if(action==='whatsapp'){
+      const digits=String(x.telefone||'').replace(/\D/g,'');
+      if(!digits)return alert('Este cliente no tiene teléfono.');
+      const phone=digits.length===10?'52'+digits:digits;
+      const url='https://wa.me/'+phone;
+      const win=window.open(url,'_blank');
+      if(!win)window.location.href=url;
     }
   }
 
