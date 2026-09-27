@@ -5,7 +5,7 @@
   style.id = 'uxCoreModulesV5Styles';
   style.textContent = `
     #uxCoreToolbar{display:none;max-width:1180px;margin:0 auto 12px;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:10px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
-    .ux-core-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.ux-core-tabs button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:11px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
+    .ux-core-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.ux-core-tabs button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:14px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
     .ux-core-tabs button:hover{transform:translateY(-1px);border-color:#d8c1e8!important}
     .ux-core-tabs button.active{background:linear-gradient(135deg,#6a0dad,#8a35cf)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px rgba(106,13,173,.18)}
     .ux-core-tabs button::after{content:'›';float:right;font-size:16px;line-height:10px;opacity:.65}.ux-core-tabs button.active::after{content:'⌄'}
@@ -15,47 +15,47 @@
     body.ux3[data-ux-view="clientes"] .main-container .card.ux-show,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-show{display:none!important;max-width:none!important;margin:0!important;min-height:100%}
     body.ux3[data-ux-view="clientes"] .main-container .card.ux-show.ux-mobile-active,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-show.ux-mobile-active{display:block!important}
     body.ux3[data-ux-view="clientes"] .main-container .card.ux-featured,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-featured{grid-column:1/-1}
-    body.ux3 .card .ux-card-kicker{display:block;color:#8d8093;font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;margin:-4px 0 10px}
+    body.ux3 .card .ux-card-kicker{display:block;color:#8d8093;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;margin:-4px 0 10px}
     body.ux3 .card.ux-hide-subsection{display:none!important}
     .ux-client-hero{display:none;max-width:1180px;margin:0 auto 12px;grid-template-columns:1.15fr .85fr;gap:12px}
     body.ux3[data-ux-view="clientes"] .ux-client-hero{display:grid}
     .ux-client-panel{background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:17px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
-    .ux-client-panel h2{margin:0 0 5px;font-size:17px;color:#302337}.ux-client-panel p{margin:0 0 13px;font-size:10px;color:#887c8e;line-height:1.45}
-    .ux-client-searchline{display:grid;grid-template-columns:1fr auto auto;gap:7px}.ux-client-searchline input{min-width:0}.ux-client-searchline button{width:auto!important;padding:10px 12px!important;font-size:10px!important}
+    .ux-client-panel h2{margin:0 0 6px;font-size:20px;color:#302337}.ux-client-panel p{margin:0 0 14px;font-size:13px;color:#675c6b;line-height:1.55}
+    .ux-client-searchline{display:grid;grid-template-columns:1fr auto auto;gap:7px}.ux-client-searchline input{min-width:0}.ux-client-searchline button{width:auto!important;min-height:44px;padding:11px 14px!important;font-size:13px!important}
     .ux-client-summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
     .ux-client-summary-grid>div{background:#faf8fb;border:1px solid #eee7f1;border-radius:11px;padding:9px}
-    .ux-client-summary-grid small{display:block;font-size:8px;color:#897d8e}.ux-client-summary-grid b{display:block;font-size:18px;color:#6a0dad;margin-top:2px}
+    .ux-client-summary-grid small{display:block;font-size:12px;color:#655b69;font-weight:700}.ux-client-summary-grid b{display:block;font-size:24px;color:#6a0dad;margin-top:2px}
     .ux-crm{margin-top:12px}.ux-crm-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-    .ux-crm-search{flex:1;min-width:180px;padding:9px 10px!important;font-size:11px!important}
-    .ux-crm-sort{width:auto!important;padding:9px 28px 9px 10px!important;font-size:10px!important}
+    .ux-crm-search{flex:1;min-width:180px;min-height:44px;padding:10px 12px!important;font-size:14px!important}
+    .ux-crm-sort{width:auto!important;min-height:44px;padding:10px 34px 10px 12px!important;font-size:13px!important}
     .ux-crm-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-    .ux-crm-filters button{width:auto!important;padding:7px 9px!important;font-size:9px!important;border:1px solid #e7dced!important;background:#faf8fb!important;color:#6b5b72!important;border-radius:999px!important}
+    .ux-crm-filters button{width:auto!important;min-height:38px;padding:8px 12px!important;font-size:12px!important;border:1px solid #e7dced!important;background:#faf8fb!important;color:#6b5b72!important;border-radius:999px!important}
     .ux-crm-filters button.active{background:#6a0dad!important;color:#fff!important;border-color:#6a0dad!important}
     .ux-crm-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:11px;align-items:start}
     .ux-crm-list{border:1px solid #eee7f1;border-radius:13px;overflow:hidden;background:#fff}
     .ux-crm-head,.ux-crm-row{display:grid;grid-template-columns:minmax(160px,1.4fr) .65fr .65fr .8fr .9fr;gap:8px;align-items:center}
-    .ux-crm-head{padding:8px 10px;background:#f7f3f9;color:#817486;font-size:8px;font-weight:900;text-transform:uppercase}
+    .ux-crm-head{padding:10px 12px;background:#f7f3f9;color:#5f5364;font-size:11px;font-weight:900;text-transform:uppercase}
     .ux-crm-rows{max-height:470px;overflow:auto;scrollbar-width:thin}
-    .ux-crm-row{padding:10px;border-top:1px solid #f0eaf2;cursor:pointer;transition:.14s ease;font-size:10px}
-    .ux-crm-row:hover,.ux-crm-row.selected{background:#f7effb}.ux-crm-row b{display:block;color:#35283b;font-size:10px}.ux-crm-row small{display:block;color:#8c8091;font-size:8px;margin-top:2px}
-    .ux-crm-money{font-weight:900;color:#2d8a53}.ux-crm-status{display:inline-flex;padding:4px 6px;border-radius:999px;font-size:8px;font-weight:900}.ux-crm-status.active{background:#e9f8ef;color:#198a4f}.ux-crm-status.inactive{background:#fff2df;color:#a86400}.ux-crm-status.none{background:#f0eef2;color:#807683}
-    .ux-crm-empty{padding:25px;text-align:center;color:#918596;font-size:11px}
+    .ux-crm-row{padding:12px;border-top:1px solid #f0eaf2;cursor:pointer;transition:.14s ease;font-size:13px;min-height:64px}
+    .ux-crm-row:hover,.ux-crm-row.selected{background:#f7effb}.ux-crm-row b{display:block;color:#2f2434;font-size:13px;line-height:1.35}.ux-crm-row small{display:block;color:#6e6373;font-size:11px;line-height:1.4;margin-top:3px}
+    .ux-crm-money{font-weight:900;color:#2d8a53}.ux-crm-status{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.ux-crm-status.active{background:#e9f8ef;color:#198a4f}.ux-crm-status.inactive{background:#fff2df;color:#a86400}.ux-crm-status.none{background:#f0eef2;color:#807683}
+    .ux-crm-empty{padding:26px;text-align:center;color:#6e6373;font-size:13px;line-height:1.5}
     .ux-crm-detail{display:none;background:linear-gradient(180deg,#fff,#fbf8fd);border:1px solid #e7dceb;border-radius:14px;padding:14px;position:sticky;top:90px}
-    .ux-crm-detail.show{display:block}.ux-crm-detail h4{margin:0;color:#322439;font-size:17px}.ux-crm-detail .meta{font-size:9px;color:#887c8e;margin:3px 0 11px}
-    .ux-crm-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ux-crm-stat{padding:9px;background:#fff;border:1px solid #eee7f1;border-radius:10px}.ux-crm-stat small{display:block;font-size:8px;color:#897d8e}.ux-crm-stat b{display:block;font-size:15px;color:#5f178f;margin-top:2px}
-    .ux-crm-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}.ux-crm-actions button{font-size:9px!important;padding:9px!important}.ux-crm-actions .wide{grid-column:1/-1}
-    .ux-crm-insight{margin-top:10px;padding:9px;border-radius:10px;background:#f4ecf9;color:#65416f;font-size:9px;line-height:1.4}
+    .ux-crm-detail.show{display:block}.ux-crm-detail h4{margin:0;color:#322439;font-size:21px}.ux-crm-detail .meta{font-size:12px;color:#665b6b;line-height:1.45;margin:4px 0 12px}
+    .ux-crm-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ux-crm-stat{padding:9px;background:#fff;border:1px solid #eee7f1;border-radius:10px}.ux-crm-stat small{display:block;font-size:11px;color:#655b69;font-weight:700}.ux-crm-stat b{display:block;font-size:19px;color:#5f178f;margin-top:2px}
+    .ux-crm-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}.ux-crm-actions button{min-height:42px;font-size:12px!important;padding:10px 11px!important}.ux-crm-actions .wide{grid-column:1/-1}
+    .ux-crm-insight{margin-top:11px;padding:11px;border-radius:10px;background:#f4ecf9;color:#51365a;font-size:12px;line-height:1.55}
     .ux-client-result{display:none;grid-column:1/-1;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:16px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-client-result.show{display:block}.ux-client-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ux-client-result h3{margin:0!important;color:#35273c!important;font-size:17px!important}
-    .ux-client-result-meta{font-size:11px;color:#7f7385;margin-top:4px}.ux-client-result-points{background:#f2e8f7;color:#6a0dad;font-weight:900;border-radius:12px;padding:9px 11px;white-space:nowrap}
-    .ux-client-history{margin-top:12px;border-top:1px solid #eee7f1;padding-top:12px}.ux-client-history-title{font-size:10px;font-weight:900;color:#6a0dad;margin-bottom:7px}
+    .ux-client-result-meta{font-size:13px;color:#655b69;margin-top:4px}.ux-client-result-points{background:#f2e8f7;color:#6a0dad;font-weight:900;border-radius:12px;padding:9px 11px;white-space:nowrap}
+    .ux-client-history{margin-top:12px;border-top:1px solid #eee7f1;padding-top:12px}.ux-client-history-title{font-size:12px;font-weight:900;color:#6a0dad;margin-bottom:7px}
     @media(max-width:900px){
       body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{grid-template-columns:1fr!important}
       .ux-client-hero{grid-template-columns:1fr}.ux-crm-layout{grid-template-columns:1fr}.ux-crm-detail{position:static}.ux-crm-head,.ux-crm-row{grid-template-columns:minmax(130px,1.4fr) .6fr .7fr .8fr}.ux-crm-head span:nth-child(5),.ux-crm-row>div:nth-child(5){display:none}
     }
     @media(max-width:780px){
-      #uxCoreToolbar{margin:0 0 8px;padding:7px;border-radius:14px}.ux-core-tabs{grid-template-columns:1fr 1fr;min-width:0}.ux-core-tabs button{padding:11px 10px!important;font-size:10px!important}.ux-core-summary{display:none}
-      .ux-client-hero{margin:0 0 8px}.ux-client-searchline{grid-template-columns:1fr 44px}.ux-client-searchline button span.label{display:none}.ux-client-searchline .ux-client-search-btn{grid-column:1/-1}
+      #uxCoreToolbar{margin:0 0 8px;padding:8px;border-radius:14px}.ux-core-tabs{grid-template-columns:1fr 1fr;min-width:0}.ux-core-tabs button{min-height:48px;padding:12px 11px!important;font-size:13px!important}.ux-core-summary{display:none}
+      .ux-client-hero{margin:0 0 8px}.ux-client-searchline{grid-template-columns:1fr 48px}.ux-client-searchline button span.label{display:none}.ux-client-searchline .ux-client-search-btn{grid-column:1/-1}
     }
   `;
   document.head.appendChild(style);
