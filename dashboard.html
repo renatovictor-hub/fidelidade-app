@@ -2117,6 +2117,7 @@ async function carregarPromos() {
 
 
         Object.entries(data)
+            .sort((a,b)=>Number(b[1]?.exp||0)-Number(a[1]?.exp||0))
             .forEach(
                 ([id, promo]) => {
 
