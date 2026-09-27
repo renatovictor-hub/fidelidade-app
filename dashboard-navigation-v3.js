@@ -31,12 +31,12 @@
   const TITLES={resumen:['Dashboard general','Clientes, fidelidad, campañas y pedidos en un solo lugar.'],clientes:['Clientes','Base de clientes y actividad.'],fidelidad:['Fidelidad','Puntos, niveles y beneficios.'],recompensas:['Recompensas','Crea y administra beneficios para tus clientes.'],ofertas:['Ofertas / Push','Campañas, promociones y notificaciones.'],pedidos:['Pedidos','Gestiona los pedidos activos y su progreso.'],entregas:['Entregas','Seguimiento operativo de pedidos para entrega.'],envio:['Configurar envío','Reglas, zonas y tarifas de entrega.'],reportes:['Reportes','Indicadores y rendimiento del negocio.'],ajustes:['Ajustes','Configuración de la empresa y sus módulos.']};
 
   const GROUPS={
-    clientes:['base de clientes','cumpleaños','reseñas','reviews'],
+    clientes:['base de clientes','opiniones de clientes'],
     fidelidad:['agregar puntos','niveles vip','bonus','bono','referidos'],
-    recompensas:['recompensas'],
+    recompensas:['recompensas','cumpleaños'],
     ofertas:['promociones activas','promociones expiradas','crear nueva promoción','notificaciones'],
     envio:['configurar envío','tarifa','entrega'],
-    ajustes:['logs del sistema']
+    ajustes:['logs del sistema','configuración de google reviews']
   };
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
