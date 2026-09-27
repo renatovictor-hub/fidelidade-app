@@ -6,14 +6,14 @@
   style.textContent=`
     #uxGrowthToolbar{display:none;max-width:1180px;margin:0 auto 12px;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:10px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     #uxGrowthToolbar .tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
-    #uxGrowthToolbar button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:11px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
+    #uxGrowthToolbar button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:14px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
     #uxGrowthToolbar button:hover{transform:translateY(-1px);border-color:#d8c1e8!important}
     #uxGrowthToolbar button.active{background:linear-gradient(135deg,#6a0dad,#8a35cf)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px rgba(106,13,173,.18)}
     #uxGrowthToolbar button::after{content:'›';float:right;font-size:16px;line-height:10px;opacity:.65}
     #uxGrowthToolbar button.active::after{content:'⌄'}
     .ux-list-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:8px 9px;background:#faf8fb;border:1px solid #eee7f1;border-radius:10px}
-    .ux-list-tools small{color:#827688;font-size:9px;font-weight:800}
-    .ux-list-tools select{width:auto!important;padding:7px 28px 7px 9px!important;font-size:10px!important;border-radius:8px!important}
+    .ux-list-tools small{color:#625768;font-size:12px;font-weight:800}
+    .ux-list-tools select{width:auto!important;padding:7px 28px 7px 9px!important;font-size:13px!important;border-radius:8px!important}
     .ux-scroll-list{max-height:480px;overflow:auto;padding-right:4px;scrollbar-width:thin}
     .ux-scroll-list::-webkit-scrollbar{width:7px}.ux-scroll-list::-webkit-scrollbar-thumb{background:#d9cbe1;border-radius:999px}
     #uxGrowthToolbar .meta{display:none!important}
@@ -29,10 +29,10 @@
     body.ux3[data-ux-view="recompensas"][data-growth-sub="crear"] .ux-reward-panel.catalog{display:none}
     body.ux3[data-ux-view="recompensas"][data-growth-sub="catalogo"] .ux-reward-panel.create{display:none}
     .ux-reward-panel.catalog{border-left:1px solid #eee7f1;padding-left:14px}
-    .ux-reward-panel h4{margin:0 0 11px;color:#3b2d42;font-size:13px}
+    .ux-reward-panel h4{margin:0 0 11px;color:#3b2d42;font-size:16px}
     .ux-reward-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
     .ux-reward-metric{border:1px solid #eee7f1;background:#faf8fb;border-radius:11px;padding:10px}
-    .ux-reward-metric small{display:block;font-size:8px;color:#897d8f}.ux-reward-metric b{display:block;font-size:18px;color:#5f0fa8;margin-top:3px}
+    .ux-reward-metric small{display:block;font-size:11px;color:#625768;font-weight:700}.ux-reward-metric b{display:block;font-size:18px;color:#5f0fa8;margin-top:3px}
     #listaRecompensas{margin-top:0!important;max-height:560px;overflow:auto;padding-right:3px}
     .reward-item{box-shadow:none!important;border-color:#ece5ef!important;border-radius:12px!important}
     .reward-actions button{border-radius:9px!important}
@@ -40,12 +40,12 @@
     .ux-offer-hero{display:none;max-width:1180px;margin:0 auto 12px;grid-template-columns:1.2fr .8fr;gap:12px}
     body.ux3[data-ux-view="ofertas"] .ux-offer-hero{display:grid}
     .ux-offer-panel{background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:16px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
-    .ux-offer-panel h2{margin:0 0 5px;color:#322438;font-size:16px}.ux-offer-panel p{margin:0;color:#8b7f91;font-size:10px;line-height:1.45}
+    .ux-offer-panel h2{margin:0 0 5px;color:#322438;font-size:19px}.ux-offer-panel p{margin:0;color:#625768;font-size:13px;line-height:1.55}
     .ux-offer-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
     .ux-offer-kpi{background:#faf8fb;border:1px solid #eee7f1;border-radius:11px;padding:10px;text-align:center}
-    .ux-offer-kpi b{display:block;font-size:18px;color:#6a0dad}.ux-offer-kpi small{font-size:8px;color:#897d8e}
+    .ux-offer-kpi b{display:block;font-size:18px;color:#6a0dad}.ux-offer-kpi small{font-size:11px;color:#625768;font-weight:700}
     .ux-offer-tip{background:linear-gradient(135deg,#6b11bd,#8d33d6);color:#fff}
-    .ux-offer-tip h2,.ux-offer-tip p{color:#fff}.ux-offer-tip p{opacity:.85}.ux-offer-tip .tip{margin-top:12px;background:rgba(255,255,255,.13);border-radius:11px;padding:10px;font-size:10px;line-height:1.45}
+    .ux-offer-tip h2,.ux-offer-tip p{color:#fff}.ux-offer-tip p{opacity:.85}.ux-offer-tip .tip{margin-top:12px;background:rgba(255,255,255,.13);border-radius:11px;padding:11px;font-size:13px;line-height:1.55}
 
     body.ux3[data-ux-view="ofertas"] .promo-item{border-left:0!important;border:1px solid #eee5d7!important;border-radius:12px!important;background:#fffdf5!important}
     body.ux3[data-ux-view="ofertas"] .expired-dashboard{background:#f8f8f8!important;border-color:#ececec!important}
@@ -60,7 +60,7 @@
     @media(max-width:780px){
       #uxGrowthToolbar{margin:0 0 8px;padding:7px;border-radius:14px}
       #uxGrowthToolbar .tabs{grid-template-columns:1fr 1fr;min-width:0}
-      #uxGrowthToolbar button{padding:11px 10px!important;font-size:10px!important}#uxGrowthToolbar .meta{display:none}
+      #uxGrowthToolbar button{padding:11px 10px!important;font-size:13px!important}#uxGrowthToolbar .meta{display:none}
       .ux-scroll-list{max-height:58vh}
       .ux-offer-hero{margin:0 0 8px}
       body.ux3[data-ux-view="recompensas"] .ux-reward-shell{display:block}
