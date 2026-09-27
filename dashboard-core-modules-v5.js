@@ -7,7 +7,7 @@
     #uxCoreToolbar{display:none;max-width:1180px;margin:0 auto 12px;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:10px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-core-tabs{display:flex;gap:7px;flex-wrap:wrap}.ux-core-tabs button{width:auto!important;border:0!important;background:#f5f1f7!important;color:#6e6074!important;padding:9px 12px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important}
     .ux-core-tabs button.active{background:#6a0dad!important;color:#fff!important}
-    .ux-core-summary{margin-top:9px;display:flex;gap:8px;flex-wrap:wrap}.ux-core-chip{font-size:9px;font-weight:800;color:#6c5e72;background:#faf8fb;border:1px solid #eee7f1;border-radius:999px;padding:5px 8px}
+    .ux-core-summary{display:none!important}
     body.ux3[data-ux-view="clientes"] #uxCoreToolbar,body.ux3[data-ux-view="fidelidad"] #uxCoreToolbar{display:block}
     body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{max-width:1180px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start!important;gap:12px!important}
     body.ux3[data-ux-view="clientes"] .main-container .card.ux-show,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-show{max-width:none!important;margin:0!important;min-height:100%}
@@ -21,6 +21,10 @@
     .ux-client-searchline{display:grid;grid-template-columns:1fr auto auto;gap:7px}.ux-client-searchline input{min-width:0}.ux-client-searchline button{width:auto!important;padding:10px 12px!important;font-size:10px!important}
     .ux-client-total{display:flex;align-items:center;justify-content:space-between;gap:10px}.ux-client-total .big{font-size:34px;font-weight:900;color:#6a0dad}.ux-client-total small{font-size:9px;color:#8c8091}
     .ux-client-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.ux-client-actions button{font-size:10px!important;padding:10px!important}
+    .ux-client-result{display:none;grid-column:1/-1;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:16px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
+    .ux-client-result.show{display:block}.ux-client-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ux-client-result h3{margin:0!important;color:#35273c!important;font-size:17px!important}
+    .ux-client-result-meta{font-size:11px;color:#7f7385;margin-top:4px}.ux-client-result-points{background:#f2e8f7;color:#6a0dad;font-weight:900;border-radius:12px;padding:9px 11px;white-space:nowrap}
+    .ux-client-history{margin-top:12px;border-top:1px solid #eee7f1;padding-top:12px}.ux-client-history-title{font-size:10px;font-weight:900;color:#6a0dad;margin-bottom:7px}
     @media(max-width:900px){
       body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{grid-template-columns:1fr!important}
       .ux-client-hero{grid-template-columns:1fr}
@@ -58,6 +62,13 @@
       <div class="ux-client-total"><div><small>Clientes registrados</small><div class="big" id="uxClientTotal">—</div></div><span style="font-size:34px">👥</span></div>
       <div class="ux-client-actions"><button class="btn-secondary" type="button" id="uxGoPoints">+ Puntos</button><button class="btn-secondary" type="button" id="uxGoRewards">Recompensas</button></div>
     </div>
+    <div class="ux-client-result" id="uxClientResult">
+      <div class="ux-client-result-head">
+        <div><h3 id="uxClientResultName">Cliente</h3><div class="ux-client-result-meta" id="uxClientResultMeta"></div></div>
+        <div class="ux-client-result-points"><span id="uxClientResultPoints">0</span> pts</div>
+      </div>
+      <div class="ux-client-history"><div class="ux-client-history-title">HISTORIAL RECIENTE</div><div id="uxClientResultHistory">Sin movimientos.</div></div>
+    </div>
   `;
   main.parentNode.insertBefore(clientHero, main);
 
@@ -94,11 +105,15 @@
     if (!['clientes','fidelidad'].includes(view)) return;
     addKickers();
     const tabs=toolbar.querySelector('.ux-core-tabs');
-    const summary=toolbar.querySelector('.ux-core-summary');
-    const sections=sectionLabels(view);
+    let sections=sectionLabels(view);
+    if(view==='clientes'){
+      const rank=t=>norm(t).includes('base de clientes')?0:norm(t).includes('opiniones')?1:9;
+      sections=sections.sort((a,b)=>rank(a.label)-rank(b.label));
+    }else{
+      const rank=t=>norm(t).includes('agregar puntos')?0:norm(t).includes('niveles vip')?1:(norm(t).includes('bonus')||norm(t).includes('bono'))?2:norm(t).includes('referidos')?3:9;
+      sections=sections.sort((a,b)=>rank(a.label)-rank(b.label));
+    }
     tabs.innerHTML=sections.map((s,i)=>'<button type="button" data-section="'+s.key+'" class="'+(i===0?'active':'')+'">'+s.label+'</button>').join('');
-    if(view==='clientes') summary.innerHTML='<span class="ux-core-chip">👥 Base de clientes</span><span class="ux-core-chip">🔎 Busca rápida</span><span class="ux-core-chip">📷 QR</span><span class="ux-core-chip">🧾 Histórico</span>';
-    else summary.innerHTML='<span class="ux-core-chip">⭐ Puntos</span><span class="ux-core-chip">👑 Níveis VIP</span><span class="ux-core-chip">🎯 Bonos</span><span class="ux-core-chip">🤝 Referidos</span>';
     const chosen=currentSection[view]||sections[0]?.key;
     applyMobileSection(view,chosen);
   }
@@ -109,11 +124,28 @@
     const m=raw.replace(/\./g,'').match(/\d+/);
     document.getElementById('uxClientTotal').textContent=m?m[0]:'—';
   }
-  document.getElementById('uxClientSearch').onclick=()=>{
+  async function renderClientResult(){
+    const result=document.getElementById('uxClientResult');
+    try{
+      if(typeof clienteSelecionado==='undefined'||!clienteSelecionado){result?.classList.remove('show');return}
+      document.getElementById('uxClientResultName').textContent=clienteSelecionado.nome||'Sin nombre';
+      document.getElementById('uxClientResultMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · ID: '+(clienteSelecionado.uid||'—');
+      document.getElementById('uxClientResultPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+      const src=document.getElementById('clienteHistorico');
+      document.getElementById('uxClientResultHistory').innerHTML=src?.innerHTML||'Sin movimientos.';
+      result?.classList.add('show');
+      if(typeof window.actualizarOpinionesCliente==='function')window.actualizarOpinionesCliente();
+    }catch(_){}
+  }
+  document.getElementById('uxClientSearch').onclick=async()=>{
     const q=document.getElementById('uxClientLookup').value.trim();if(!q)return;
-    const input=document.getElementById('clienteUid');if(input){input.value=q;typeof buscarCliente==='function'&&buscarCliente()}
-    const fidelityBtn=[...document.querySelectorAll('#uxSidebar .ux-nav button')].find(x=>norm(x.textContent)==='fidelidad');fidelityBtn?.click();
-    setTimeout(()=>{const cards=visibleCards('fidelidad');const target=cards.find(c=>norm(cardTitle(c)).includes('agregar puntos'));if(target){currentSection.fidelidad=String(cards.indexOf(target));renderToolbar('fidelidad')}},100);
+    const input=document.getElementById('clienteUid');
+    if(!input||typeof buscarCliente!=='function')return;
+    input.value=q;
+    await buscarCliente();
+    await new Promise(r=>setTimeout(r,250));
+    renderClientResult();
+    setTimeout(renderClientResult,700);
   };
   document.getElementById('uxClientQr').onclick=()=>{typeof abrirScannerQr==='function'&&abrirScannerQr()};
   document.getElementById('uxGoPoints').onclick=()=>{[...document.querySelectorAll('#uxSidebar .ux-nav button')].find(x=>norm(x.textContent)==='fidelidad')?.click()};
