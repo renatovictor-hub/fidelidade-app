@@ -5,8 +5,10 @@
   style.id = 'uxCoreModulesV5Styles';
   style.textContent = `
     #uxCoreToolbar{display:none;max-width:1180px;margin:0 auto 12px;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:10px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
-    .ux-core-tabs{display:flex;gap:7px;flex-wrap:wrap}.ux-core-tabs button{width:auto!important;border:0!important;background:#f5f1f7!important;color:#6e6074!important;padding:9px 12px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important}
-    .ux-core-tabs button.active{background:#6a0dad!important;color:#fff!important}
+    .ux-core-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.ux-core-tabs button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:11px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
+    .ux-core-tabs button:hover{transform:translateY(-1px);border-color:#d8c1e8!important}
+    .ux-core-tabs button.active{background:linear-gradient(135deg,#6a0dad,#8a35cf)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px rgba(106,13,173,.18)}
+    .ux-core-tabs button::after{content:'›';float:right;font-size:16px;line-height:10px;opacity:.65}.ux-core-tabs button.active::after{content:'⌄'}
     .ux-core-summary{display:none!important}
     body.ux3[data-ux-view="clientes"] #uxCoreToolbar,body.ux3[data-ux-view="fidelidad"] #uxCoreToolbar{display:block}
     body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{max-width:1180px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start!important;gap:12px!important}
@@ -31,7 +33,7 @@
       .ux-client-hero{grid-template-columns:1fr}
     }
     @media(max-width:780px){
-      #uxCoreToolbar{margin:0 0 8px;padding:7px;overflow-x:auto;border-radius:14px}.ux-core-tabs{flex-wrap:nowrap;min-width:max-content}.ux-core-summary{display:none}
+      #uxCoreToolbar{margin:0 0 8px;padding:7px;border-radius:14px}.ux-core-tabs{grid-template-columns:1fr 1fr;min-width:0}.ux-core-tabs button{padding:11px 10px!important;font-size:10px!important}.ux-core-summary{display:none}
       .ux-client-hero{margin:0 0 8px}.ux-client-searchline{grid-template-columns:1fr 44px}.ux-client-searchline button span.label{display:none}.ux-client-searchline .ux-client-search-btn{grid-column:1/-1}
     }
   `;
