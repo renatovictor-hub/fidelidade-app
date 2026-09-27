@@ -147,66 +147,17 @@
   }
   toolbar.addEventListener('click',e=>{const b=e.target.closest('button[data-section]');if(!b)return;applyMobileSection(document.body.dataset.uxView,b.dataset.section)});
 
-  let crmData={customers:[],summary:{}};
+let crmData={customers:[],summary:{}};
   let crmFilter='all';
   let crmSelected='';
   let crmLoadedAt=0;
 
-  function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
-  function money(v){return '
-    const raw=document.getElementById('totalClientes')?.textContent||'';
-    const m=raw.replace(/\./g,'').match(/\d+/);
-    if(!crmData.customers.length)document.getElementById('uxClientTotal').textContent=m?m[0]:'—';
+  function esc(v){
+    return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
   }
-  async function renderClientResult(){
-    const result=document.getElementById('uxClientResult');
-    try{
-      if(typeof clienteSelecionado==='undefined'||!clienteSelecionado){result?.classList.remove('show');return}
-      document.getElementById('uxClientResultName').textContent=clienteSelecionado.nome||'Sin nombre';
-      document.getElementById('uxClientResultMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · ID: '+(clienteSelecionado.uid||'—');
-      document.getElementById('uxClientResultPoints').textContent=String(Number(clienteSelecionado.pontos||0));
-      const src=document.getElementById('clienteHistorico');
-      document.getElementById('uxClientResultHistory').innerHTML=src?.innerHTML||'Sin movimientos.';
-      result?.classList.add('show');
-      if(typeof window.actualizarOpinionesCliente==='function')window.actualizarOpinionesCliente();
-    }catch(_){}
+  function money(v){
+    return '$'+Number(v||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2});
   }
-  document.getElementById('uxClientSearch').onclick=async()=>{
-    const q=document.getElementById('uxClientLookup').value.trim();if(!q)return;
-    const input=document.getElementById('clienteUid');
-    if(!input||typeof buscarCliente!=='function')return;
-    input.value=q;
-    await buscarCliente();
-    await new Promise(r=>setTimeout(r,250));
-    renderClientResult();
-    setTimeout(renderClientResult,700);
-  };
-  document.getElementById('uxClientQr').onclick=()=>{typeof abrirScannerQr==='function'&&abrirScannerQr()};
-
-  function refreshCore(){
-    syncClientTotal();prepareCRM();
-    const view=document.body.dataset.uxView;
-    if(view==='clientes')loadCRM();
-    if(!['clientes','fidelidad'].includes(view)) return;
-    const key=view+'|'+sectionLabels(view).map(s=>s.label).join('|');
-    if(toolbar.dataset.renderKey!==key){
-      renderToolbar(view);
-      toolbar.dataset.renderKey=key;
-    }
-  }
-  setInterval(refreshCore,1800);
-
-  const bodyObserver=new MutationObserver(muts=>{
-    if(muts.some(m=>m.attributeName==='data-ux-view')){
-      const view=document.body.dataset.uxView;
-      toolbar.dataset.renderKey='';
-      if(['clientes','fidelidad'].includes(view)) setTimeout(refreshCore,20);
-    }
-  });
-  bodyObserver.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
-  setTimeout(refreshCore,120);setTimeout(()=>loadCRM(),500);
-})();+Number(v||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2})}
-  function shortDate(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'})}
   function agoLabel(days){
     if(days==null)return 'Sin compras';
     if(days===0)return 'Hoy';
@@ -221,37 +172,40 @@
     card.classList.add('ux-featured');
     const total=document.getElementById('totalClientes');
     if(total)total.style.display='none';
+
     const host=document.createElement('div');
     host.className='ux-crm';
-    host.innerHTML=`
-      <div class="ux-crm-tools">
-        <input class="ux-crm-search" id="uxCrmSearch" placeholder="Buscar por nombre o teléfono…">
-        <select class="ux-crm-sort" id="uxCrmSort">
-          <option value="spend">Mayor gasto</option>
-          <option value="purchases">Más compras</option>
-          <option value="recent">Compra más reciente</option>
-          <option value="points">Más puntos</option>
-        </select>
-      </div>
-      <div class="ux-crm-filters" id="uxCrmFilters">
-        <button data-filter="all" class="active">Todos</button>
-        <button data-filter="active">Activos 30d</button>
-        <button data-filter="inactive">Inactivos +30d</button>
-        <button data-filter="frequent">Frecuentes</button>
-        <button data-filter="new">Nuevos 30d</button>
-        <button data-filter="birthday">Cumpleaños 30d</button>
-      </div>
-      <div class="ux-crm-layout">
-        <div class="ux-crm-list">
-          <div class="ux-crm-head"><span>Cliente</span><span>Puntos</span><span>Compras</span><span>Gasto</span><span>Última compra</span></div>
-          <div class="ux-crm-rows" id="uxCrmRows"><div class="ux-crm-empty">Cargando clientes…</div></div>
-        </div>
-        <aside class="ux-crm-detail" id="uxCrmDetail"></aside>
-      </div>`;
+    host.innerHTML=
+      '<div class="ux-crm-tools">'+
+        '<input class="ux-crm-search" id="uxCrmSearch" placeholder="Buscar por nombre o teléfono…">'+
+        '<select class="ux-crm-sort" id="uxCrmSort">'+
+          '<option value="spend">Mayor gasto</option>'+
+          '<option value="purchases">Más compras</option>'+
+          '<option value="recent">Compra más reciente</option>'+
+          '<option value="points">Más puntos</option>'+
+        '</select>'+
+      '</div>'+
+      '<div class="ux-crm-filters" id="uxCrmFilters">'+
+        '<button data-filter="all" class="active">Todos</button>'+
+        '<button data-filter="active">Activos 30d</button>'+
+        '<button data-filter="inactive">Inactivos +30d</button>'+
+        '<button data-filter="frequent">Frecuentes</button>'+
+        '<button data-filter="new">Nuevos 30d</button>'+
+        '<button data-filter="birthday">Cumpleaños 30d</button>'+
+      '</div>'+
+      '<div class="ux-crm-layout">'+
+        '<div class="ux-crm-list">'+
+          '<div class="ux-crm-head"><span>Cliente</span><span>Puntos</span><span>Compras</span><span>Gasto</span><span>Última compra</span></div>'+
+          '<div class="ux-crm-rows" id="uxCrmRows"><div class="ux-crm-empty">Cargando clientes…</div></div>'+
+        '</div>'+
+        '<aside class="ux-crm-detail" id="uxCrmDetail"></aside>'+
+      '</div>';
+
     card.appendChild(host);
 
     document.getElementById('uxCrmFilters').addEventListener('click',e=>{
-      const b=e.target.closest('button[data-filter]');if(!b)return;
+      const b=e.target.closest('button[data-filter]');
+      if(!b)return;
       crmFilter=b.dataset.filter;
       document.querySelectorAll('#uxCrmFilters button').forEach(x=>x.classList.toggle('active',x===b));
       renderCRM();
@@ -259,21 +213,27 @@
     document.getElementById('uxCrmSearch').addEventListener('input',renderCRM);
     document.getElementById('uxCrmSort').addEventListener('change',renderCRM);
     document.getElementById('uxCrmRows').addEventListener('click',e=>{
-      const row=e.target.closest('[data-uid]');if(!row)return;
-      crmSelected=row.dataset.uid;renderCRM();renderCRMDetail(crmSelected);
+      const row=e.target.closest('[data-uid]');
+      if(!row)return;
+      crmSelected=row.dataset.uid;
+      renderCRM();
+      renderCRMDetail(crmSelected);
     });
     document.getElementById('uxCrmDetail').addEventListener('click',handleCRMAction);
   }
 
   function filteredCRM(){
     let arr=[...crmData.customers];
-    const q=norm(document.getElementById('uxCrmSearch')?.value||'');
+    const search=document.getElementById('uxCrmSearch');
+    const q=norm(search?.value||'');
     if(q)arr=arr.filter(x=>norm(x.nome).includes(q)||String(x.telefone||'').includes(q)||norm(x.uid).includes(q));
+
     if(crmFilter==='active')arr=arr.filter(x=>x.status==='activo');
     if(crmFilter==='inactive')arr=arr.filter(x=>x.status==='inactivo');
     if(crmFilter==='frequent')arr=arr.filter(x=>Number(x.compras||0)>=3);
     if(crmFilter==='new')arr=arr.filter(x=>x.nuevo_30d);
     if(crmFilter==='birthday')arr=arr.filter(x=>x.aniversario_em_dias!=null&&x.aniversario_em_dias<=30);
+
     const sort=document.getElementById('uxCrmSort')?.value||'spend';
     if(sort==='spend')arr.sort((a,b)=>b.gasto_total-a.gasto_total);
     if(sort==='purchases')arr.sort((a,b)=>b.compras-a.compras);
@@ -283,19 +243,25 @@
   }
 
   function renderCRM(){
-    const box=document.getElementById('uxCrmRows');if(!box)return;
+    const box=document.getElementById('uxCrmRows');
+    if(!box)return;
     const arr=filteredCRM();
-    box.innerHTML=arr.length?arr.map(x=>{
+    if(!arr.length){
+      box.innerHTML='<div class="ux-crm-empty">No hay clientes para este filtro.</div>';
+      return;
+    }
+
+    box.innerHTML=arr.map(x=>{
       const cls=x.status==='activo'?'active':x.status==='inactivo'?'inactive':'none';
       const label=x.status==='activo'?'Activo':x.status==='inactivo'?'Inactivo':'Sin compras';
       return '<div class="ux-crm-row '+(crmSelected===x.uid?'selected':'')+'" data-uid="'+esc(x.uid)+'">'+
         '<div><b>'+esc(x.nome||'Sin nombre')+'</b><small>'+esc(x.telefone||x.uid)+'</small></div>'+
         '<div><b>'+Number(x.pontos||0)+'</b><small>pts</small></div>'+
-        '<div><b>'+Number(x.compras||0)+'</b><small>'+esc(x.ticket_medio?money(x.ticket_medio)+' ticket':'sin ticket')+'</small></div>'+
+        '<div><b>'+Number(x.compras||0)+'</b><small>'+(x.ticket_medio?money(x.ticket_medio)+' ticket':'sin ticket')+'</small></div>'+
         '<div class="ux-crm-money">'+money(x.gasto_total)+'</div>'+
         '<div><span class="ux-crm-status '+cls+'">'+label+'</span><small>'+agoLabel(x.dias_sem_comprar)+'</small></div>'+
       '</div>';
-    }).join(''):'<div class="ux-crm-empty">No hay clientes para este filtro.</div>';
+    }).join('');
   }
 
   function insightFor(x){
@@ -307,29 +273,32 @@
   }
 
   function renderCRMDetail(uid){
-    const box=document.getElementById('uxCrmDetail');if(!box)return;
-    const x=crmData.customers.find(c=>c.uid===uid);if(!x){box.classList.remove('show');return}
+    const box=document.getElementById('uxCrmDetail');
+    if(!box)return;
+    const x=crmData.customers.find(c=>c.uid===uid);
+    if(!x){box.classList.remove('show');return}
+
     box.classList.add('show');
     const bday=x.aniversario_em_dias==null?'—':x.aniversario_em_dias===0?'Hoy':x.aniversario_em_dias+' días';
-    box.innerHTML=`
-      <h4>${esc(x.nome||'Sin nombre')}</h4>
-      <div class="meta">${esc(x.telefone||'Sin teléfono')} · ${esc(x.uid)}</div>
-      <div class="ux-crm-stats">
-        <div class="ux-crm-stat"><small>Puntos</small><b>${Number(x.pontos||0)}</b></div>
-        <div class="ux-crm-stat"><small>Compras</small><b>${Number(x.compras||0)}</b></div>
-        <div class="ux-crm-stat"><small>Gasto total</small><b>${money(x.gasto_total)}</b></div>
-        <div class="ux-crm-stat"><small>Ticket medio</small><b>${money(x.ticket_medio)}</b></div>
-        <div class="ux-crm-stat"><small>Última compra</small><b style="font-size:11px">${agoLabel(x.dias_sem_comprar)}</b></div>
-        <div class="ux-crm-stat"><small>Cumpleaños</small><b style="font-size:11px">${bday}</b></div>
-      </div>
-      <div class="ux-crm-insight">💡 ${esc(insightFor(x))}</div>
-      <div class="ux-crm-actions">
-        <button class="btn-primary" data-crm-action="points" data-uid="${esc(x.uid)}">+ Puntos</button>
-        <button class="btn-secondary" data-crm-action="reward" data-uid="${esc(x.uid)}">Recompensa</button>
-        <button class="btn-secondary" data-crm-action="offer" data-uid="${esc(x.uid)}">Enviar oferta</button>
-        <button class="btn-secondary" data-crm-action="opinions" data-uid="${esc(x.uid)}">Opiniones</button>
-        <button class="btn-success wide" data-crm-action="whatsapp" data-uid="${esc(x.uid)}">WhatsApp</button>
-      </div>`;
+    box.innerHTML=
+      '<h4>'+esc(x.nome||'Sin nombre')+'</h4>'+
+      '<div class="meta">'+esc(x.telefone||'Sin teléfono')+' · '+esc(x.uid)+'</div>'+
+      '<div class="ux-crm-stats">'+
+        '<div class="ux-crm-stat"><small>Puntos</small><b>'+Number(x.pontos||0)+'</b></div>'+
+        '<div class="ux-crm-stat"><small>Compras</small><b>'+Number(x.compras||0)+'</b></div>'+
+        '<div class="ux-crm-stat"><small>Gasto total</small><b>'+money(x.gasto_total)+'</b></div>'+
+        '<div class="ux-crm-stat"><small>Ticket medio</small><b>'+money(x.ticket_medio)+'</b></div>'+
+        '<div class="ux-crm-stat"><small>Última compra</small><b style="font-size:11px">'+agoLabel(x.dias_sem_comprar)+'</b></div>'+
+        '<div class="ux-crm-stat"><small>Cumpleaños</small><b style="font-size:11px">'+bday+'</b></div>'+
+      '</div>'+
+      '<div class="ux-crm-insight">💡 '+esc(insightFor(x))+'</div>'+
+      '<div class="ux-crm-actions">'+
+        '<button class="btn-primary" data-crm-action="points" data-uid="'+esc(x.uid)+'">+ Puntos</button>'+
+        '<button class="btn-secondary" data-crm-action="reward" data-uid="'+esc(x.uid)+'">Recompensa</button>'+
+        '<button class="btn-secondary" data-crm-action="offer" data-uid="'+esc(x.uid)+'">Enviar oferta</button>'+
+        '<button class="btn-secondary" data-crm-action="opinions" data-uid="'+esc(x.uid)+'">Opiniones</button>'+
+        '<button class="btn-success wide" data-crm-action="whatsapp" data-uid="'+esc(x.uid)+'">WhatsApp</button>'+
+      '</div>';
   }
 
   async function selectUnderlyingClient(uid){
@@ -341,37 +310,63 @@
   }
 
   async function handleCRMAction(e){
-    const b=e.target.closest('[data-crm-action]');if(!b)return;
-    const x=crmData.customers.find(c=>c.uid===b.dataset.uid);if(!x)return;
+    const b=e.target.closest('[data-crm-action]');
+    if(!b)return;
+    const x=crmData.customers.find(c=>c.uid===b.dataset.uid);
+    if(!x)return;
+
     const action=b.dataset.crmAction;
     if(action==='whatsapp'){
       const digits=String(x.telefone||'').replace(/\D/g,'');
-      if(!digits)return alert('Este cliente no tiene teléfono.');
+      if(!digits){alert('Este cliente no tiene teléfono.');return}
       const phone=digits.length===10?'52'+digits:digits;
       window.open('https://wa.me/'+phone,'_blank','noopener');
       return;
     }
+
     await selectUnderlyingClient(x.uid);
+
     if(action==='points'){
       [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent)==='fidelidad')?.click();
       setTimeout(()=>{
-        const sections=sectionLabels('fidelidad'),target=sections.find(s=>norm(s.label).includes('agregar puntos'));
-        if(target){currentSection.fidelidad=target.key;renderToolbar('fidelidad')}
+        const sections=sectionLabels('fidelidad');
+        const target=sections.find(s=>norm(s.label).includes('agregar puntos'));
+        if(target){
+          currentSection.fidelidad=target.key;
+          renderToolbar('fidelidad');
+          applyMobileSection('fidelidad',target.key);
+        }
       },100);
+      return;
     }
+
     if(action==='reward'){
       [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent)==='recompensas')?.click();
+      return;
     }
+
     if(action==='offer'){
       [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent).includes('ofertas'))?.click();
       setTimeout(()=>{
-        const seg=document.getElementById('pushSegmento');if(seg){seg.value='cliente';seg.dispatchEvent(new Event('change'))}
-        const val=document.getElementById('pushValorSegmento');if(val)val.value=x.telefone||x.uid;
+        const seg=document.getElementById('pushSegmento');
+        if(seg){
+          seg.value='cliente';
+          seg.dispatchEvent(new Event('change'));
+        }
+        const val=document.getElementById('pushValorSegmento');
+        if(val)val.value=x.telefone||x.uid;
       },250);
+      return;
     }
+
     if(action==='opinions'){
-      const sections=sectionLabels('clientes'),target=sections.find(s=>norm(s.label).includes('opiniones'));
-      if(target){currentSection.clientes=target.key;renderToolbar('clientes');applyMobileSection('clientes',target.key)}
+      const sections=sectionLabels('clientes');
+      const target=sections.find(s=>norm(s.label).includes('opiniones'));
+      if(target){
+        currentSection.clientes=target.key;
+        renderToolbar('clientes');
+        applyMobileSection('clientes',target.key);
+      }
       setTimeout(()=>document.getElementById('reviewsFiltroCliente')?.click(),150);
     }
   }
@@ -381,29 +376,50 @@
     prepareCRM();
     try{
       const res=await fetch('/api/cliente?action=customers&admin=1&t='+Date.now(),{cache:'no-store'});
-      const data=await res.json();if(!res.ok)throw new Error(data.error||'Error');
-      crmData={customers:Array.isArray(data.customers)?data.customers:[],summary:data.summary||{}};
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+
+      crmData={
+        customers:Array.isArray(data.customers)?data.customers:[],
+        summary:data.summary||{}
+      };
       window.uaiCrmData=crmData;
       crmLoadedAt=Date.now();
+
       const s=crmData.summary;
-      const vals={uxClientTotal:s.total,uxClientActive30:s.activos_30d,uxClientInactive30:s.inactivos_30d,uxClientNew30:s.nuevos_30d};
-      Object.entries(vals).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v??'—'});
+      const vals={
+        uxClientTotal:s.total,
+        uxClientActive30:s.activos_30d,
+        uxClientInactive30:s.inactivos_30d,
+        uxClientNew30:s.nuevos_30d
+      };
+      Object.entries(vals).forEach(([id,v])=>{
+        const el=document.getElementById(id);
+        if(el)el.textContent=v??'—';
+      });
+
       renderCRM();
       if(crmSelected)renderCRMDetail(crmSelected);
     }catch(err){
-      const box=document.getElementById('uxCrmRows');if(box)box.innerHTML='<div class="ux-crm-empty">No se pudo cargar la base de clientes.</div>';
+      const box=document.getElementById('uxCrmRows');
+      if(box)box.innerHTML='<div class="ux-crm-empty">No se pudo cargar la base de clientes.</div>';
     }
   }
 
   function syncClientTotal(){
     const raw=document.getElementById('totalClientes')?.textContent||'';
     const m=raw.replace(/\./g,'').match(/\d+/);
-    document.getElementById('uxClientTotal').textContent=m?m[0]:'—';
+    const el=document.getElementById('uxClientTotal');
+    if(el&&!crmData.customers.length)el.textContent=m?m[0]:'—';
   }
+
   async function renderClientResult(){
     const result=document.getElementById('uxClientResult');
     try{
-      if(typeof clienteSelecionado==='undefined'||!clienteSelecionado){result?.classList.remove('show');return}
+      if(typeof clienteSelecionado==='undefined'||!clienteSelecionado){
+        result?.classList.remove('show');
+        return;
+      }
       document.getElementById('uxClientResultName').textContent=clienteSelecionado.nome||'Sin nombre';
       document.getElementById('uxClientResultMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · ID: '+(clienteSelecionado.uid||'—');
       document.getElementById('uxClientResultPoints').textContent=String(Number(clienteSelecionado.pontos||0));
@@ -413,8 +429,10 @@
       if(typeof window.actualizarOpinionesCliente==='function')window.actualizarOpinionesCliente();
     }catch(_){}
   }
+
   document.getElementById('uxClientSearch').onclick=async()=>{
-    const q=document.getElementById('uxClientLookup').value.trim();if(!q)return;
+    const q=document.getElementById('uxClientLookup').value.trim();
+    if(!q)return;
     const input=document.getElementById('clienteUid');
     if(!input||typeof buscarCliente!=='function')return;
     input.value=q;
@@ -423,27 +441,36 @@
     renderClientResult();
     setTimeout(renderClientResult,700);
   };
-  document.getElementById('uxClientQr').onclick=()=>{typeof abrirScannerQr==='function'&&abrirScannerQr()};
+
+  document.getElementById('uxClientQr').onclick=()=>{
+    if(typeof abrirScannerQr==='function')abrirScannerQr();
+  };
 
   function refreshCore(){
     syncClientTotal();
+    prepareCRM();
     const view=document.body.dataset.uxView;
-    if(!['clientes','fidelidad'].includes(view)) return;
+    if(view==='clientes')loadCRM();
+    if(!['clientes','fidelidad'].includes(view))return;
+
     const key=view+'|'+sectionLabels(view).map(s=>s.label).join('|');
     if(toolbar.dataset.renderKey!==key){
       renderToolbar(view);
       toolbar.dataset.renderKey=key;
     }
   }
+
   setInterval(refreshCore,1800);
 
   const bodyObserver=new MutationObserver(muts=>{
     if(muts.some(m=>m.attributeName==='data-ux-view')){
       const view=document.body.dataset.uxView;
       toolbar.dataset.renderKey='';
-      if(['clientes','fidelidad'].includes(view)) setTimeout(refreshCore,20);
+      if(['clientes','fidelidad'].includes(view))setTimeout(refreshCore,20);
     }
   });
   bodyObserver.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
+
   setTimeout(refreshCore,120);
+  setTimeout(()=>loadCRM(),500);
 })();
