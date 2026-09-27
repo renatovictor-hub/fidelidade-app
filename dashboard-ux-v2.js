@@ -42,7 +42,7 @@
       <button data-id="ordersAdmin"><span>🛵</span>Entregas</button>
       <button data-find="envío"><span>⚙</span>Configurar envío</button>
       <div class="ux-divider"></div>
-      <button data-soft="Relatórios"><span>▤</span>Relatórios</button>
+      <button data-soft="Reportes"><span>▤</span>Reportes</button>
       <button data-soft="Ajustes"><span>⚙</span>Ajustes</button>
     </nav>
     <div class="ux-side-foot"><b>Plataforma modular</b><small>Fidelidad como base · Delivery como módulo adicional. Preparado para futuras empresas e personalizaciones por tenant.</small></div>`;
