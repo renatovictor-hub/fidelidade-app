@@ -43,7 +43,13 @@
     #uxSettingsReviewsHost>.card h3{font-size:14px!important;color:#3a2a42!important;margin:0 0 12px!important}.ux-setting{display:flex;justify-content:space-between;gap:10px;padding:11px;border:1px solid #eee7f1;border-radius:11px;background:#faf8fb}.ux-setting b{font-size:13px}.ux-setting small{display:block;color:#625768;font-size:11px;margin-top:2px}
     .ux-toggle{font-size:11px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e9f8ef;color:#188b4f;align-self:center}
     .ux-toggle.off{background:#f3f3f3;color:#888}
-    .ux-qr-box{display:grid;place-items:center;min-height:210px;background:linear-gradient(135deg,#faf7fc,#f0e7f7);border:1px dashed #d9c6e5;border-radius:14px;margin-top:12px}.ux-qr-box .icon{font-size:64px}.ux-qr-box b{display:block;text-align:center;font-size:13px}.ux-qr-box small{display:block;text-align:center;color:#625768;font-size:12px;margin-top:5px}
+    .ux-qr-box{display:grid;place-items:center;min-height:180px;background:linear-gradient(135deg,#faf7fc,#f0e7f7);border:1px dashed #d9c6e5;border-radius:14px;margin-top:12px}.ux-qr-box .icon{font-size:54px}.ux-qr-box b{display:block;text-align:center;font-size:15px}.ux-qr-box small{display:block;text-align:center;color:#625768;font-size:12px;margin-top:5px}
+    .ux-caja-search{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:12px}.ux-caja-search input{min-width:0}.ux-caja-search button{width:auto!important}
+    .ux-caja-client{display:none;margin-top:12px;padding:14px;border:1px solid #e9ddeb;border-radius:14px;background:#fbf8fd}.ux-caja-client.show{display:block}
+    .ux-caja-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ux-caja-client-head h3{margin:0;font-size:20px;color:#34253c}.ux-caja-client-head p{margin:3px 0 0;font-size:12px;color:#685d6c}.ux-caja-points{font-size:24px;font-weight:900;color:#6a0dad}
+    .ux-caja-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.ux-caja-actions button{font-size:13px!important;min-height:44px!important}
+    .ux-caja-purchase{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end;margin-top:14px}.ux-caja-purchase label{display:block;font-weight:800;font-size:13px;margin-bottom:5px}.ux-caja-purchase input{min-height:44px}.ux-caja-preview{margin-top:8px;padding:10px 12px;background:#fff7d6;border-radius:10px;color:#6b5700;font-weight:800;font-size:13px}
+    .ux-caja-rewards{display:none;margin-top:12px}.ux-caja-rewards.show{display:block}.ux-caja-reward{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee7f1}.ux-caja-reward:last-child{border-bottom:0}.ux-caja-reward button{width:auto!important;min-width:100px!important}
 
     @media(max-width:1000px){.ux-span-8,.ux-span-7,.ux-span-6,.ux-span-5,.ux-span-4{grid-column:span 12}.ux-mini-kpis{grid-template-columns:repeat(2,1fr)}.ux-order-summary{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:780px){.ux-section-grid{display:block}.ux-panel{margin-bottom:9px;padding:13px;border-radius:14px}.ux-mini-kpis{grid-template-columns:1fr 1fr}.ux-kanban{grid-template-columns:repeat(5,82vw)}.ux-order-summary{grid-template-columns:1fr 1fr}.ux-tr{grid-template-columns:1fr}.ux-report-bars{height:140px}}
@@ -52,18 +58,18 @@
 
   const sidebar=document.getElementById('uxSidebar');
   const nav=sidebar?.querySelector('.ux-nav');
-  if(nav && ![...nav.querySelectorAll('button')].some(b=>b.textContent.includes('QR / Validación'))){
+  if(nav && ![...nav.querySelectorAll('button')].some(b=>b.textContent.includes('Caja Fidelidad'))){
     const fidelidadBtn=[...nav.querySelectorAll('button')].find(b=>b.textContent.includes('Fidelidad'));
     if(fidelidadBtn){
       const qr=document.createElement('button');
-      qr.innerHTML='<span>▦</span>QR / Validación';
+      qr.innerHTML='<span>▦</span>Caja Fidelidad';
       qr.dataset.uxCustom='qr';
       fidelidadBtn.insertAdjacentElement('afterend',qr);
     }
   }
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-  const TITLES={qr:['QR / Validación','Escanea, valida y consulta movimientos de fidelidad.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
+  const TITLES={qr:['Caja Fidelidad','Registra compras, suma puntos y canjea beneficios en el mostrador.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
 
   function setTitle(view){
     const t=TITLES[view];if(!t)return;
@@ -72,7 +78,7 @@
   }
   function setActive(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={qr:'QR / Validación',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
+    const map={qr:'Caja Fidelidad',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
   }
   function showVirtual(view){
@@ -82,8 +88,42 @@
   const anchor=document.querySelector('.main-container')||document.body.lastElementChild;
   const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML=`
     <div class="ux-section-grid">
-      <div class="ux-panel ux-span-7"><h2>Validación rápida</h2><p>Escanea el QR del cliente para abrir su perfil, saldo e historial.</p><div class="ux-qr-box"><div><div class="icon">▦</div><b>Scanner QR</b><small>Usa la cámara del dispositivo</small></div></div><div class="ux-actions-row"><button class="btn-primary" id="uxOpenScanner">📷 ABRIR SCANNER</button><button class="btn-secondary" id="uxGoClient">Buscar cliente</button></div></div>
-      <div class="ux-panel ux-span-5"><h2>Resumen de fidelidad</h2><p>Acceso rápido a las principales acciones del mostrador.</p><div class="ux-mini-kpis"><div class="ux-mini-kpi"><small>Clientes</small><b id="uxQrClients">—</b></div><div class="ux-mini-kpi"><small>Recompensas</small><b id="uxQrRewards">—</b></div><div class="ux-mini-kpi"><small>Cliente actual</small><b id="uxQrCurrent">—</b></div><div class="ux-mini-kpi"><small>Saldo actual</small><b id="uxQrPoints">—</b></div></div><div class="ux-delivery-note">La validación sigue usando las funciones actuales del sistema; esta pantalla solo organiza mejor la operación.</div></div>
+      <div class="ux-panel ux-span-8">
+        <h2>Caja Fidelidad</h2>
+        <p>Identifica al cliente y registra la compra sin salir de esta pantalla.</p>
+        <div class="ux-caja-search">
+          <input id="uxCajaLookup" placeholder="Teléfono o ID del cliente">
+          <button class="btn-secondary" id="uxCajaScanner">📷 QR</button>
+          <button class="btn-primary" id="uxCajaBuscar">BUSCAR</button>
+        </div>
+        <div class="ux-caja-client" id="uxCajaClient">
+          <div class="ux-caja-client-head">
+            <div><h3 id="uxCajaName">Cliente</h3><p id="uxCajaMeta">—</p></div>
+            <div class="ux-caja-points"><span id="uxCajaPoints">0</span> pts</div>
+          </div>
+          <div class="ux-caja-purchase">
+            <div><label>Valor de la compra (MXN)</label><input id="uxCajaPurchase" type="number" min="1" step="0.01" placeholder="Ej. 350"></div>
+            <button class="btn-primary" id="uxCajaConfirm">REGISTRAR COMPRA</button>
+          </div>
+          <div class="ux-caja-preview" id="uxCajaPreview">Ingresa el valor de la compra.</div>
+          <div class="ux-caja-actions">
+            <button class="btn-secondary" id="uxCajaRewards">🎁 Canjear recompensa</button>
+            <button class="btn-secondary" id="uxCajaBonus">⭐ Dar bono</button>
+          </div>
+          <div class="ux-caja-rewards" id="uxCajaRewardsList"></div>
+        </div>
+      </div>
+      <div class="ux-panel ux-span-4">
+        <h2>Operación rápida</h2>
+        <p>Esta es la pantalla que el personal usa durante la atención.</p>
+        <div class="ux-mini-kpis">
+          <div class="ux-mini-kpi"><small>Clientes</small><b id="uxQrClients">—</b></div>
+          <div class="ux-mini-kpi"><small>Recompensas</small><b id="uxQrRewards">—</b></div>
+          <div class="ux-mini-kpi"><small>Cliente actual</small><b id="uxQrCurrent">—</b></div>
+          <div class="ux-mini-kpi"><small>Saldo actual</small><b id="uxQrPoints">—</b></div>
+        </div>
+        <div class="ux-delivery-note">Flujo ideal: identificar → registrar compra → sumar puntos → canjear si corresponde.</div>
+      </div>
     </div>`;
   anchor.parentNode.insertBefore(qr,anchor);
 
@@ -186,14 +226,86 @@
     configureOrdersView();
   }
 
-  document.getElementById('uxOpenScanner').onclick=()=>{if(typeof abrirScannerQr==='function')abrirScannerQr()};
-  document.getElementById('uxGoClient').onclick=()=>{[...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)==='clientes')?.click()};
+  async function cajaSelectClient(value){
+    const input=document.getElementById('clienteUid');
+    if(!input||typeof buscarCliente!=='function')return false;
+    input.value=String(value||'').trim();
+    if(!input.value)return false;
+    await buscarCliente();
+    if(typeof clienteSelecionado==='undefined'||!clienteSelecionado)return false;
+    document.getElementById('uxCajaName').textContent=clienteSelecionado.nome||'Sin nombre';
+    document.getElementById('uxCajaMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · '+(clienteSelecionado.uid||'');
+    document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+    document.getElementById('uxCajaClient').classList.add('show');
+    document.getElementById('uxQrCurrent').textContent=clienteSelecionado.nome||clienteSelecionado.telefone||'Cliente';
+    document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+    return true;
+  }
+
+  async function cajaLoadRewards(){
+    const box=document.getElementById('uxCajaRewardsList');
+    box.classList.add('show');
+    box.innerHTML='<div class="ux-crm-empty">Cargando recompensas…</div>';
+    try{
+      const res=await fetch('/api/recompensas?t='+Date.now(),{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+      const items=(Array.isArray(data.recompensas)?data.recompensas:[]).filter(i=>i.ativa!==false);
+      box.innerHTML=items.length?items.map(i=>
+        '<div class="ux-caja-reward"><div><b>'+String(i.nome||'Recompensa')+'</b><small>'+Number(i.pontos||0)+' pts</small></div>'+
+        '<button class="btn-success" data-caja-redeem="'+String(i.id)+'" data-name="'+String(i.nome||'Recompensa').replace(/"/g,'&quot;')+'" data-points="'+Number(i.pontos||0)+'">CANJEAR</button></div>'
+      ).join(''):'<div class="ux-crm-empty">No hay recompensas activas.</div>';
+      box.querySelectorAll('[data-caja-redeem]').forEach(btn=>{
+        btn.onclick=async()=>{
+          if(typeof window.resgatarRecompensa!=='function')return alert('No se pudo abrir el canje.');
+          await window.resgatarRecompensa(btn.dataset.cajaRedeem,btn.dataset.name,Number(btn.dataset.points),btn);
+          if(typeof clienteSelecionado!=='undefined'&&clienteSelecionado){
+            document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+            document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+          }
+        };
+      });
+    }catch(_){box.innerHTML='<div class="ux-crm-empty">No se pudieron cargar las recompensas.</div>'}
+  }
+
+  window.openCajaFidelidadForClient=async function(uid){
+    showVirtual('qr');
+    document.getElementById('uxCajaLookup').value=uid||'';
+    await cajaSelectClient(uid);
+    setTimeout(()=>document.getElementById('uxCajaPurchase')?.focus(),50);
+  };
+
+  document.getElementById('uxCajaBuscar').onclick=()=>cajaSelectClient(document.getElementById('uxCajaLookup').value);
+  document.getElementById('uxCajaLookup').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('uxCajaBuscar').click()});
+  document.getElementById('uxCajaScanner').onclick=()=>{if(typeof abrirScannerQr==='function')abrirScannerQr()};
+  document.getElementById('uxCajaPurchase').addEventListener('input',e=>{
+    const amount=Number(e.target.value||0);
+    document.getElementById('uxCajaPreview').textContent=amount>0?'⭐ '+Math.floor(amount/10)+' puntos':'Ingresa el valor de la compra.';
+  });
+  document.getElementById('uxCajaConfirm').onclick=async()=>{
+    if(typeof clienteSelecionado==='undefined'||!clienteSelecionado)return alert('Primero identifica al cliente.');
+    const amount=Number(document.getElementById('uxCajaPurchase').value||0);
+    if(!amount||amount<=0)return alert('Ingresa un valor de compra válido.');
+    const hidden=document.getElementById('valorCompra');
+    if(hidden)hidden.value=String(amount);
+    if(typeof calcularPontosCompra==='function')calcularPontosCompra();
+    if(typeof creditarPontos!=='function')return alert('No se pudo registrar la compra.');
+    await creditarPontos();
+    document.getElementById('uxCajaPurchase').value='';
+    document.getElementById('uxCajaPreview').textContent='Compra registrada.';
+    document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+    document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+  };
+  document.getElementById('uxCajaRewards').onclick=cajaLoadRewards;
+  document.getElementById('uxCajaBonus').onclick=()=>{
+    [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)==='fidelidad')?.click();
+  };
 
   document.addEventListener('click',e=>{
     const b=e.target.closest('#uxSidebar .ux-nav button');if(!b)return;
     const txt=norm(b.textContent);
     let view=null;
-    if(b.dataset.uxCustom==='qr'||txt==='qr / validacion')view='qr';
+    if(b.dataset.uxCustom==='qr'||txt==='caja fidelidad')view='qr';
     else if(txt==='configurar envio')view='envio';
     else if(txt==='reportes')view='reportes';
     else if(txt==='ajustes')view='ajustes';
