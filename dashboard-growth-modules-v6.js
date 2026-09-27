@@ -5,9 +5,17 @@
   style.id='uxGrowthModulesV6Styles';
   style.textContent=`
     #uxGrowthToolbar{display:none;max-width:1180px;margin:0 auto 12px;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:10px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
-    #uxGrowthToolbar .tabs{display:flex;gap:7px;flex-wrap:wrap}
-    #uxGrowthToolbar button{width:auto!important;border:0!important;background:#f5f1f7!important;color:#6e6074!important;padding:9px 12px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important}
-    #uxGrowthToolbar button.active{background:#6a0dad!important;color:#fff!important}
+    #uxGrowthToolbar .tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+    #uxGrowthToolbar button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:11px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
+    #uxGrowthToolbar button:hover{transform:translateY(-1px);border-color:#d8c1e8!important}
+    #uxGrowthToolbar button.active{background:linear-gradient(135deg,#6a0dad,#8a35cf)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px rgba(106,13,173,.18)}
+    #uxGrowthToolbar button::after{content:'›';float:right;font-size:16px;line-height:10px;opacity:.65}
+    #uxGrowthToolbar button.active::after{content:'⌄'}
+    .ux-list-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:8px 9px;background:#faf8fb;border:1px solid #eee7f1;border-radius:10px}
+    .ux-list-tools small{color:#827688;font-size:9px;font-weight:800}
+    .ux-list-tools select{width:auto!important;padding:7px 28px 7px 9px!important;font-size:10px!important;border-radius:8px!important}
+    .ux-scroll-list{max-height:480px;overflow:auto;padding-right:4px;scrollbar-width:thin}
+    .ux-scroll-list::-webkit-scrollbar{width:7px}.ux-scroll-list::-webkit-scrollbar-thumb{background:#d9cbe1;border-radius:999px}
     #uxGrowthToolbar .meta{display:none!important}
 
     body.ux3[data-ux-view="recompensas"] #uxGrowthToolbar,body.ux3[data-ux-view="ofertas"] #uxGrowthToolbar{display:block}
@@ -50,8 +58,10 @@
       .ux-offer-hero{grid-template-columns:1fr}
     }
     @media(max-width:780px){
-      #uxGrowthToolbar{margin:0 0 8px;padding:7px;overflow-x:auto;border-radius:14px}
-      #uxGrowthToolbar .tabs{flex-wrap:nowrap;min-width:max-content}#uxGrowthToolbar .meta{display:none}
+      #uxGrowthToolbar{margin:0 0 8px;padding:7px;border-radius:14px}
+      #uxGrowthToolbar .tabs{grid-template-columns:1fr 1fr;min-width:0}
+      #uxGrowthToolbar button{padding:11px 10px!important;font-size:10px!important}#uxGrowthToolbar .meta{display:none}
+      .ux-scroll-list{max-height:58vh}
       .ux-offer-hero{margin:0 0 8px}
       body.ux3[data-ux-view="recompensas"] .ux-reward-shell{display:block}
       body.ux3[data-ux-view="recompensas"] .ux-reward-panel{display:none}
@@ -147,6 +157,35 @@
     if(a)a.textContent=String(active);if(e)e.textContent=String(expired);if(p)p.textContent=String(push);
   }
 
+  function ensureListTools(){
+    const configs=[
+      {id:'listaExpiradas',label:'promociones expiradas',key:'expired'},
+      {id:'pushHistoricoLista',label:'notificaciones',key:'push'}
+    ];
+    configs.forEach(cfg=>{
+      const list=document.getElementById(cfg.id);
+      if(!list||list.dataset.uxLimited)return;
+      list.dataset.uxLimited='1';
+      list.classList.add('ux-scroll-list');
+      const tools=document.createElement('div');
+      tools.className='ux-list-tools';
+      tools.innerHTML='<small></small><select aria-label="Cantidad a mostrar"><option value="5">Últimas 5</option><option value="10">Últimas 10</option><option value="all">Todas</option></select>';
+      list.parentNode.insertBefore(tools,list);
+      const label=tools.querySelector('small'),select=tools.querySelector('select');
+      const apply=()=>{
+        const items=[...list.children].filter(x=>x.nodeType===1);
+        const limit=select.value==='all'?items.length:Number(select.value||5);
+        items.forEach((el,i)=>el.style.display=i<limit?'':'none');
+        label.textContent=items.length+' '+cfg.label;
+        list.style.maxHeight=select.value==='all'?'480px':'none';
+        list.style.overflowY=select.value==='all'?'auto':'visible';
+      };
+      select.addEventListener('change',apply);
+      const mo=new MutationObserver(apply);mo.observe(list,{childList:true});
+      setTimeout(apply,100);
+    });
+  }
+
   function render(view){
     prepareRewards();prepareBirthday();prepareOffers();
     const tabs=toolbar.querySelector('.tabs'),meta=toolbar.querySelector('.meta');
@@ -163,12 +202,12 @@
       tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.growth===sub));
     } else if(view==='ofertas'){
       let sub=document.body.dataset.growthSub||'crear';if(!['crear','activas','expiradas','historial'].includes(sub))sub='crear';
-      tabs.innerHTML='<button data-growth="crear">Nueva campaña</button><button data-growth="activas">Activas</button><button data-growth="expiradas">Expiradas</button><button data-growth="historial">Historial</button>';
+      tabs.innerHTML='<button data-growth="crear">1 · Enviar Push / campaña</button><button data-growth="activas">2 · Ofertas activas</button><button data-growth="expiradas">3 · Expiradas</button><button data-growth="historial">4 · Historial Push</button>';
       meta.innerHTML='<span>🔔 Push</span><span>🎯 Segmentación</span><span>🔥 Promociones</span><span>🕘 Histórico</span>';
       cards('ofertas').forEach(c=>c.classList.toggle('ux-growth-active',c.dataset.growthSection===sub));
       tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.growth===sub));
     }
-    rewardMetrics();offerMetrics();
+    rewardMetrics();offerMetrics();ensureListTools();
   }
 
   toolbar.addEventListener('click',e=>{
@@ -188,7 +227,7 @@
   attrObs.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
 
   function refreshGrowth(){
-    prepareRewards();prepareBirthday();prepareOffers();rewardMetrics();offerMetrics();
+    prepareRewards();prepareBirthday();prepareOffers();rewardMetrics();offerMetrics();ensureListTools();
     const view=document.body.dataset.uxView;
     if(!['recompensas','ofertas'].includes(view)) return;
     if(toolbar.dataset.renderView!==view){
