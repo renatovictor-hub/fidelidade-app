@@ -19,14 +19,14 @@ frame.addEventListener('load',()=>{
     ['/bonus-pontos-admin.js?v=20260831-1','bonusPontosAdminScript'],
     ['/referidos-admin.js?v=20260831-1','referidosAdminScript'],
     ['/niveles-vip-admin.js?v=20260831-1','nivelesVipAdminScript'],
-    ['/reviews-admin.js?v=20260831-1','reviewsAdminScript'],
+    ['/reviews-admin.js?v=20260927-reorg1','reviewsAdminScript'],
     ['/pedidos-admin.js?v=20260913-2','pedidosAdminScript'],
     ['/dashboard-ux-v2.js?v=20260927-audit2','dashboardUxV2Script'],
-    ['/dashboard-navigation-v3.js?v=20260927-audit2','dashboardNavigationV3Script'],
+    ['/dashboard-navigation-v3.js?v=20260927-reorg1','dashboardNavigationV3Script'],
     ['/dashboard-overview-v4.js?v=20260927-audit2','dashboardOverviewV4Script'],
-    ['/dashboard-core-modules-v5.js?v=20260927-audit2','dashboardCoreModulesV5Script'],
-    ['/dashboard-growth-modules-v6.js?v=20260927-audit1','dashboardGrowthModulesV6Script'],
-    ['/dashboard-final-modules-v7.js?v=20260927-audit2','dashboardFinalModulesV7Script']
+    ['/dashboard-core-modules-v5.js?v=20260927-reorg2','dashboardCoreModulesV5Script'],
+    ['/dashboard-growth-modules-v6.js?v=20260927-reorg2','dashboardGrowthModulesV6Script'],
+    ['/dashboard-final-modules-v7.js?v=20260927-reorg1','dashboardFinalModulesV7Script']
   ];
   scripts.forEach(([src,id])=>{if(d.getElementById(id))return;const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s);});
 });
