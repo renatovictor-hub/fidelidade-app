@@ -1052,7 +1052,27 @@ async function buscarCliente() {
             pontos:
                 Number(
                     cliente.pontos || 0
-                )
+                ),
+
+            pontos_acumulados:
+                Number(
+                    cliente.pontos_acumulados ?? cliente.pontos ?? 0
+                ),
+
+            nascimento:
+                cliente.nascimento || "",
+
+            created_at:
+                cliente.created_at || "",
+
+            ultima_compra:
+                cliente.ultima_compra || "",
+
+            feedback_last_purchase:
+                cliente.feedback_last_purchase || "",
+
+            google_review_clicked:
+                cliente.google_review_clicked === true
 
         };
 
