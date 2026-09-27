@@ -53,6 +53,8 @@
       body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show{display:none!important}
       body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show.ux-growth-active{display:block!important}
       .ux-offer-hero{margin:0 0 8px}
+      body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show{display:none!important}
+      body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show.ux-growth-active{display:block!important}
       body.ux3[data-ux-view="recompensas"] .ux-reward-shell{display:block}
       body.ux3[data-ux-view="recompensas"] .ux-reward-panel{display:none}
       body.ux3[data-ux-view="recompensas"][data-growth-sub="crear"] .ux-reward-panel.create,body.ux3[data-ux-view="recompensas"]:not([data-growth-sub]) .ux-reward-panel.create{display:block}
@@ -117,6 +119,13 @@
     ['promociones expiradas','expiradas'],
     ['historial de notificaciones','historial']
   ];
+  function prepareBirthday(){
+    cards('recompensas').forEach(c=>{
+      if(norm(title(c)).includes('cumpleanos'))c.dataset.growthSection='cumpleanos';
+      else if(norm(title(c)).includes('recompensas'))c.dataset.growthSection='recompensas';
+    });
+  }
+
   function prepareOffers(){
     cards('ofertas').forEach(c=>{
       const t=norm(title(c));
@@ -141,12 +150,18 @@
   }
 
   function render(view){
-    prepareRewards();prepareOffers();
+    prepareRewards();prepareBirthday();prepareOffers();
     const tabs=toolbar.querySelector('.tabs'),meta=toolbar.querySelector('.meta');
     if(view==='recompensas'){
-      const sub=document.body.dataset.growthSub||'crear';
-      tabs.innerHTML='<button data-growth="crear">Crear recompensa</button><button data-growth="catalogo">Catálogo</button>';
-      meta.innerHTML='<span>🎁 Beneficios</span><span>⭐ Puntos configurables</span><span>✅ Activar / desactivar</span><span>🧾 Canje por cliente</span>';
+      let sub=document.body.dataset.growthSub||'crear';
+      if(!['crear','catalogo','cumpleanos'].includes(sub))sub='crear';
+      tabs.innerHTML='<button data-growth="crear">Crear recompensa</button><button data-growth="catalogo">Catálogo</button><button data-growth="cumpleanos">Cumpleaños</button>';
+      meta.innerHTML='<span>🎁 Beneficios</span><span>⭐ Puntos configurables</span><span>🎂 Cumpleaños</span><span>🧾 Canje por cliente</span>';
+      const rewardCard=cards('recompensas').find(c=>c.dataset.growthSection==='recompensas');
+      const birthdayCard=cards('recompensas').find(c=>c.dataset.growthSection==='cumpleanos');
+      if(rewardCard)rewardCard.classList.toggle('ux-growth-active',sub==='crear'||sub==='catalogo');
+      if(birthdayCard)birthdayCard.classList.toggle('ux-growth-active',sub==='cumpleanos');
+      document.body.dataset.growthSub=sub;
       tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.growth===sub));
     } else if(view==='ofertas'){
       let sub=document.body.dataset.growthSub||'crear';if(!['crear','activas','expiradas','historial'].includes(sub))sub='crear';
@@ -175,7 +190,7 @@
   attrObs.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
 
   function refreshGrowth(){
-    prepareRewards();prepareOffers();rewardMetrics();offerMetrics();
+    prepareRewards();prepareBirthday();prepareOffers();rewardMetrics();offerMetrics();
     const view=document.body.dataset.uxView;
     if(!['recompensas','ofertas'].includes(view)) return;
     if(toolbar.dataset.renderView!==view){
