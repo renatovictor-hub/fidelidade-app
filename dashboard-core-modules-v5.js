@@ -17,7 +17,7 @@
     body.ux3[data-ux-view="clientes"] .main-container .card.ux-featured,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-featured{grid-column:1/-1}
     body.ux3 .card .ux-card-kicker{display:block;color:#8d8093;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;margin:-4px 0 10px}
     body.ux3 .card.ux-hide-subsection{display:none!important}
-    .ux-client-hero{display:none;max-width:1180px;margin:0 auto 12px;grid-template-columns:1.15fr .85fr;gap:12px}
+    .ux-client-hero{display:none;max-width:1180px;margin:0 auto 12px;grid-template-columns:1fr;gap:12px}
     body.ux3[data-ux-view="clientes"][data-client-sub="base"] .ux-client-hero{display:grid}
     .ux-client-panel{background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:17px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-client-panel h2{margin:0 0 6px;font-size:20px;color:#302337}.ux-client-panel p{margin:0 0 14px;font-size:13px;color:#675c6b;line-height:1.55}
@@ -48,7 +48,12 @@
     .ux-client-result{display:none;grid-column:1/-1;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:16px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-client-result.show{display:block}.ux-client-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ux-client-result h3{margin:0!important;color:#35273c!important;font-size:17px!important}
     .ux-client-result-meta{font-size:13px;color:#655b69;margin-top:4px}.ux-client-result-points{background:#f2e8f7;color:#6a0dad;font-weight:900;border-radius:12px;padding:9px 11px;white-space:nowrap}
-    .ux-client-history{margin-top:12px;border-top:1px solid #eee7f1;padding-top:12px}.ux-client-history-title{font-size:12px;font-weight:900;color:#6a0dad;margin-bottom:7px}
+    .ux-history-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(30,18,36,.55);backdrop-filter:blur(3px);padding:24px;align-items:center;justify-content:center}
+    .ux-history-overlay.show{display:flex}.ux-history-modal{width:min(820px,96vw);max-height:82vh;background:#fff;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
+    .ux-history-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #eee7f1}
+    .ux-history-head h3{margin:0;font-size:20px!important}.ux-history-close{width:42px!important;height:42px!important;min-height:42px!important;border:0!important;border-radius:12px!important;background:#f2edf5!important;color:#5f4c67!important;font-size:20px!important;cursor:pointer}
+    .ux-history-body{padding:16px 18px;overflow:auto;font-size:13px;line-height:1.5}
+    .ux-history-body .movimiento{font-size:13px!important}
     @media(max-width:900px){
       body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{grid-template-columns:1fr!important}
       .ux-client-hero{grid-template-columns:1fr}.ux-crm-layout{grid-template-columns:1fr}.ux-crm-detail{position:static}.ux-crm-head,.ux-crm-row{grid-template-columns:minmax(130px,1.4fr) .6fr .7fr .8fr}.ux-crm-head span:nth-child(5),.ux-crm-row>div:nth-child(5){display:none}
@@ -72,15 +77,6 @@
   clientHero.className = 'ux-client-hero';
   clientHero.innerHTML = `
     <div class="ux-client-panel">
-      <h2>Buscar cliente</h2>
-      <p>Encuentra un cliente por teléfono o ID, o escanea su QR.</p>
-      <div class="ux-client-searchline">
-        <input id="uxClientLookup" placeholder="Teléfono o ID del cliente">
-        <button class="btn-secondary" id="uxClientQr" type="button">📷 <span class="label">QR</span></button>
-        <button class="btn-primary ux-client-search-btn" id="uxClientSearch" type="button">BUSCAR CLIENTE</button>
-      </div>
-    </div>
-    <div class="ux-client-panel">
       <h2>Salud de la base</h2>
       <p>Quién está comprando y quién necesita una acción.</p>
       <div class="ux-client-summary-grid">
@@ -90,15 +86,16 @@
         <div><small>Nuevos 30d</small><b id="uxClientNew30">—</b></div>
       </div>
     </div>
-    <div class="ux-client-result" id="uxClientResult">
-      <div class="ux-client-result-head">
-        <div><h3 id="uxClientResultName">Cliente</h3><div class="ux-client-result-meta" id="uxClientResultMeta"></div></div>
-        <div class="ux-client-result-points"><span id="uxClientResultPoints">0</span> pts</div>
-      </div>
-      <div class="ux-client-history"><div class="ux-client-history-title">HISTORIAL RECIENTE</div><div id="uxClientResultHistory">Sin movimientos.</div></div>
-    </div>
   `;
   main.parentNode.insertBefore(clientHero, main);
+
+  const historyOverlay=document.createElement('div');
+  historyOverlay.className='ux-history-overlay';
+  historyOverlay.id='uxHistoryOverlay';
+  historyOverlay.innerHTML='<div class="ux-history-modal" role="dialog" aria-modal="true" aria-labelledby="uxHistoryTitle"><div class="ux-history-head"><h3 id="uxHistoryTitle">Historial del cliente</h3><button class="ux-history-close" type="button" aria-label="Cerrar">×</button></div><div class="ux-history-body" id="uxHistoryBody">Cargando…</div></div>';
+  document.body.appendChild(historyOverlay);
+  historyOverlay.addEventListener('click',e=>{if(e.target===historyOverlay||e.target.closest('.ux-history-close'))historyOverlay.classList.remove('show')});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')historyOverlay.classList.remove('show')});
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
   function visibleCards(view){
@@ -183,7 +180,7 @@ let crmData={customers:[],summary:{}};
     host.className='ux-crm';
     host.innerHTML=
       '<div class="ux-crm-tools">'+
-        '<input class="ux-crm-search" id="uxCrmSearch" placeholder="Buscar por nombre o teléfono…">'+
+        '<input class="ux-crm-search" id="uxCrmSearch" placeholder="Buscar cliente por nombre, teléfono o ID…">'+
         '<select class="ux-crm-sort" id="uxCrmSort">'+
           '<option value="spend">Mayor gasto</option>'+
           '<option value="purchases">Más compras</option>'+
@@ -303,7 +300,8 @@ let crmData={customers:[],summary:{}};
         '<button class="btn-secondary" data-crm-action="reward" data-uid="'+esc(x.uid)+'">Recompensa</button>'+
         '<button class="btn-secondary" data-crm-action="offer" data-uid="'+esc(x.uid)+'">Enviar oferta</button>'+
         '<button class="btn-secondary" data-crm-action="opinions" data-uid="'+esc(x.uid)+'">Opiniones</button>'+
-        '<button class="btn-success wide" data-crm-action="whatsapp" data-uid="'+esc(x.uid)+'">WhatsApp</button>'+
+        '<button class="btn-secondary" data-crm-action="history" data-uid="'+esc(x.uid)+'">Ver historial</button>'+
+        '<button class="btn-success" data-crm-action="whatsapp" data-uid="'+esc(x.uid)+'">WhatsApp</button>'+
       '</div>';
   }
 
@@ -365,6 +363,16 @@ let crmData={customers:[],summary:{}};
       return;
     }
 
+    if(action==='history'){
+      await selectUnderlyingClient(x.uid);
+      const body=document.getElementById('uxHistoryBody');
+      const src=document.getElementById('clienteHistorico');
+      document.getElementById('uxHistoryTitle').textContent='Historial · '+(x.nome||x.telefone||'Cliente');
+      body.innerHTML=src?.innerHTML||'<div class="ux-crm-empty">Sin movimientos.</div>';
+      document.getElementById('uxHistoryOverlay').classList.add('show');
+      return;
+    }
+
     if(action==='opinions'){
       const sections=sectionLabels('clientes');
       const target=sections.find(s=>norm(s.label).includes('opiniones'));
@@ -418,39 +426,6 @@ let crmData={customers:[],summary:{}};
     const el=document.getElementById('uxClientTotal');
     if(el&&!crmData.customers.length)el.textContent=m?m[0]:'—';
   }
-
-  async function renderClientResult(){
-    const result=document.getElementById('uxClientResult');
-    try{
-      if(typeof clienteSelecionado==='undefined'||!clienteSelecionado){
-        result?.classList.remove('show');
-        return;
-      }
-      document.getElementById('uxClientResultName').textContent=clienteSelecionado.nome||'Sin nombre';
-      document.getElementById('uxClientResultMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · ID: '+(clienteSelecionado.uid||'—');
-      document.getElementById('uxClientResultPoints').textContent=String(Number(clienteSelecionado.pontos||0));
-      const src=document.getElementById('clienteHistorico');
-      document.getElementById('uxClientResultHistory').innerHTML=src?.innerHTML||'Sin movimientos.';
-      result?.classList.add('show');
-      if(typeof window.actualizarOpinionesCliente==='function')window.actualizarOpinionesCliente();
-    }catch(_){}
-  }
-
-  document.getElementById('uxClientSearch').onclick=async()=>{
-    const q=document.getElementById('uxClientLookup').value.trim();
-    if(!q)return;
-    const input=document.getElementById('clienteUid');
-    if(!input||typeof buscarCliente!=='function')return;
-    input.value=q;
-    await buscarCliente();
-    await new Promise(r=>setTimeout(r,250));
-    renderClientResult();
-    setTimeout(renderClientResult,700);
-  };
-
-  document.getElementById('uxClientQr').onclick=()=>{
-    if(typeof abrirScannerQr==='function')abrirScannerQr();
-  };
 
   function refreshCore(){
     syncClientTotal();
