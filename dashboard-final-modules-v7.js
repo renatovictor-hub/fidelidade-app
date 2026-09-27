@@ -60,7 +60,7 @@
   }
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-  const TITLES={qr:['QR / Validación','Escanea, valida y consulta movimientos de fidelidad.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Relatórios','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
+  const TITLES={qr:['QR / Validación','Escanea, valida y consulta movimientos de fidelidad.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
 
   function setTitle(view){
     const t=TITLES[view];if(!t)return;
@@ -69,7 +69,7 @@
   }
   function setActive(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={qr:'QR / Validación',envio:'Configurar envío',reportes:'Relatórios',ajustes:'Ajustes'};
+    const map={qr:'QR / Validación',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
   }
   function showVirtual(view){
@@ -79,31 +79,31 @@
   const anchor=document.querySelector('.main-container')||document.body.lastElementChild;
   const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML=`
     <div class="ux-section-grid">
-      <div class="ux-panel ux-span-7"><h2>Validação rápida</h2><p>Escaneie o QR do cliente para abrir seu cadastro, saldo e histórico.</p><div class="ux-qr-box"><div><div class="icon">▦</div><b>Scanner QR</b><small>Usa a câmera do dispositivo</small></div></div><div class="ux-actions-row"><button class="btn-primary" id="uxOpenScanner">📷 ABRIR SCANNER</button><button class="btn-secondary" id="uxGoClient">Buscar cliente</button></div></div>
-      <div class="ux-panel ux-span-5"><h2>Resumo de fidelidade</h2><p>Acesso rápido às principais ações do balcão.</p><div class="ux-mini-kpis"><div class="ux-mini-kpi"><small>Clientes</small><b id="uxQrClients">—</b></div><div class="ux-mini-kpi"><small>Recompensas</small><b id="uxQrRewards">—</b></div><div class="ux-mini-kpi"><small>Cliente atual</small><b id="uxQrCurrent">—</b></div><div class="ux-mini-kpi"><small>Saldo atual</small><b id="uxQrPoints">—</b></div></div><div class="ux-delivery-note">A validação continua usando as funções atuais do sistema; esta tela só organiza melhor a operação.</div></div>
+      <div class="ux-panel ux-span-7"><h2>Validación rápida</h2><p>Escanea el QR del cliente para abrir su perfil, saldo e historial.</p><div class="ux-qr-box"><div><div class="icon">▦</div><b>Scanner QR</b><small>Usa la cámara del dispositivo</small></div></div><div class="ux-actions-row"><button class="btn-primary" id="uxOpenScanner">📷 ABRIR SCANNER</button><button class="btn-secondary" id="uxGoClient">Buscar cliente</button></div></div>
+      <div class="ux-panel ux-span-5"><h2>Resumen de fidelidad</h2><p>Acceso rápido a las principales acciones del mostrador.</p><div class="ux-mini-kpis"><div class="ux-mini-kpi"><small>Clientes</small><b id="uxQrClients">—</b></div><div class="ux-mini-kpi"><small>Recompensas</small><b id="uxQrRewards">—</b></div><div class="ux-mini-kpi"><small>Cliente actual</small><b id="uxQrCurrent">—</b></div><div class="ux-mini-kpi"><small>Saldo actual</small><b id="uxQrPoints">—</b></div></div><div class="ux-delivery-note">La validación sigue usando las funciones actuales del sistema; esta pantalla solo organiza mejor la operación.</div></div>
     </div>`;
   anchor.parentNode.insertBefore(qr,anchor);
 
   const envio=document.createElement('section');envio.id='uxDeliverySettingsView';envio.className='ux-virtual-view';envio.innerHTML=`
     <div class="ux-section-grid">
-      <div class="ux-panel ux-span-8"><h2>Tarifas por distância</h2><p>Regras atuais usadas pelo checkout.</p><div class="ux-table"><div class="ux-tr"><b>0 – 2,5 km</b><span>Faixa base</span><span class="ux-chip">$40</span></div><div class="ux-tr"><b>2,6 – 4 km</b><span>Faixa 2</span><span class="ux-chip">$50</span></div><div class="ux-tr"><b>4,1 – 5,5 km</b><span>Faixa 3</span><span class="ux-chip">$60</span></div><div class="ux-tr"><b>5,6 – 7 km</b><span>Faixa 4</span><span class="ux-chip">$70</span></div><div class="ux-tr"><b>7,1 – 10 km</b><span>Faixa 5</span><span class="ux-chip">$80</span></div><div class="ux-tr"><b>Acima de 10 km</b><span>$10 por km iniciado</span><span class="ux-chip">$80 + extra</span></div></div></div>
-      <div class="ux-panel ux-span-4"><h2>Recargos</h2><p>Condições especiais da operação.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Bonfil</b><small>Recargo automático</small></div><span class="ux-toggle">+$20</span></div><div class="ux-setting"><div><b>Plaza comercial</b><small>Marcado no checkout</small></div><span class="ux-toggle">+$20</span></div><div class="ux-setting"><div><b>Fora do horário</b><small>08:00–23:00</small></div><span class="ux-toggle">+$20</span></div><div class="ux-setting"><div><b>Chuva</b><small>Controlado por configuração</small></div><span class="ux-toggle">+$10</span></div></div></div>
-      <div class="ux-panel ux-span-12"><h2>Residenciais e acesso</h2><p>O checkout já registra residencial, necessidade de QR e instruções de acesso. Esta área fica preparada para futuramente salvar regras recorrentes por residencial.</p></div>
+      <div class="ux-panel ux-span-8"><h2>Tarifas por distancia</h2><p>Reglas actuales usadas por el checkout.</p><div class="ux-table"><div class="ux-tr"><b>0 – 2,5 km</b><span>Tarifa base</span><span class="ux-chip">$40</span></div><div class="ux-tr"><b>2,6 – 4 km</b><span>Tarifa 2</span><span class="ux-chip">$50</span></div><div class="ux-tr"><b>4,1 – 5,5 km</b><span>Tarifa 3</span><span class="ux-chip">$60</span></div><div class="ux-tr"><b>5,6 – 7 km</b><span>Tarifa 4</span><span class="ux-chip">$70</span></div><div class="ux-tr"><b>7,1 – 10 km</b><span>Tarifa 5</span><span class="ux-chip">$80</span></div><div class="ux-tr"><b>Más de 10 km</b><span>$10 por km iniciado</span><span class="ux-chip">$80 + extra</span></div></div></div>
+      <div class="ux-panel ux-span-4"><h2>Recargos</h2><p>Condiciones especiales de la operación.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Bonfil</b><small>Recargo automático</small></div><span class="ux-toggle">+$20</span></div><div class="ux-setting"><div><b>Plaza comercial</b><small>Marcado en el checkout</small></div><span class="ux-toggle">+$20</span></div><div class="ux-setting"><div><b>Fuera de horario</b><small>08:00–23:00</small></div><span class="ux-toggle">+$20</span></div><div class="ux-setting"><div><b>Chuva</b><small>Controlado por configuración</small></div><span class="ux-toggle">+$10</span></div></div></div>
+      <div class="ux-panel ux-span-12"><h2>Residenciales y acceso</h2><p>El checkout ya registra residencial, necesidad de QR e instrucciones de acceso. Esta área queda preparada para guardar reglas recurrentes por residencial.</p></div>
     </div>`;
   anchor.parentNode.insertBefore(envio,anchor);
 
   const reports=document.createElement('section');reports.id='uxReportsView';reports.className='ux-virtual-view';reports.innerHTML=`
     <div class="ux-section-grid">
-      <div class="ux-panel ux-span-12"><h2>Visão do negócio</h2><p>Resumo com dados que já existem no sistema. Métricas financeiras avançadas entram quando houver histórico consolidado suficiente.</p><div class="ux-mini-kpis"><div class="ux-mini-kpi"><small>Clientes</small><b id="uxRepClients">—</b></div><div class="ux-mini-kpi"><small>Pedidos ativos</small><b id="uxRepActive">—</b></div><div class="ux-mini-kpi"><small>Recompensas</small><b id="uxRepRewards">—</b></div><div class="ux-mini-kpi"><small>Ofertas ativas</small><b id="uxRepOffers">—</b></div></div></div>
-      <div class="ux-panel ux-span-8"><h2>Atividade semanal</h2><p>Estrutura visual preparada para vendas, pedidos e resgates.</p><div class="ux-report-bars"><i style="height:34%"></i><i style="height:48%"></i><i style="height:42%"></i><i style="height:61%"></i><i style="height:54%"></i><i style="height:78%"></i><i style="height:67%"></i></div><div class="ux-report-days"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div></div>
-      <div class="ux-panel ux-span-4"><h2>Módulos</h2><p>Indicadores separados conforme o que cada empresa contratar.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Fidelidade</b><small>Clientes, pontos, recompensas</small></div><span class="ux-toggle">Ativo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Pedidos, rotas e entrega</small></div><span class="ux-toggle">Ativo</span></div></div></div>
+      <div class="ux-panel ux-span-12"><h2>Visión del negocio</h2><p>Resumen con datos que ya existen en el sistema. Las métricas financieras avanzadas se activarán cuando haya historial consolidado suficiente.</p><div class="ux-mini-kpis"><div class="ux-mini-kpi"><small>Clientes</small><b id="uxRepClients">—</b></div><div class="ux-mini-kpi"><small>Pedidos activos</small><b id="uxRepActive">—</b></div><div class="ux-mini-kpi"><small>Recompensas</small><b id="uxRepRewards">—</b></div><div class="ux-mini-kpi"><small>Ofertas activas</small><b id="uxRepOffers">—</b></div></div></div>
+      <div class="ux-panel ux-span-8"><h2>Actividad semanal</h2><p>Estructura visual preparada para ventas, pedidos y canjes.</p><div class="ux-report-bars"><i style="height:34%"></i><i style="height:48%"></i><i style="height:42%"></i><i style="height:61%"></i><i style="height:54%"></i><i style="height:78%"></i><i style="height:67%"></i></div><div class="ux-report-days"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div></div>
+      <div class="ux-panel ux-span-4"><h2>Módulos</h2><p>Indicadores separados según los módulos contratados por cada empresa.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Fidelidad</b><small>Clientes, pontos, recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Pedidos, rotas e entrega</small></div><span class="ux-toggle">Activo</span></div></div></div>
     </div>`;
   anchor.parentNode.insertBefore(reports,anchor);
 
   const settings=document.createElement('section');settings.id='uxSettingsView';settings.className='ux-virtual-view';settings.innerHTML=`
     <div class="ux-section-grid">
-      <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalização por tenant no modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Uai Sô · Cancún</b><small>Empresa ativa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidade visual</b><small>Logo, cores e nome por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Regras de fidelidade</b><small>Pontos, níveis e recompensas</small></div><span class="ux-toggle">Ativo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle">Ativo</span></div></div></div>
-      <div class="ux-panel ux-span-5"><h2>Segurança e operação</h2><p>Itens que devem ser ativados antes do lançamento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Senha do dashboard</b><small>Desativada apenas no Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Produção</b><small>Não alterada por estas mudanças</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponível</small></div><span class="ux-toggle">Ativo</span></div></div></div>
+      <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Uai Sô · Cancún</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle">Activo</span></div></div></div>
+      <div class="ux-panel ux-span-5"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Desactivada solo en Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
     </div>`;
   anchor.parentNode.insertBefore(settings,anchor);
 
@@ -170,7 +170,7 @@
     const offers=document.querySelectorAll('#listaPromos .promo-item').length;
     const active=document.querySelectorAll('#ordersAdminList .order-admin.active').length;
     const current=document.getElementById('clienteNome')?.textContent?.trim()||'—';
-    const points=numText('clientePontos');
+    const points=numText('clientePuntos');
     [['uxQrClients',clients],['uxQrRewards',rewards],['uxQrCurrent',current],['uxQrPoints',points],['uxRepClients',clients],['uxRepRewards',rewards],['uxRepOffers',offers],['uxRepActive',active]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=String(v)});
     configureOrdersView();
   }
@@ -184,7 +184,7 @@
     let view=null;
     if(b.dataset.uxCustom==='qr'||txt==='qr / validacion')view='qr';
     else if(txt==='configurar envio')view='envio';
-    else if(txt==='relatorios')view='reportes';
+    else if(txt==='reportes')view='reportes';
     else if(txt==='ajustes')view='ajustes';
     if(view){e.preventDefault();e.stopImmediatePropagation();showVirtual(view)}
   },true);
