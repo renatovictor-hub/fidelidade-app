@@ -114,8 +114,9 @@
   function textOrDash(v){ return (v === null || v === undefined || Number.isNaN(v)) ? '—' : String(v); }
 
   function sync() {
-    const total = num(document.getElementById('totalClientes')?.textContent);
-    document.getElementById('ovClients').textContent = textOrDash(total);
+    const crmTotal = Number(window.uaiCrmData?.summary?.total);
+    const fallbackTotal = num(document.getElementById('totalClientes')?.textContent);
+    document.getElementById('ovClients').textContent = textOrDash(Number.isFinite(crmTotal) ? crmTotal : fallbackTotal);
 
     const rewards = [...document.querySelectorAll('#listaRecompensas > *')].filter(el => el.textContent.trim()).length;
     document.getElementById('ovRewards').textContent = document.getElementById('listaRecompensas') ? String(rewards) : '—';
