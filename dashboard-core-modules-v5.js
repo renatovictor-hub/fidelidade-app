@@ -383,6 +383,7 @@
       const res=await fetch('/api/cliente?action=customers&admin=1&t='+Date.now(),{cache:'no-store'});
       const data=await res.json();if(!res.ok)throw new Error(data.error||'Error');
       crmData={customers:Array.isArray(data.customers)?data.customers:[],summary:data.summary||{}};
+      window.uaiCrmData=crmData;
       crmLoadedAt=Date.now();
       const s=crmData.summary;
       const vals={uxClientTotal:s.total,uxClientActive30:s.activos_30d,uxClientInactive30:s.inactivos_30d,uxClientNew30:s.nuevos_30d};
