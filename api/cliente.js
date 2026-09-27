@@ -165,7 +165,7 @@ async function handleCustomersGet(req, res) {
         return Math.round((target - today) / dayMs);
     };
 
-    const customers = Object.entries(usersRaw).map(([uid, user]) => {
+    const customers = Object.entries(usersRaw).filter(([uid]) => /^user_\d+$/.test(uid)).map(([uid, user]) => {
         const txs = (byUser.get(uid) || []).slice();
         const purchases = txs.filter(item => Number(item?.valor_compra || 0) > 0 && !["debito","resgate","canje"].includes(String(item?.tipo || "").toLowerCase()));
         const totalSpent = purchases.reduce((sum, item) => sum + Math.max(0, Number(item?.valor_compra || 0)), 0);
