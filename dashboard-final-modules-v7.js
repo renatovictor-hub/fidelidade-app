@@ -107,33 +107,60 @@
     </div>`;
   anchor.parentNode.insertBefore(settings,anchor);
 
-  const orders=document.getElementById('ordersAdmin');
-  if(orders){
-    const shell=document.createElement('div');shell.id='uxOrdersOps';
-    orders.insertAdjacentElement('beforebegin',shell);
+  let orders=null;
+  function ensureOrders(){
+    orders=document.getElementById('ordersAdmin');
+    return orders;
   }
 
   function getStatus(card){
     const t=norm(card.querySelector('.order-status')?.textContent||'');
     if(t.includes('enviado'))return'received';if(t.includes('acept'))return'accepted';if(t.includes('prepar'))return'preparing';if(t.includes('repartidor'))return'waiting';if(t.includes('salio')||t.includes('salió'))return'out';if(t.includes('entregado'))return'delivered';if(t.includes('cancel'))return'cancelled';return'other';
   }
-  function buildKanban(){
-    if(!orders)return;
+  let lastOrderSignature='';
+  let lastOrderView='';
+  function buildKanban(force=false){
+    if(!ensureOrders())return;
+    const source=orders.querySelector('#ordersAdminList');
+    if(!source)return;
     let board=document.getElementById('uxKanbanBoard');
     if(!board){board=document.createElement('div');board.id='uxKanbanBoard';orders.querySelector('.orders-card')?.prepend(board)}
-    const cards=[...orders.querySelectorAll('#ordersAdminList .order-admin')];
+    const cards=[...source.querySelectorAll('.order-admin')];
+    const view=document.body.dataset.uxView||'';
+    const signature=cards.map(card=>(card.dataset.id||'')+':'+getStatus(card)).join('|');
+    if(!force && signature===lastOrderSignature && view===lastOrderView)return;
+    lastOrderSignature=signature;lastOrderView=view;
     const defs=[['received','Enviado'],['accepted','Aceptado'],['preparing','Preparación'],['waiting','Repartidor'],['out','En ruta']];
     board.innerHTML='<div class="ux-order-summary">'+defs.map(([k,l])=>'<div><small>'+l+'</small><b data-sum="'+k+'">0</b></div>').join('')+'</div><div class="ux-kanban">'+defs.map(([k,l])=>'<section class="ux-kanban-col"><div class="ux-kanban-head"><span>'+l+'</span><span class="ux-kanban-count" data-count="'+k+'">0</span></div><div class="ux-kanban-list" data-col="'+k+'"></div></section>').join('')+'</div>';
-    cards.forEach(card=>{const s=getStatus(card);const col=board.querySelector('[data-col="'+s+'"]');if(col)col.appendChild(card)});
-    defs.forEach(([k])=>{const n=board.querySelectorAll('[data-col="'+k+'"] .order-admin').length;board.querySelector('[data-count="'+k+'"]').textContent=n;board.querySelector('[data-sum="'+k+'"]').textContent=n});
-    const list=orders.querySelector('#ordersAdminList');if(list)list.style.display='none';
+    cards.forEach(card=>{
+      const s=getStatus(card),col=board.querySelector('[data-col="'+s+'"]');
+      if(!col)return;
+      const clone=card.cloneNode(true);clone.classList.add('ux-kanban-clone');
+      clone.querySelectorAll('button[data-status]').forEach(btn=>{
+        btn.onclick=()=>{
+          const original=source.querySelector('.order-admin[data-id="'+CSS.escape(card.dataset.id||'')+'"] button[data-status="'+btn.dataset.status+'"]');
+          original?.click();
+        };
+      });
+      col.appendChild(clone);
+    });
+    defs.forEach(([k])=>{
+      const n=board.querySelectorAll('[data-col="'+k+'"] .order-admin').length;
+      const a=board.querySelector('[data-count="'+k+'"]'),b=board.querySelector('[data-sum="'+k+'"]');
+      if(a)a.textContent=n;if(b)b.textContent=n;
+    });
+    source.style.display='none';
   }
-  function configureOrdersView(){
-    if(!orders)return;
+  function configureOrdersView(force=false){
+    if(!ensureOrders())return;
     const view=document.body.dataset.uxView;
     const title=orders.querySelector('.orders-head h3');
-    if(view==='pedidos'){if(title)title.textContent='🧾 Pedidos';buildKanban()}
-    if(view==='entregas'){if(title)title.textContent='🛵 Entregas';buildKanban();const cols=document.querySelectorAll('#uxKanbanBoard .ux-kanban-col');cols.forEach((c,i)=>{if(i<2)c.style.opacity='.55';else c.style.opacity='1'})}
+    if(view==='pedidos'||view==='entregas'){
+      if(title)title.textContent=view==='pedidos'?'🧾 Pedidos':'🛵 Entregas';
+      buildKanban(force);
+      const cols=document.querySelectorAll('#uxKanbanBoard .ux-kanban-col');
+      cols.forEach((col,i)=>{col.style.opacity=view==='entregas'&&i<2?'.55':'1'});
+    }
   }
 
   function numText(id){const t=document.getElementById(id)?.textContent||'';const m=t.replace(/\./g,'').match(/\d+/);return m?m[0]:'—'}
@@ -141,7 +168,7 @@
     const clients=numText('totalClientes');
     const rewards=document.querySelectorAll('#listaRecompensas .reward-item').length;
     const offers=document.querySelectorAll('#listaPromos .promo-item').length;
-    const active=document.querySelectorAll('#ordersAdmin .order-admin.active').length;
+    const active=document.querySelectorAll('#ordersAdminList .order-admin.active').length;
     const current=document.getElementById('clienteNome')?.textContent?.trim()||'—';
     const points=numText('clientePontos');
     [['uxQrClients',clients],['uxQrRewards',rewards],['uxQrCurrent',current],['uxQrPoints',points],['uxRepClients',clients],['uxRepRewards',rewards],['uxRepOffers',offers],['uxRepActive',active]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=String(v)});
@@ -162,9 +189,14 @@
     if(view){e.preventDefault();e.stopImmediatePropagation();showVirtual(view)}
   },true);
 
-  const obs=new MutationObserver(()=>{syncAll()});
-  obs.observe(document.body,{childList:true,subtree:true});
-  const attr=new MutationObserver(()=>{const v=document.body.dataset.uxView;if(v==='pedidos'||v==='entregas')setTimeout(configureOrdersView,30)});
+  const attr=new MutationObserver(()=>{
+    const v=document.body.dataset.uxView;
+    if(v==='pedidos'||v==='entregas'){
+      lastOrderView='';
+      setTimeout(()=>configureOrdersView(true),30);
+    }
+  });
   attr.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
-  setInterval(syncAll,2000);syncAll();
+  setInterval(syncAll,2000);
+  setTimeout(syncAll,250);
 })();
