@@ -18,7 +18,7 @@
     body.ux3 .card .ux-card-kicker{display:block;color:#8d8093;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;margin:-4px 0 10px}
     body.ux3 .card.ux-hide-subsection{display:none!important}
     .ux-client-hero{display:none;max-width:1180px;margin:0 auto 12px;grid-template-columns:1.15fr .85fr;gap:12px}
-    body.ux3[data-ux-view="clientes"] .ux-client-hero{display:grid}
+    body.ux3[data-ux-view="clientes"][data-client-sub="base"] .ux-client-hero{display:grid}
     .ux-client-panel{background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:17px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-client-panel h2{margin:0 0 6px;font-size:20px;color:#302337}.ux-client-panel p{margin:0 0 14px;font-size:13px;color:#675c6b;line-height:1.55}
     .ux-client-searchline{display:grid;grid-template-columns:1fr auto auto;gap:7px}.ux-client-searchline input{min-width:0}.ux-client-searchline button{width:auto!important;min-height:44px;padding:11px 14px!important;font-size:13px!important}
@@ -126,8 +126,14 @@
   function applyMobileSection(view,key){
     const sections=sectionLabels(view);
     currentSection[view]=key ?? sections[0]?.key ?? '0';
+    const selected=sections.find(s=>s.key===currentSection[view]);
     sections.forEach(s=>s.card.classList.toggle('ux-mobile-active',s.key===currentSection[view]));
     toolbar.querySelectorAll('.ux-core-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.section===currentSection[view]));
+    if(view==='clientes'){
+      document.body.dataset.clientSub=selected && norm(selected.label).includes('opiniones') ? 'opiniones' : 'base';
+    }else{
+      delete document.body.dataset.clientSub;
+    }
   }
   function renderToolbar(view){
     if (!['clientes','fidelidad'].includes(view)) return;
@@ -471,6 +477,7 @@ let crmData={customers:[],summary:{}};
   });
   bodyObserver.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
 
+  if(document.body.dataset.uxView==='clientes')document.body.dataset.clientSub='base';
   setTimeout(refreshCore,120);
   setTimeout(()=>loadCRM(),500);
 })();
