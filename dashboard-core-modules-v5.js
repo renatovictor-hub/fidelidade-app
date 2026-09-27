@@ -119,19 +119,25 @@
   document.getElementById('uxGoPoints').onclick=()=>{[...document.querySelectorAll('#uxSidebar .ux-nav button')].find(x=>norm(x.textContent)==='fidelidad')?.click()};
   document.getElementById('uxGoRewards').onclick=()=>{[...document.querySelectorAll('#uxSidebar .ux-nav button')].find(x=>norm(x.textContent)==='recompensas')?.click()};
 
-  const observer=new MutationObserver(()=>{
-    const view=document.body.dataset.uxView;
-    if(['clientes','fidelidad'].includes(view)) renderToolbar(view);
+  function refreshCore(){
     syncClientTotal();
-  });
-  observer.observe(document.body,{childList:true,subtree:true});
-  setInterval(syncClientTotal,1800);
+    const view=document.body.dataset.uxView;
+    if(!['clientes','fidelidad'].includes(view)) return;
+    const key=view+'|'+sectionLabels(view).map(s=>s.label).join('|');
+    if(toolbar.dataset.renderKey!==key){
+      renderToolbar(view);
+      toolbar.dataset.renderKey=key;
+    }
+  }
+  setInterval(refreshCore,1800);
 
   const bodyObserver=new MutationObserver(muts=>{
     if(muts.some(m=>m.attributeName==='data-ux-view')){
       const view=document.body.dataset.uxView;
-      if(['clientes','fidelidad'].includes(view)) setTimeout(()=>renderToolbar(view),20);
+      toolbar.dataset.renderKey='';
+      if(['clientes','fidelidad'].includes(view)) setTimeout(refreshCore,20);
     }
   });
   bodyObserver.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
+  setTimeout(refreshCore,120);
 })();
