@@ -8,16 +8,18 @@
     #uxGrowthToolbar .tabs{display:flex;gap:7px;flex-wrap:wrap}
     #uxGrowthToolbar button{width:auto!important;border:0!important;background:#f5f1f7!important;color:#6e6074!important;padding:9px 12px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important}
     #uxGrowthToolbar button.active{background:#6a0dad!important;color:#fff!important}
-    #uxGrowthToolbar .meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
-    #uxGrowthToolbar .meta span{font-size:9px;font-weight:800;color:#6c5e72;background:#faf8fb;border:1px solid #eee7f1;border-radius:999px;padding:5px 8px}
+    #uxGrowthToolbar .meta{display:none!important}
 
     body.ux3[data-ux-view="recompensas"] #uxGrowthToolbar,body.ux3[data-ux-view="ofertas"] #uxGrowthToolbar{display:block}
     body.ux3[data-ux-view="recompensas"] .main-container,body.ux3[data-ux-view="ofertas"] .main-container{max-width:1180px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;align-items:start!important}
-    body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show,body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show{max-width:none!important;margin:0!important}
+    body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show,body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show{display:none!important;max-width:none!important;margin:0!important}
+    body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show.ux-growth-active,body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show.ux-growth-active{display:block!important}
     body.ux3[data-ux-view="recompensas"] .main-container .card[data-growth-span="full"],body.ux3[data-ux-view="ofertas"] .main-container .card[data-growth-span="full"]{grid-column:1/-1}
 
     .ux-reward-shell{display:grid;grid-template-columns:.85fr 1.15fr;gap:14px}
     .ux-reward-panel{min-width:0}
+    body.ux3[data-ux-view="recompensas"][data-growth-sub="crear"] .ux-reward-panel.catalog{display:none}
+    body.ux3[data-ux-view="recompensas"][data-growth-sub="catalogo"] .ux-reward-panel.create{display:none}
     .ux-reward-panel.catalog{border-left:1px solid #eee7f1;padding-left:14px}
     .ux-reward-panel h4{margin:0 0 11px;color:#3b2d42;font-size:13px}
     .ux-reward-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -50,11 +52,7 @@
     @media(max-width:780px){
       #uxGrowthToolbar{margin:0 0 8px;padding:7px;overflow-x:auto;border-radius:14px}
       #uxGrowthToolbar .tabs{flex-wrap:nowrap;min-width:max-content}#uxGrowthToolbar .meta{display:none}
-      body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show{display:none!important}
-      body.ux3[data-ux-view="ofertas"] .main-container .card.ux-show.ux-growth-active{display:block!important}
       .ux-offer-hero{margin:0 0 8px}
-      body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show{display:none!important}
-      body.ux3[data-ux-view="recompensas"] .main-container .card.ux-show.ux-growth-active{display:block!important}
       body.ux3[data-ux-view="recompensas"] .ux-reward-shell{display:block}
       body.ux3[data-ux-view="recompensas"] .ux-reward-panel{display:none}
       body.ux3[data-ux-view="recompensas"][data-growth-sub="crear"] .ux-reward-panel.create,body.ux3[data-ux-view="recompensas"]:not([data-growth-sub]) .ux-reward-panel.create{display:block}
