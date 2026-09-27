@@ -126,6 +126,99 @@ async function handleOrderCreate(req, res) {
     return res.status(201).json({ success:true, order:publicOrder(orderRef.key, order) });
 }
 
+async function handleCustomersGet(req, res) {
+    if (!requireAdmin(req, res)) return;
+
+    const db = admin.database();
+    const [usersSnap, txSnap] = await Promise.all([
+        db.ref("users").once("value"),
+        db.ref("transacoes").once("value")
+    ]);
+
+    const usersRaw = usersSnap.val() || {};
+    const txRaw = txSnap.val() || {};
+    const byUser = new Map();
+
+    for (const item of Object.values(txRaw)) {
+        const uid = String(item?.user_id || item?.uid || "").trim();
+        if (!uid) continue;
+        if (!byUser.has(uid)) byUser.set(uid, []);
+        byUser.get(uid).push(item || {});
+    }
+
+    const now = Date.now();
+    const dayMs = 86400000;
+    const daysSince = value => {
+        const t = Date.parse(String(value || ""));
+        return Number.isFinite(t) ? Math.max(0, Math.floor((now - t) / dayMs)) : null;
+    };
+    const birthdayInDays = value => {
+        const raw = String(value || "").trim();
+        const m = raw.match(/^(?:\d{4}-)?(\d{1,2})-(\d{1,2})$/) || raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/\d{4})?$/);
+        if (!m) return null;
+        const month = Number(m[1]) - 1, day = Number(m[2]);
+        if (!Number.isFinite(month) || !Number.isFinite(day)) return null;
+        const d = new Date();
+        let target = new Date(d.getFullYear(), month, day);
+        const today = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        if (target < today) target = new Date(d.getFullYear() + 1, month, day);
+        return Math.round((target - today) / dayMs);
+    };
+
+    const customers = Object.entries(usersRaw).map(([uid, user]) => {
+        const txs = (byUser.get(uid) || []).slice();
+        const purchases = txs.filter(item => Number(item?.valor_compra || 0) > 0 && !["debito","resgate","canje"].includes(String(item?.tipo || "").toLowerCase()));
+        const totalSpent = purchases.reduce((sum, item) => sum + Math.max(0, Number(item?.valor_compra || 0)), 0);
+        const dates = txs.map(item => item?.data || item?.created_at).filter(Boolean).sort((a,b)=>String(b).localeCompare(String(a)));
+        const lastPurchase = dates[0] || user?.ultima_compra || "";
+        const purchaseCount = purchases.length;
+        const createdAt = user?.created_at || "";
+        const inactiveDays = daysSince(lastPurchase);
+        const createdDays = daysSince(createdAt);
+        const birthday = user?.nascimento || user?.cumpleanos || "";
+        return {
+            uid,
+            nome: user?.nome || user?.nombre || "",
+            telefone: user?.telefone || "",
+            pontos: Number(user?.pontos || 0),
+            pontos_acumulados: Number(user?.pontos_acumulados ?? user?.pontos ?? 0),
+            nivel: user?.nivel_vip || user?.nivel || user?.vip_nivel || "",
+            nascimento: birthday,
+            created_at: createdAt,
+            ultima_compra: lastPurchase,
+            dias_sem_comprar: inactiveDays,
+            compras: purchaseCount,
+            gasto_total: Math.round(totalSpent * 100) / 100,
+            ticket_medio: purchaseCount ? Math.round((totalSpent / purchaseCount) * 100) / 100 : 0,
+            aniversario_em_dias: birthdayInDays(birthday),
+            feedback_last_at: user?.feedback_last_at || "",
+            google_review_clicked: user?.google_review_clicked === true,
+            status: inactiveDays == null ? "sin_compras" : inactiveDays <= 30 ? "activo" : "inactivo",
+            nuevo_30d: createdDays != null && createdDays <= 30
+        };
+    }).sort((a,b) => b.gasto_total - a.gasto_total || b.compras - a.compras || String(a.nome).localeCompare(String(b.nome)));
+
+    const active30 = customers.filter(c => c.status === "activo").length;
+    const inactive30 = customers.filter(c => c.status === "inactivo").length;
+    const new30 = customers.filter(c => c.nuevo_30d).length;
+    const birthdays30 = customers.filter(c => c.aniversario_em_dias != null && c.aniversario_em_dias <= 30).length;
+    const frequent = customers.filter(c => c.compras >= 3).length;
+    const totalRevenue = Math.round(customers.reduce((s,c)=>s+c.gasto_total,0) * 100) / 100;
+
+    return res.status(200).json({
+        customers,
+        summary: {
+            total: customers.length,
+            activos_30d: active30,
+            inactivos_30d: inactive30,
+            nuevos_30d: new30,
+            frecuentes: frequent,
+            aniversarios_30d: birthdays30,
+            gasto_total: totalRevenue
+        }
+    });
+}
+
 async function handleOrdersGet(req, res) {
     const db = admin.database();
     if (String(req.query.admin || "") === "1") {
@@ -314,6 +407,10 @@ export default async function handler(req, res) {
 
     if (req.method === "GET" && String(req.query.action || "") === "orders") {
         return handleOrdersGet(req, res);
+    }
+
+    if (req.method === "GET" && String(req.query.action || "") === "customers") {
+        return handleCustomersGet(req, res);
     }
 
     try {
