@@ -120,7 +120,7 @@
     const rewards = [...document.querySelectorAll('#listaRecompensas > *')].filter(el => el.textContent.trim()).length;
     document.getElementById('ovRewards').textContent = document.getElementById('listaRecompensas') ? String(rewards) : '—';
 
-    const activeOrders = document.querySelectorAll('#ordersAdmin .order-admin.active').length;
+    const activeOrders = document.querySelectorAll('#ordersAdminList .order-admin.active').length;
     document.getElementById('ovOrders').textContent = document.getElementById('ordersAdmin') ? String(activeOrders) : '—';
 
     const promos = [...document.querySelectorAll('#listaPromos .promo-item')].filter(el => getComputedStyle(el).display !== 'none');
@@ -134,7 +134,7 @@
       document.querySelector('#ovCampaign small').textContent = desc;
     }
 
-    const orderCards = [...document.querySelectorAll('#ordersAdmin .order-admin')];
+    const orderCards = [...document.querySelectorAll('#ordersAdminList .order-admin')];
     const statusMap = [
       ['received','Pedido enviado'],['accepted','Pedido aceito'],['preparing','Em preparação'],
       ['waiting_driver','Aguardando repartidor'],['out_for_delivery','Saiu para entrega'],['delivered','Entregue hoje']
