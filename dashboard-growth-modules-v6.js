@@ -167,19 +167,29 @@
   const attrObs=new MutationObserver(muts=>{
     if(muts.some(m=>m.attributeName==='data-ux-view')){
       delete document.body.dataset.growthSub;
+      toolbar.dataset.renderView='';
       const view=document.body.dataset.uxView;
-      if(['recompensas','ofertas'].includes(view))setTimeout(()=>render(view),30);
+      if(['recompensas','ofertas'].includes(view))setTimeout(refreshGrowth,30);
     }
   });
   attrObs.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
 
-  const contentObs=new MutationObserver(()=>{
-    const view=document.body.dataset.uxView;
+  function refreshGrowth(){
     prepareRewards();prepareOffers();rewardMetrics();offerMetrics();
-    if(['recompensas','ofertas'].includes(view))render(view);
-  });
-  contentObs.observe(main,{childList:true,subtree:true});
+    const view=document.body.dataset.uxView;
+    if(!['recompensas','ofertas'].includes(view)) return;
+    if(toolbar.dataset.renderView!==view){
+      render(view);
+      toolbar.dataset.renderView=view;
+      return;
+    }
+    if(view==='ofertas'){
+      const sub=document.body.dataset.growthSub||'crear';
+      cards('ofertas').forEach(c=>c.classList.toggle('ux-growth-active',c.dataset.growthSection===sub));
+    }
+  }
 
   prepareRewards();prepareOffers();
-  setInterval(()=>{rewardMetrics();offerMetrics()},1800);
+  setInterval(refreshGrowth,1800);
+  setTimeout(refreshGrowth,150);
 })();
