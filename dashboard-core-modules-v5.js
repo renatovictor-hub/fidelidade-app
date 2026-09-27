@@ -454,7 +454,10 @@ let crmData={customers:[],summary:{}};
     if(!x)return;
     const action=b.dataset.crmAction;
 
-    if(action==='points')return directAddPoints(x);
+    if(action==='points'){
+      if(typeof window.openCajaFidelidadForClient==='function')return window.openCajaFidelidadForClient(x.uid);
+      return directAddPoints(x);
+    }
     if(action==='reward')return directReward(x);
     if(action==='offer')return directOffer(x);
     if(action==='opinions')return directOpinions(x);
