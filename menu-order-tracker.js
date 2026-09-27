@@ -1,4 +1,13 @@
 (() => {
+  if (!document.querySelector('link[href*="client-readability.css"]')) {
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='/client-readability.css?v=20260927-1';
+    document.head.appendChild(link);
+  }
+})();
+
+(() => {
   const originalSubmit=window.submitOrder;
   if(typeof originalSubmit!=='function')return;
   let sending=false;
