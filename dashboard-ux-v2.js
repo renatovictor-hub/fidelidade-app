@@ -20,6 +20,15 @@
     body.ux2 #ordersAdmin{max-width:1440px!important;margin:0 auto 14px!important;padding:0!important}body.ux2 #ordersAdmin .orders-card{border:1px solid var(--ux-border)!important;border-radius:16px!important;box-shadow:0 8px 24px rgba(55,24,70,.05)!important}body.ux2 #ordersAdmin .order-admin{border-radius:14px!important}
     #uxDrawerShade{display:none}
     @media(max-width:1050px){body.ux2{padding-left:22px}.ux-kpis{grid-template-columns:repeat(2,1fr)}#uxSidebar{transform:translateX(-102%);transition:.22s}body.ux-drawer #uxSidebar{transform:translateX(0)}#uxTopbar{left:0}.ux-menu-btn{display:inline-flex!important}#uxDrawerShade{display:none;position:fixed;z-index:9970;inset:0;background:rgba(23,10,29,.42)}body.ux-drawer #uxDrawerShade{display:block}}
+    /* Accesibilidad tipográfica global */
+    body.ux3{font-size:15px!important;color:#2f2434}
+    body.ux3 #uxTopbar .ux-title h1{font-size:25px!important;line-height:1.2!important}
+    body.ux3 #uxTopbar .ux-title p{font-size:13px!important;color:#665b6b!important;line-height:1.45!important}
+    body.ux3 #uxSidebar .ux-nav button{font-size:14px!important;min-height:44px!important;line-height:1.25!important}
+    body.ux3 .card h3{font-size:19px!important;line-height:1.3!important}
+    body.ux3 label{font-size:13px!important;line-height:1.4!important}
+    body.ux3 input,body.ux3 select,body.ux3 textarea{font-size:14px!important;min-height:42px!important}
+    body.ux3 button{line-height:1.25!important}
     @media(max-width:780px){body.ux2{padding:86px 10px 22px}.ux-top-badge{display:none}.ux-title h1{font-size:18px}.ux-title p{font-size:9px}.ux-kpis{grid-template-columns:1fr 1fr;gap:8px}.ux-kpi{padding:11px;gap:9px}.ux-kpi-icon{width:36px;height:36px}.ux-kpi b{font-size:19px}.ux-overview-row{grid-template-columns:1fr}.main-container{display:block!important}body.ux2 #ordersAdmin{margin:0 0 12px!important}.ux-top-actions .ux-exit{display:none}}
     @media(max-width:430px){.ux-kpis{grid-template-columns:1fr}.ux-kpi{min-height:72px}.ux-quick-actions button{flex:1}.ux-welcome{padding:14px}}
   `;
