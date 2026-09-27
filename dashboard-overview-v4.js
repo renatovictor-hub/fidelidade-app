@@ -43,23 +43,23 @@
   root.id = 'uxOverviewV4';
   root.innerHTML = `
     <div class="ov-kpis">
-      <div class="ov-kpi"><div class="ico">👤</div><div><small>Clientes cadastrados</small><b id="ovClients">—</b><em>Base de fidelidad</em></div></div>
-      <div class="ov-kpi"><div class="ico">⭐</div><div><small>Pontos disponíveis</small><b id="ovPoints">—</b><em>Saldo conhecido</em></div></div>
+      <div class="ov-kpi"><div class="ico">👤</div><div><small>Clientes registrados</small><b id="ovClients">—</b><em>Base de fidelidad</em></div></div>
+      <div class="ov-kpi"><div class="ico">⭐</div><div><small>Puntos disponibles</small><b id="ovPoints">—</b><em>Saldo conhecido</em></div></div>
       <div class="ov-kpi"><div class="ico">🎁</div><div><small>Recompensas</small><b id="ovRewards">—</b><em>Catálogo disponível</em></div></div>
-      <div class="ov-kpi"><div class="ico">🧾</div><div><small>Pedidos ativos</small><b id="ovOrders">—</b><em>Operação atual</em></div></div>
-      <div class="ov-kpi"><div class="ico">🔔</div><div><small>Ofertas ativas</small><b id="ovPromos">—</b><em>Campanhas visíveis</em></div></div>
-      <div class="ov-kpi"><div class="ico">🛵</div><div><small>Entregues hoje</small><b id="ovDelivered">—</b><em>Delivery</em></div></div>
+      <div class="ov-kpi"><div class="ico">🧾</div><div><small>Pedidos activos</small><b id="ovOrders">—</b><em>Operação atual</em></div></div>
+      <div class="ov-kpi"><div class="ico">🔔</div><div><small>Ofertas activas</small><b id="ovPromos">—</b><em>Campanhas visíveis</em></div></div>
+      <div class="ov-kpi"><div class="ico">🛵</div><div><small>Entregados hoy</small><b id="ovDelivered">—</b><em>Delivery</em></div></div>
     </div>
 
     <div class="ov-grid">
       <section class="ov-card">
-        <div class="ov-head"><h2>Programa de fidelidade</h2><button class="ov-link" data-view="fidelidad">Ver tudo →</button></div>
+        <div class="ov-head"><h2>Programa de fidelidad</h2><button class="ov-link" data-view="fidelidad">Ver tudo →</button></div>
         <div class="ov-vip">
-          <div><strong>👑 Cliente VIP</strong><span class="level">Níveis configuráveis</span><div class="ov-progress"><i></i></div></div>
-          <div class="pts"><span id="ovPointsVip">—</span><br><small>pontos</small></div>
+          <div><strong>👑 Cliente VIP</strong><span class="level">Niveles configurables</span><div class="ov-progress"><i></i></div></div>
+          <div class="pts"><span id="ovPointsVip">—</span><br><small>puntos</small></div>
         </div>
-        <div class="ov-head" style="margin:2px 0 7px"><h2 style="font-size:11px">Recompensas mais populares</h2><button class="ov-link" data-view="recompensas">Gerenciar</button></div>
-        <div class="ov-list" id="ovRewardList"><div class="ov-empty">Carregando recompensas…</div></div>
+        <div class="ov-head" style="margin:2px 0 7px"><h2 style="font-size:11px">Recompensas populares</h2><button class="ov-link" data-view="recompensas">Administrar</button></div>
+        <div class="ov-list" id="ovRewardList"><div class="ov-empty">Cargando recompensas…</div></div>
       </section>
 
       <section class="ov-card">
@@ -68,22 +68,22 @@
       </section>
 
       <section class="ov-card">
-        <div class="ov-head"><h2>Campanhas e ofertas</h2><button class="ov-link" data-view="ofertas">Nova campanha +</button></div>
-        <div class="ov-campaign" id="ovCampaign"><span>ATIVA</span><b>Sem campanha ativa</b><small>Crie uma promoção para seus clientes</small></div>
+        <div class="ov-head"><h2>Campañas y ofertas</h2><button class="ov-link" data-view="ofertas">Nueva campaña +</button></div>
+        <div class="ov-campaign" id="ovCampaign"><span>ATIVA</span><b>Sin campaña activa</b><small>Crea una promoción para tus clientes</small></div>
         <div class="ov-stats3">
-          <div class="ov-stat"><b id="ovCampaigns">0</b><small>Campanhas ativas</small></div>
-          <div class="ov-stat"><b>—</b><small>Taxa de abertura</small></div>
-          <div class="ov-stat"><b>—</b><small>Cliques</small></div>
+          <div class="ov-stat"><b id="ovCampaigns">0</b><small>Campañas activas</small></div>
+          <div class="ov-stat"><b>—</b><small>Tasa de apertura</small></div>
+          <div class="ov-stat"><b>—</b><small>Clics</small></div>
         </div>
-        <div class="ov-note">As métricas de abertura e clique entram quando conectarmos o relatório de campanhas.</div>
+        <div class="ov-note">Las métricas de apertura y clics aparecerán cuando conectemos el reporte de campañas.</div>
       </section>
 
       <section class="ov-card">
-        <div class="ov-head"><h2>QR / Validação</h2><button class="ov-link" data-view="fidelidad">Ver todos →</button></div>
+        <div class="ov-head"><h2>QR / Validación</h2><button class="ov-link" data-view="fidelidad">Ver todos →</button></div>
         <div class="ov-list" id="ovQrList">
-          <div class="ov-row"><div class="main"><b>Scanner de cliente</b><small>Validação de pontos e recompensas por QR</small></div><span class="ov-badge">Ativo</span></div>
-          <div class="ov-row"><div class="main"><b>Resgates</b><small>Histórico disponível no perfil do cliente</small></div><span class="ov-badge">Fidelidade</span></div>
-          <div class="ov-row"><div class="main"><b>Validação rápida</b><small>Acesso pelo módulo de fidelidade</small></div><span class="ov-badge">QR</span></div>
+          <div class="ov-row"><div class="main"><b>Scanner de cliente</b><small>Validação de puntos e recompensas por QR</small></div><span class="ov-badge">Ativo</span></div>
+          <div class="ov-row"><div class="main"><b>Canjes</b><small>Historial disponible en el perfil del cliente</small></div><span class="ov-badge">Fidelidade</span></div>
+          <div class="ov-row"><div class="main"><b>Validación rápida</b><small>Acceso desde el módulo de fidelidad</small></div><span class="ov-badge">QR</span></div>
         </div>
       </section>
 
@@ -91,17 +91,17 @@
         <div class="ov-head"><h2>Clientes</h2><button class="ov-link" data-view="clientes">Ver todos →</button></div>
         <div class="ov-search"><input id="ovClientSearch" placeholder="Buscar por nome, telefone ou ID…"></div>
         <div class="ov-list" id="ovClientList">
-          <div class="ov-empty">Use “Clientes” para buscar e abrir o histórico completo.</div>
+          <div class="ov-empty">Usa “Clientes” para buscar y abrir el historial completo.</div>
         </div>
       </section>
 
       <section class="ov-card">
-        <div class="ov-head"><h2>Relatórios</h2><button class="ov-link" data-view="reportes">Ver relatório completo →</button></div>
+        <div class="ov-head"><h2>Reportes</h2><button class="ov-link" data-view="reportes">Ver reporte completo →</button></div>
         <div class="ov-chart">
           <div class="ov-bar" style="height:32%"></div><div class="ov-bar" style="height:50%"></div><div class="ov-bar" style="height:44%"></div><div class="ov-bar" style="height:62%"></div><div class="ov-bar" style="height:55%"></div><div class="ov-bar" style="height:76%"></div><div class="ov-bar" style="height:68%"></div>
         </div>
         <div class="ov-chart-labels"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
-        <div class="ov-note">Visual preparado. Os valores reais de vendas/resgates serão conectados quando o módulo de relatórios estiver implementado.</div>
+        <div class="ov-note">Vista preparada. Los valores reales de ventas/canjes se conectarán cuando el módulo de reportes esté implementado.</div>
       </section>
     </div>
   `;
@@ -136,8 +136,8 @@
 
     const orderCards = [...document.querySelectorAll('#ordersAdminList .order-admin')];
     const statusMap = [
-      ['received','Pedido enviado'],['accepted','Pedido aceito'],['preparing','Em preparação'],
-      ['waiting_driver','Aguardando repartidor'],['out_for_delivery','Saiu para entrega'],['delivered','Entregue hoje']
+      ['received','Pedido enviado'],['accepted','Pedido aceptado'],['preparing','En preparación'],
+      ['waiting_driver','Esperando repartidor'],['out_for_delivery','Salió para entrega'],['delivered','Entregado hoy']
     ];
     const statusBox = document.getElementById('ovOrderStatus');
     if (statusBox && document.getElementById('ordersAdmin')) {
@@ -155,7 +155,7 @@
             (key==='delivered' && normalized.includes('entregado'))
           ) count++;
         });
-        return '<div class="ov-row"><span class="ov-count ov-status '+key+'">'+count+'</span><div class="main" style="flex:1"><b>'+label+'</b><small>'+ (key==='delivered'?'Pedidos finalizados':'Etapa operacional') +'</small></div><span style="color:#aaa">—</span></div>';
+        return '<div class="ov-row"><span class="ov-count ov-status '+key+'">'+count+'</span><div class="main" style="flex:1"><b>'+label+'</b><small>'+ (key==='delivered'?'Pedidos finalizados':'Etapa operativa') +'</small></div><span style="color:#aaa">—</span></div>';
       }).join('');
       const delivered = statusMap.length ? orderCards.filter(c => (c.querySelector('.order-status')?.textContent || '').toLowerCase().includes('entregado')).length : 0;
       document.getElementById('ovDelivered').textContent = String(delivered);
@@ -167,15 +167,15 @@
       if (rewardNodes.length) {
         rewardBox.innerHTML = rewardNodes.map((el,i) => {
           const lines = el.textContent.split('\n').map(s=>s.trim()).filter(Boolean);
-          return '<div class="ov-row"><span class="ov-count">🎁</span><div class="main" style="flex:1"><b>'+ (lines[0] || 'Recompensa '+(i+1)) +'</b><small>'+ (lines[1] || 'Disponível para resgate') +'</small></div><span style="color:#aaa">›</span></div>';
+          return '<div class="ov-row"><span class="ov-count">🎁</span><div class="main" style="flex:1"><b>'+ (lines[0] || 'Recompensa '+(i+1)) +'</b><small>'+ (lines[1] || 'Disponible para canje') +'</small></div><span style="color:#aaa">›</span></div>';
         }).join('');
       } else {
-        rewardBox.innerHTML = '<div class="ov-empty">Nenhuma recompensa carregada.</div>';
+        rewardBox.innerHTML = '<div class="ov-empty">No hay recompensas cargadas.</div>';
       }
     }
 
     let points = null;
-    const pointEls = [...document.querySelectorAll('[id*="pontos" i], [id*="saldo" i]')];
+    const pointEls = [...document.querySelectorAll('[id*="puntos" i], [id*="saldo" i]')];
     for (const el of pointEls) {
       const n = num(el.textContent);
       if (n !== null && n > 0) { points = n; break; }
@@ -189,7 +189,7 @@
     if (!b) return;
     const view = b.dataset.view;
     const sidebarButtons = [...document.querySelectorAll('#uxSidebar .ux-nav button')];
-    const names = {fidelidad:'Fidelidad',recompensas:'Recompensas',pedidos:'Pedidos',ofertas:'Ofertas / Push',clientes:'Clientes',reportes:'Relatórios'};
+    const names = {fidelidad:'Fidelidad',recompensas:'Recompensas',pedidos:'Pedidos',ofertas:'Ofertas / Push',clientes:'Clientes',reportes:'Reportes'};
     const target = sidebarButtons.find(x => x.textContent.trim().includes(names[view] || ''));
     if (target) target.click();
   });
