@@ -37,7 +37,10 @@
     .ux-order-summary div{background:#fff;border:1px solid #ebe4ee;border-radius:12px;padding:10px}.ux-order-summary small{display:block;font-size:8px;color:#8b7f91}.ux-order-summary b{font-size:18px;color:#5d148f}
     .ux-delivery-note{background:#fff8e5;border:1px solid #f0dfaa;border-radius:11px;padding:10px;font-size:10px;color:#66520a;margin-top:10px}
     .ux-report-bars{height:190px;display:flex;align-items:flex-end;gap:10px;padding:15px 8px 6px;border-bottom:1px solid #eee7f1;margin-top:8px}.ux-report-bars i{flex:1;background:linear-gradient(#c69aef,#7a2bd2);border-radius:8px 8px 2px 2px;min-width:18px}.ux-report-days{display:grid;grid-template-columns:repeat(7,1fr);font-size:8px;text-align:center;color:#887c8e;margin-top:5px}
-    .ux-settings-list{display:grid;gap:8px;margin-top:12px}.ux-setting{display:flex;justify-content:space-between;gap:10px;padding:11px;border:1px solid #eee7f1;border-radius:11px;background:#faf8fb}.ux-setting b{font-size:10px}.ux-setting small{display:block;color:#887c8e;font-size:8px;margin-top:2px}
+    .ux-settings-list{display:grid;gap:8px;margin-top:12px}
+    #uxSettingsReviewsHost{margin-top:12px}
+    #uxSettingsReviewsHost>.card{display:block!important;max-width:none!important;margin:0!important;box-shadow:none!important;padding:0!important;border:0!important}
+    #uxSettingsReviewsHost>.card h3{font-size:14px!important;color:#3a2a42!important;margin:0 0 12px!important}.ux-setting{display:flex;justify-content:space-between;gap:10px;padding:11px;border:1px solid #eee7f1;border-radius:11px;background:#faf8fb}.ux-setting b{font-size:10px}.ux-setting small{display:block;color:#887c8e;font-size:8px;margin-top:2px}
     .ux-toggle{font-size:8px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e9f8ef;color:#188b4f;align-self:center}
     .ux-toggle.off{background:#f3f3f3;color:#888}
     .ux-qr-box{display:grid;place-items:center;min-height:210px;background:linear-gradient(135deg,#faf7fc,#f0e7f7);border:1px dashed #d9c6e5;border-radius:14px;margin-top:12px}.ux-qr-box .icon{font-size:64px}.ux-qr-box b{display:block;text-align:center;font-size:13px}.ux-qr-box small{display:block;text-align:center;color:#887c8e;font-size:9px;margin-top:5px}
@@ -104,6 +107,7 @@
     <div class="ux-section-grid">
       <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Uai Sô · Cancún</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle">Activo</span></div></div></div>
       <div class="ux-panel ux-span-5"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Desactivada solo en Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
+      <div class="ux-panel ux-span-12"><h2>Opiniones y Google Reviews</h2><p>Configuración de solicitudes de reseña.</p><div id="uxSettingsReviewsHost"></div></div>
     </div>`;
   anchor.parentNode.insertBefore(settings,anchor);
 
@@ -164,7 +168,14 @@
   }
 
   function numText(id){const t=document.getElementById(id)?.textContent||'';const m=t.replace(/\./g,'').match(/\d+/);return m?m[0]:'—'}
+  function moveSettingsCards(){
+    const host=document.getElementById('uxSettingsReviewsHost');
+    const reviews=document.getElementById('reviewsConfigAdminCard');
+    if(host&&reviews&&reviews.parentElement!==host)host.appendChild(reviews);
+  }
+
   function syncAll(){
+    moveSettingsCards();
     const clients=numText('totalClientes');
     const rewards=document.querySelectorAll('#listaRecompensas .reward-item').length;
     const offers=document.querySelectorAll('#listaPromos .promo-item').length;
