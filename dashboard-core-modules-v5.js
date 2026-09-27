@@ -55,7 +55,7 @@
       </div>
     </div>
     <div class="ux-client-panel">
-      <div class="ux-client-total"><div><small>Clientes cadastrados</small><div class="big" id="uxClientTotal">—</div></div><span style="font-size:34px">👥</span></div>
+      <div class="ux-client-total"><div><small>Clientes registrados</small><div class="big" id="uxClientTotal">—</div></div><span style="font-size:34px">👥</span></div>
       <div class="ux-client-actions"><button class="btn-secondary" type="button" id="uxGoPoints">+ Puntos</button><button class="btn-secondary" type="button" id="uxGoRewards">Recompensas</button></div>
     </div>
   `;
@@ -98,7 +98,7 @@
     const sections=sectionLabels(view);
     tabs.innerHTML=sections.map((s,i)=>'<button type="button" data-section="'+s.key+'" class="'+(i===0?'active':'')+'">'+s.label+'</button>').join('');
     if(view==='clientes') summary.innerHTML='<span class="ux-core-chip">👥 Base de clientes</span><span class="ux-core-chip">🔎 Busca rápida</span><span class="ux-core-chip">📷 QR</span><span class="ux-core-chip">🧾 Histórico</span>';
-    else summary.innerHTML='<span class="ux-core-chip">⭐ Pontos</span><span class="ux-core-chip">👑 Níveis VIP</span><span class="ux-core-chip">🎯 Bônus</span><span class="ux-core-chip">🤝 Referidos</span>';
+    else summary.innerHTML='<span class="ux-core-chip">⭐ Puntos</span><span class="ux-core-chip">👑 Níveis VIP</span><span class="ux-core-chip">🎯 Bonos</span><span class="ux-core-chip">🤝 Referidos</span>';
     const chosen=currentSection[view]||sections[0]?.key;
     applyMobileSection(view,chosen);
   }
