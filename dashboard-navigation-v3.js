@@ -45,7 +45,8 @@
       const title=norm(card.querySelector('h1,h2,h3,h4')?.textContent||'');
       let group='';
       for(const [g,terms] of Object.entries(GROUPS)){if(terms.some(t=>title.includes(norm(t)))){group=g;break}}
-      if(!group)group='ajustes';
+      if(title.includes('agregar puntos')) group='internal';
+      else if(!group)group='ajustes';
       card.dataset.uxGroup=group;
     });
   }
@@ -84,5 +85,11 @@
 
   const observer=new MutationObserver(()=>{classify();const current=document.body.dataset.uxView||'resumen';if(current!=='resumen'&&current!=='pedidos'&&current!=='entregas')document.querySelectorAll('.main-container .card').forEach(c=>c.classList.toggle('ux-show',c.dataset.uxGroup===current))});
   observer.observe(document.body,{childList:true,subtree:true});
-  setTimeout(()=>{let saved='resumen';try{saved=sessionStorage.getItem('uai_admin_view')||'resumen'}catch(_){ }if(['qr','envio','reportes','ajustes'].includes(saved)) saved='resumen';show(saved)},100);
+  setTimeout(()=>{let saved='resumen';try{saved=sessionStorage.getItem('uai_admin_view')||'resumen'}catch(_){ }
+    if(['qr','envio','reportes','ajustes'].includes(saved)){
+      const virtualSaved=saved;
+      show('resumen');
+      try{sessionStorage.setItem('uai_admin_view',virtualSaved)}catch(_){ }
+    }else show(saved);
+  },100);
 })();
