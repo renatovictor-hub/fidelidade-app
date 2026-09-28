@@ -244,10 +244,10 @@ let crmData={customers:[],summary:{}};
     if(crmFilter==='birthday')arr=arr.filter(x=>x.aniversario_em_dias!=null&&x.aniversario_em_dias<=30);
 
     const sort=document.getElementById('uxCrmSort')?.value||'spend';
-    if(sort==='spend')arr.sort((a,b)=>b.gasto_total-a.gasto_total);
-    if(sort==='purchases')arr.sort((a,b)=>b.compras-a.compras);
-    if(sort==='points')arr.sort((a,b)=>b.pontos-a.pontos);
-    if(sort==='recent')arr.sort((a,b)=>(a.dias_sem_comprar??99999)-(b.dias_sem_comprar??99999));
+    if(sort==='spend')arr.sort((a,b)=>(b.gasto_total-a.gasto_total)||(b.compras-a.compras)||String(a.nome||'').localeCompare(String(b.nome||'')));
+    if(sort==='purchases')arr.sort((a,b)=>(b.compras-a.compras)||(b.gasto_total-a.gasto_total)||String(a.nome||'').localeCompare(String(b.nome||'')));
+    if(sort==='points')arr.sort((a,b)=>(b.pontos-a.pontos)||(b.gasto_total-a.gasto_total)||String(a.nome||'').localeCompare(String(b.nome||'')));
+    if(sort==='recent')arr.sort((a,b)=>((a.dias_sem_comprar??99999)-(b.dias_sem_comprar??99999))||(b.gasto_total-a.gasto_total));
     return arr;
   }
 
