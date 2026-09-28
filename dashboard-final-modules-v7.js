@@ -5,13 +5,14 @@
   style.id='uxFinalModulesV7Styles';
   style.textContent=`
     .ux-virtual-view{display:none;max-width:1280px;margin:0 auto}
-    body[data-ux-view="qr"] #uxQrView,
+    body[data-ux-view="fidelidad"] #uxQrView,
     body[data-ux-view="envio"] #uxDeliverySettingsView,
     body[data-ux-view="reportes"] #uxReportsView,
     body[data-ux-view="ajustes"] #uxSettingsView{display:block}
 
-    body[data-ux-view="qr"] .main-container,
-    body[data-ux-view="qr"] #ordersAdmin,
+    body[data-ux-view="fidelidad"] .main-container,
+    body[data-ux-view="fidelidad"] #ordersAdmin,
+    body[data-ux-view="fidelidad"] #uxCoreToolbar,
     body[data-ux-view="envio"] .main-container,
     body[data-ux-view="envio"] #ordersAdmin,
     body[data-ux-view="reportes"] .main-container,
@@ -49,27 +50,27 @@
     .ux-caja-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ux-caja-client-head h3{margin:0;font-size:20px;color:#34253c}.ux-caja-client-head p{margin:3px 0 0;font-size:12px;color:#685d6c}.ux-caja-points{font-size:24px;font-weight:900;color:#6a0dad}
     .ux-caja-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.ux-caja-actions button{font-size:13px!important;min-height:44px!important}
     .ux-caja-purchase{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end;margin-top:14px}.ux-caja-purchase label{display:block;font-weight:800;font-size:13px;margin-bottom:5px}.ux-caja-purchase input{min-height:44px}.ux-caja-preview{margin-top:8px;padding:10px 12px;background:#fff7d6;border-radius:10px;color:#6b5700;font-weight:800;font-size:13px}
-    .ux-caja-rewards{display:none;margin-top:12px}.ux-caja-rewards.show{display:block}.ux-caja-reward{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee7f1}.ux-caja-reward:last-child{border-bottom:0}.ux-caja-reward button{width:auto!important;min-width:100px!important}
+    .ux-caja-rewards{margin-top:12px}.ux-caja-reward{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee7f1}.ux-caja-reward:last-child{border-bottom:0}.ux-caja-reward button{width:auto!important;min-width:100px!important}
 
+    .ux-fid-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px;background:#fff;border:1px solid #ebe4ee;border-radius:16px;padding:9px}
+    .ux-fid-tabs button{min-height:44px!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#5c4d62!important;font-size:13px!important;font-weight:850!important}
+    .ux-fid-tabs button.active{background:linear-gradient(135deg,#8c2bd2,#6a0dad)!important;color:#fff!important;border-color:transparent!important}
+    .ux-fid-pane{display:none}.ux-fid-pane.active{display:block}
+    .ux-fid-config-host{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .ux-fid-config-host>.card{display:block!important;max-width:none!important;margin:0!important;min-height:100%;box-shadow:none!important}
+    .ux-fid-rule{padding:12px;border:1px solid #eee7f1;border-radius:12px;background:#faf8fb;margin-top:12px}
+    .ux-fid-rule b{display:block;font-size:14px}.ux-fid-rule small{display:block;font-size:12px;color:#665b6b;margin-top:4px}
+    .ux-fid-history{display:grid;gap:8px;margin-top:12px;max-height:520px;overflow:auto}.ux-fid-history .historico-item{margin:0}
     @media(max-width:1000px){.ux-span-8,.ux-span-7,.ux-span-6,.ux-span-5,.ux-span-4{grid-column:span 12}.ux-mini-kpis{grid-template-columns:repeat(2,1fr)}.ux-order-summary{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:780px){.ux-section-grid{display:block}.ux-panel{margin-bottom:9px;padding:13px;border-radius:14px}.ux-mini-kpis{grid-template-columns:1fr 1fr}.ux-kanban{grid-template-columns:repeat(5,82vw)}.ux-order-summary{grid-template-columns:1fr 1fr}.ux-tr{grid-template-columns:1fr}.ux-report-bars{height:140px}}
+    @media(max-width:780px){.ux-section-grid{display:block}.ux-panel{margin-bottom:9px;padding:13px;border-radius:14px}.ux-mini-kpis{grid-template-columns:1fr 1fr}.ux-kanban{grid-template-columns:repeat(5,82vw)}.ux-order-summary{grid-template-columns:1fr 1fr}.ux-tr{grid-template-columns:1fr}.ux-report-bars{height:140px}.ux-fid-tabs{grid-template-columns:1fr 1fr}.ux-fid-config-host{grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
 
   const sidebar=document.getElementById('uxSidebar');
   const nav=sidebar?.querySelector('.ux-nav');
-  if(nav && ![...nav.querySelectorAll('button')].some(b=>b.textContent.includes('Caja Fidelidad'))){
-    const fidelidadBtn=[...nav.querySelectorAll('button')].find(b=>b.textContent.includes('Programa de Fidelidad')||b.textContent.includes('Fidelidad'));
-    if(fidelidadBtn){
-      const qr=document.createElement('button');
-      qr.innerHTML='<span>▦</span>Caja Fidelidad';
-      qr.dataset.uxCustom='qr';
-      fidelidadBtn.insertAdjacentElement('afterend',qr);
-    }
-  }
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-  const TITLES={qr:['Caja Fidelidad','Registra compras, suma puntos y canjea beneficios en el mostrador.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
+  const TITLES={fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
 
   function setTitle(view){
     const t=TITLES[view];if(!t)return;
@@ -78,7 +79,7 @@
   }
   function setActive(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={qr:'Caja Fidelidad',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
+    const map={fidelidad:'Fidelidad',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
   }
   function showVirtual(view){
@@ -87,45 +88,7 @@
   }
 
   const anchor=document.querySelector('.main-container')||document.body.lastElementChild;
-  const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML=`
-    <div class="ux-section-grid">
-      <div class="ux-panel ux-span-8">
-        <h2>Caja Fidelidad</h2>
-        <p>Identifica al cliente y registra la compra sin salir de esta pantalla.</p>
-        <div class="ux-caja-search">
-          <input id="uxCajaLookup" placeholder="Teléfono o ID del cliente">
-          <button class="btn-secondary" id="uxCajaScanner">📷 QR</button>
-          <button class="btn-primary" id="uxCajaBuscar">BUSCAR</button>
-        </div>
-        <div class="ux-caja-client" id="uxCajaClient">
-          <div class="ux-caja-client-head">
-            <div><h3 id="uxCajaName">Cliente</h3><p id="uxCajaMeta">—</p></div>
-            <div class="ux-caja-points"><span id="uxCajaPoints">0</span> pts</div>
-          </div>
-          <div class="ux-caja-purchase">
-            <div><label>Valor de la compra (MXN)</label><input id="uxCajaPurchase" type="number" min="1" step="0.01" placeholder="Ej. 350"></div>
-            <button class="btn-primary" id="uxCajaConfirm">REGISTRAR COMPRA</button>
-          </div>
-          <div class="ux-caja-preview" id="uxCajaPreview">Ingresa el valor de la compra.</div>
-          <div class="ux-caja-actions">
-            <button class="btn-secondary" id="uxCajaRewards">🎁 Canjear recompensa</button>
-            <button class="btn-secondary" id="uxCajaBonus">⭐ Dar bono</button>
-          </div>
-          <div class="ux-caja-rewards" id="uxCajaRewardsList"></div>
-        </div>
-      </div>
-      <div class="ux-panel ux-span-4">
-        <h2>Operación rápida</h2>
-        <p>Esta es la pantalla que el personal usa durante la atención.</p>
-        <div class="ux-mini-kpis">
-          <div class="ux-mini-kpi"><small>Clientes</small><b id="uxQrClients">—</b></div>
-          <div class="ux-mini-kpi"><small>Recompensas</small><b id="uxQrRewards">—</b></div>
-          <div class="ux-mini-kpi"><small>Cliente actual</small><b id="uxQrCurrent">—</b></div>
-          <div class="ux-mini-kpi"><small>Saldo actual</small><b id="uxQrPoints">—</b></div>
-        </div>
-        <div class="ux-delivery-note">Flujo ideal: identificar → registrar compra → sumar puntos → canjear si corresponde.</div>
-      </div>
-    </div>`;
+  const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML="\n<div class=\"ux-fid-tabs\" id=\"uxFidTabs\">\n  <button type=\"button\" data-fid-tab=\"register\" class=\"active\">Registrar compra</button>\n  <button type=\"button\" data-fid-tab=\"redeem\">Canjear recompensa</button>\n  <button type=\"button\" data-fid-tab=\"history\">Movimientos</button>\n  <button type=\"button\" data-fid-tab=\"config\">Configuración</button>\n</div>\n<div class=\"ux-fid-pane active\" data-fid-pane=\"register\">\n  <div class=\"ux-section-grid\">\n    <div class=\"ux-panel ux-span-8\">\n      <h2>Registrar compra</h2>\n      <p>Identifica al cliente por teléfono, ID o QR y suma sus puntos.</p>\n      <div class=\"ux-caja-search\">\n        <input id=\"uxCajaLookup\" placeholder=\"Teléfono o ID del cliente\">\n        <button class=\"btn-secondary\" id=\"uxCajaScanner\">📷 QR</button>\n        <button class=\"btn-primary\" id=\"uxCajaBuscar\">BUSCAR</button>\n      </div>\n      <div class=\"ux-caja-client\" id=\"uxCajaClient\">\n        <div class=\"ux-caja-client-head\">\n          <div><h3 id=\"uxCajaName\">Cliente</h3><p id=\"uxCajaMeta\">—</p></div>\n          <div class=\"ux-caja-points\"><span id=\"uxCajaPoints\">0</span> pts</div>\n        </div>\n        <div class=\"ux-caja-purchase\">\n          <div><label>Valor de la compra (MXN)</label><input id=\"uxCajaPurchase\" type=\"number\" min=\"1\" step=\"0.01\" placeholder=\"Ej. 350\"></div>\n          <button class=\"btn-primary\" id=\"uxCajaConfirm\">REGISTRAR COMPRA</button>\n        </div>\n        <div class=\"ux-caja-preview\" id=\"uxCajaPreview\">Ingresa el valor de la compra.</div>\n        <div class=\"ux-caja-actions\">\n          <button class=\"btn-secondary\" id=\"uxCajaRewards\">🎁 Canjear recompensa</button>\n          <button class=\"btn-secondary\" id=\"uxCajaHistory\">🧾 Ver movimientos</button>\n        </div>\n      </div>\n    </div>\n    <div class=\"ux-panel ux-span-4\">\n      <h2>Operación rápida</h2>\n      <p>La pantalla principal para registrar compras presenciales.</p>\n      <div class=\"ux-mini-kpis\">\n        <div class=\"ux-mini-kpi\"><small>Clientes</small><b id=\"uxQrClients\">—</b></div>\n        <div class=\"ux-mini-kpi\"><small>Recompensas</small><b id=\"uxQrRewards\">—</b></div>\n        <div class=\"ux-mini-kpi\"><small>Cliente actual</small><b id=\"uxQrCurrent\">—</b></div>\n        <div class=\"ux-mini-kpi\"><small>Saldo actual</small><b id=\"uxQrPoints\">—</b></div>\n      </div>\n      <div class=\"ux-fid-rule\"><b>Regla base actual</b><small>MX$10 de compra = 1 punto. Los bonus configurados pueden multiplicar este valor.</small></div>\n    </div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"redeem\">\n  <div class=\"ux-panel\">\n    <h2>Canjear recompensa</h2>\n    <p id=\"uxRedeemIntro\">Selecciona primero un cliente en Registrar compra.</p>\n    <div class=\"ux-caja-rewards\" id=\"uxCajaRewardsList\"><div class=\"ux-crm-empty\">Selecciona un cliente para ver las recompensas disponibles.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"history\">\n  <div class=\"ux-panel\">\n    <h2>Movimientos</h2>\n    <p id=\"uxFidHistoryIntro\">Consulta compras, puntos acreditados y canjes del cliente seleccionado.</p>\n    <div class=\"ux-actions-row\"><button class=\"btn-secondary\" id=\"uxFidHistoryRefresh\">ACTUALIZAR</button></div>\n    <div class=\"ux-fid-history\" id=\"uxFidHistoryList\"><div class=\"ux-crm-empty\">Selecciona un cliente en Registrar compra.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"config\">\n  <div class=\"ux-panel\">\n    <h2>Configuración de fidelidad</h2>\n    <p>Ajustes que no necesitas modificar durante la operación diaria.</p>\n    <div class=\"ux-fid-rule\"><b>Regla base de puntos</b><small>Actualmente: MX$10 = 1 punto. Los multiplicadores de Puntos Bonus se aplican sobre esta base.</small></div>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityConfigHost\"></div>\n  </div>\n</div>";
   anchor.parentNode.insertBefore(qr,anchor);
 
   const envio=document.createElement('section');envio.id='uxDeliverySettingsView';envio.className='ux-virtual-view';envio.innerHTML=`
@@ -227,6 +190,58 @@
     configureOrdersView();
   }
 
+
+  function showFidTab(tab){
+    const valid=['register','redeem','history','config'];
+    if(!valid.includes(tab))tab='register';
+    document.querySelectorAll('#uxFidTabs [data-fid-tab]').forEach(b=>b.classList.toggle('active',b.dataset.fidTab===tab));
+    document.querySelectorAll('#uxQrView [data-fid-pane]').forEach(p=>p.classList.toggle('active',p.dataset.fidPane===tab));
+    try{sessionStorage.setItem('uai_fidelity_tab',tab)}catch(_){}
+    if(tab==='redeem')cajaLoadRewards();
+    if(tab==='history')loadFidelityHistory();
+    if(tab==='config')mountFidelityConfig();
+  }
+
+  function mountFidelityConfig(){
+    const host=document.getElementById('uxFidelityConfigHost');
+    if(!host)return;
+    ['nivelesVipAdminCard','bonusPontosAdminCard','referidosAdminCard'].forEach(id=>{
+      const card=document.getElementById(id);
+      if(card&&card.parentNode!==host)host.appendChild(card);
+    });
+  }
+
+  async function loadFidelityHistory(){
+    const box=document.getElementById('uxFidHistoryList');
+    const intro=document.getElementById('uxFidHistoryIntro');
+    if(!box)return;
+    let client=null;
+    try{client=typeof clienteSelecionado!=='undefined'?clienteSelecionado:null}catch(_){}
+    if(!client?.uid){
+      box.innerHTML='<div class="ux-crm-empty">Selecciona un cliente en Registrar compra.</div>';
+      if(intro)intro.textContent='Consulta compras, puntos acreditados y canjes del cliente seleccionado.';
+      return;
+    }
+    if(intro)intro.textContent=(client.nome||'Cliente')+' · '+(client.telefone||client.uid);
+    box.innerHTML='<div class="ux-crm-empty">Cargando movimientos…</div>';
+    try{
+      const res=await fetch('/api/historico?uid='+encodeURIComponent(client.uid)+'&t='+Date.now(),{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+      const items=Array.isArray(data.transacoes)?data.transacoes:[];
+      box.innerHTML=items.length?items.map(item=>{
+        const sign=String(item.tipo||'').toLowerCase()==='debito'?'-':'+';
+        const dt=item.data?new Date(item.data).toLocaleString('es-MX'):'';
+        return '<div class="historico-item"><div class="historico-top"><strong>'+sign+Number(item.pontos||0)+' puntos</strong><span>'+dt+'</span></div><div>Compra: $'+Number(item.valor_compra||0).toLocaleString('es-MX',{maximumFractionDigits:2})+' MXN</div><div style="font-size:12px;color:#777">Saldo: '+Number(item.saldo_anterior||0)+' → '+Number(item.saldo_novo||0)+'</div></div>';
+      }).join(''):'<div class="ux-crm-empty">Sin movimientos.</div>';
+    }catch(_){box.innerHTML='<div class="ux-crm-empty">No se pudieron cargar los movimientos.</div>'}
+  }
+
+  document.getElementById('uxFidTabs').addEventListener('click',e=>{
+    const b=e.target.closest('[data-fid-tab]');
+    if(b)showFidTab(b.dataset.fidTab);
+  });
+
   async function cajaSelectClient(value){
     const input=document.getElementById('clienteUid');
     if(!input||typeof buscarCliente!=='function')return false;
@@ -240,6 +255,7 @@
     document.getElementById('uxCajaClient').classList.add('show');
     document.getElementById('uxQrCurrent').textContent=clienteSelecionado.nome||clienteSelecionado.telefone||'Cliente';
     document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+    const intro=document.getElementById('uxRedeemIntro');if(intro)intro.textContent=(clienteSelecionado.nome||'Cliente')+' · '+Number(clienteSelecionado.pontos||0)+' puntos disponibles';
     return true;
   }
 
@@ -270,7 +286,8 @@
   }
 
   window.openCajaFidelidadForClient=async function(uid){
-    showVirtual('qr');
+    showVirtual('fidelidad');
+    showFidTab('register');
     document.getElementById('uxCajaLookup').value=uid||'';
     await cajaSelectClient(uid);
     setTimeout(()=>document.getElementById('uxCajaPurchase')?.focus(),50);
@@ -297,16 +314,15 @@
     document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
     document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
   };
-  document.getElementById('uxCajaRewards').onclick=cajaLoadRewards;
-  document.getElementById('uxCajaBonus').onclick=()=>{
-    [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)==='fidelidad')?.click();
-  };
+  document.getElementById('uxCajaRewards').onclick=()=>showFidTab('redeem');
+  document.getElementById('uxCajaHistory').onclick=()=>showFidTab('history');
+  document.getElementById('uxFidHistoryRefresh').onclick=loadFidelityHistory;
 
   document.addEventListener('click',e=>{
     const b=e.target.closest('#uxSidebar .ux-nav button');if(!b)return;
     const txt=norm(b.textContent);
     let view=null;
-    if(b.dataset.uxCustom==='qr'||txt==='caja fidelidad')view='qr';
+    if(txt==='fidelidad'||txt==='programa de fidelidad')view='fidelidad';
     else if(txt==='configurar envio')view='envio';
     else if(txt==='reportes')view='reportes';
     else if(txt==='ajustes')view='ajustes';
@@ -323,5 +339,6 @@
   attr.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
   setInterval(syncAll,2000);
   setTimeout(syncAll,250);
-  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['qr','envio','reportes','ajustes'].includes(saved))showVirtual(saved)},180);
+  setTimeout(mountFidelityConfig,260);
+  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
 })();
