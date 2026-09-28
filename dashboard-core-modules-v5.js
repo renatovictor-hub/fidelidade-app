@@ -129,6 +129,7 @@
   function applyMobileSection(view,key){
     const sections=sectionLabels(view);
     currentSection[view]=key ?? sections[0]?.key ?? '0';
+    try{sessionStorage.setItem('uai_admin_sub_'+view,currentSection[view])}catch(_){ }
     const selected=sections.find(s=>s.key===currentSection[view]);
     sections.forEach(s=>s.card.classList.toggle('ux-mobile-active',s.key===currentSection[view]));
     toolbar.querySelectorAll('.ux-core-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.section===currentSection[view]));
@@ -610,7 +611,12 @@ let crmData={customers:[],summary:{}};
   });
   bodyObserver.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
 
-  if(document.body.dataset.uxView==='clientes')document.body.dataset.clientSub='base';
+  if(document.body.dataset.uxView==='clientes'){
+    const saved=currentSection.clientes;
+    const sections=sectionLabels('clientes');
+    const selected=sections.find(s=>s.key===saved);
+    document.body.dataset.clientSub=selected&&norm(selected.label).includes('opiniones')?'opiniones':'base';
+  }
   setTimeout(refreshCore,120);
   setTimeout(()=>loadCRM(),500);
 })();
