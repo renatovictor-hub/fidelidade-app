@@ -17,10 +17,20 @@
     if(!shell){shell=document.createElement('div');shell.id='clientFidGrowth';shell.className='cfg-shell';const anchor=home.querySelector('.card,.hello,.points')||home.firstElementChild;if(anchor?.parentNode)anchor.insertAdjacentElement('afterend',shell);else home.appendChild(shell)}
     const next=d.next_reward;
     const nextHtml=next?`<div class="cfg-card"><div class="cfg-next"><div><h3>🎯 Tu próxima recompensa</h3><p>${next.nome||'Recompensa'} · ${next.pontos} pts</p></div><strong>Faltan ${next.faltan}</strong></div><div class="cfg-progress"><i style="width:${Math.min(100,Math.round(((Number(d.client?.pontos||0))/(Number(next.pontos)||1))*100))}%"></i></div><p style="margin-top:7px">Con una compra aproximada de $ ${Number(next.compra_aprox||0).toLocaleString('es-MX')} podrías alcanzarla.</p></div>`:'';
-    const missionHtml=(d.missions||[]).length?`<div class="cfg-card"><h3>🎮 Misiones</h3><p>Completa retos y desbloquea beneficios.</p><div class="cfg-missions">${d.missions.slice(0,4).map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}</div>`).join('')}</div></div>`: '';
+    const missionHtml=(d.missions||[]).length?`<div class="cfg-card"><h3>🎮 Misiones</h3><p>Completa retos y desbloquea beneficios.</p><div class="cfg-missions">${d.missions.slice(0,4).map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}${m.progress?.completed&&!m.claimed?'<button class="btn-primary cfg-claim" data-mission="'+m.id+'" style="margin-top:8px;width:100%">RECLAMAR PREMIO</button>':m.claimed?'<p class="cfg-complete" style="margin-top:7px">✓ Premio reclamado</p>':''}</div>`).join('')}</div></div>`: '';
     const badges=(d.badges||[]).length?`<div class="cfg-card"><h3>🏅 Tus logros</h3><div class="cfg-badges">${d.badges.map(b=>`<div class="cfg-badge"><span>${b.icon}</span><b>${b.name}</b></div>`).join('')}</div></div>`:'';
     const surprise=d.surprise?`<div class="cfg-card cfg-surprise"><h3>🎁 ${d.surprise.titulo||'Beneficio especial'}</h3><p>${d.surprise.texto||''}</p></div>`:'';
     shell.innerHTML=nextHtml+surprise+missionHtml+badges;
+    shell.querySelectorAll('.cfg-claim').forEach(btn=>btn.onclick=async()=>{
+      btn.disabled=true;btn.textContent='RECLAMANDO...';
+      try{
+        const r=await fetch('/api/fidelidad-growth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'claim_mission',uid,id:btn.dataset.mission})});
+        const out=await r.json().catch(()=>({}));
+        if(!r.ok)throw new Error(out.error||'No se pudo reclamar');
+        alert('🎉 Premio reclamado: +'+Number(out.puntos||0)+' puntos');
+        await load();
+      }catch(e){alert(e.message)}finally{btn.disabled=false}
+    });
   }
   load();setInterval(load,30000);window.addEventListener('focus',load);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load()});
 })();
