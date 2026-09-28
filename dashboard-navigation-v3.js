@@ -28,11 +28,11 @@
   document.head.appendChild(style);
   document.body.classList.add('ux3');
 
-  const TITLES={resumen:['Dashboard general','Clientes, fidelidad, campañas y pedidos en un solo lugar.'],clientes:['Clientes','Base de clientes y actividad.'],fidelidad:['Fidelidad','Puntos, niveles y beneficios.'],recompensas:['Recompensas','Crea y administra beneficios para tus clientes.'],ofertas:['Ofertas / Push','Campañas, promociones y notificaciones.'],pedidos:['Pedidos','Gestiona los pedidos activos y su progreso.'],entregas:['Entregas','Seguimiento operativo de pedidos para entrega.'],envio:['Configurar envío','Reglas, zonas y tarifas de entrega.'],reportes:['Reportes','Indicadores y rendimiento del negocio.'],ajustes:['Ajustes','Configuración de la empresa y sus módulos.']};
+  const TITLES={resumen:['Dashboard general','Clientes, fidelidad, campañas y pedidos en un solo lugar.'],clientes:['Clientes','Base de clientes y actividad.'],fidelidad:['Programa de Fidelidad','Configura niveles, bonos, referidos y reglas del programa.'],recompensas:['Recompensas','Crea y administra beneficios para tus clientes.'],ofertas:['Ofertas / Push','Campañas, promociones y notificaciones.'],pedidos:['Pedidos','Gestiona los pedidos activos y su progreso.'],entregas:['Entregas','Seguimiento operativo de pedidos para entrega.'],envio:['Configurar envío','Reglas, zonas y tarifas de entrega.'],reportes:['Reportes','Indicadores y rendimiento del negocio.'],ajustes:['Ajustes','Configuración de la empresa y sus módulos.']};
 
   const GROUPS={
     clientes:['base de clientes','opiniones de clientes'],
-    fidelidad:['agregar puntos','niveles vip','bonus','bono','referidos'],
+    fidelidad:['niveles vip','bonus','bono','referidos'],
     recompensas:['recompensas','cumpleaños'],
     ofertas:['promociones activas','promociones expiradas','crear nueva promoción','notificaciones'],
     envio:['configurar envío','tarifa','entrega'],
@@ -55,13 +55,14 @@
 
   function setActiveNav(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={resumen:'Resumen',clientes:'Clientes',fidelidad:'Fidelidad',recompensas:'Recompensas',ofertas:'Ofertas / Push',pedidos:'Pedidos',entregas:'Entregas',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
+    const map={resumen:'Resumen',clientes:'Clientes',fidelidad:'Programa de Fidelidad',recompensas:'Recompensas',ofertas:'Ofertas / Push',pedidos:'Pedidos',entregas:'Entregas',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
     mobile.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   }
 
   function show(view){
     classify();
+    try{sessionStorage.setItem('uai_admin_view',view)}catch(_){ }
     document.body.dataset.uxView=view;
     document.querySelectorAll('.main-container .card').forEach(c=>c.classList.toggle('ux-show',c.dataset.uxGroup===view));
     const title=TITLES[view]||[view,''];
@@ -83,5 +84,5 @@
 
   const observer=new MutationObserver(()=>{classify();const current=document.body.dataset.uxView||'resumen';if(current!=='resumen'&&current!=='pedidos'&&current!=='entregas')document.querySelectorAll('.main-container .card').forEach(c=>c.classList.toggle('ux-show',c.dataset.uxGroup===current))});
   observer.observe(document.body,{childList:true,subtree:true});
-  setTimeout(()=>show('resumen'),100);
+  setTimeout(()=>{let saved='resumen';try{saved=sessionStorage.getItem('uai_admin_view')||'resumen'}catch(_){ }if(['qr','envio','reportes','ajustes'].includes(saved)) saved='resumen';show(saved)},100);
 })();
