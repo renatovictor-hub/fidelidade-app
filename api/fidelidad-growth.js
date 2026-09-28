@@ -95,7 +95,8 @@ export default async function handler(req,res){
       const points=Number(user.pontos||0),acc=Number(user.pontos_acumulados??points);
       const nextReward=all.rewards.find(r=>Number(r.pontos||0)>points)||null;
       const vip=all.vip.ativo===false?"":acc>=Number(all.vip.diamante||1500)?"Diamante":acc>=Number(all.vip.ouro||800)?"Oro":acc>=Number(all.vip.prata||300)?"Plata":"Bronce";
-      const missions=all.missions.filter(m=>m.ativa!==false).map(m=>({...m,progress:missionProgress(m,stats)}));
+      const claims=user.mission_claims||{};
+      const missions=all.missions.filter(m=>m.ativa!==false).map(m=>({...m,progress:missionProgress(m,stats),claimed:claims[m.id]===true}));
       const badges=[];
       if(stats.compras>=1)badges.push({icon:"🥉",name:"Primera compra"});
       if(stats.compras>=3)badges.push({icon:"🔥",name:"Cliente frecuente"});
@@ -106,12 +107,37 @@ export default async function handler(req,res){
         client:{uid,nome:user.nome||user.nombre||"",pontos:points,pontos_acumulados:acc,vip,compras:stats.compras,gasto:stats.gasto},
         next_reward:nextReward?{...nextReward,faltan:Math.max(0,Number(nextReward.pontos||0)-points),compra_aprox:Math.max(0,(Number(nextReward.pontos||0)-points)*10)}:null,
         missions,badges,
-        surprise:all.surprise.ativa===false?null:all.surprise,
+        surprise:(()=>{
+          if(all.surprise.ativa===false)return null;
+          const rank={Bronce:0,Plata:1,Oro:2,Diamante:3};
+          return (rank[vip]??0)>=(rank[String(all.surprise.min_nivel||"Bronce")]??0)?all.surprise:null;
+        })(),
         benefits:[
           vip==="Oro"||vip==="Diamante"?{icon:"👑",title:"Beneficio VIP",text:vip==="Diamante"?"Acceso a beneficios Diamante":"Beneficios exclusivos nivel Oro"}:null,
           stats.compras>=3?{icon:"🔥",title:"Cliente frecuente",text:"Ya formas parte de nuestros clientes frecuentes."}:null
         ].filter(Boolean)
       });
+    }
+
+    if(req.method==="POST"&&String(req.body?.action||"")==="claim_mission"){
+      const uid=String(req.body?.uid||"").trim(),id=String(req.body?.id||"").trim();
+      if(!validUid(uid)||!id)return res.status(400).json({error:"Datos inválidos"});
+      const all=await loadAll(),user=all.users[uid],mission=all.missions.find(m=>m.id===id&&m.ativa!==false);
+      if(!user||!mission)return res.status(404).json({error:"Misión no encontrada"});
+      if(user.mission_claims?.[id]===true)return res.status(409).json({error:"Premio ya reclamado"});
+      const stats=customerStats(uid,user,all.byUser.get(uid)||[]),progress=missionProgress(mission,stats);
+      if(!progress.completed)return res.status(400).json({error:"Misión todavía incompleta"});
+      const reward=Math.max(0,Number(mission.premio_puntos||0)),old=Number(user.pontos||0),next=old+reward,tx=db.ref("transacoes").push(),now=new Date().toISOString();
+      const updates={};
+      updates[`users/${uid}/mission_claims/${id}`]=true;
+      updates[`users/${uid}/mission_claimed_at/${id}`]=now;
+      if(reward>0){
+        updates[`users/${uid}/pontos`]=next;
+        updates[`users/${uid}/pontos_acumulados`]=Number(user.pontos_acumulados??old)+reward;
+        updates[`transacoes/${tx.key}`]={user_id:uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",tipo:"credito",origem:"mision",mision_id:id,mision_titulo:mission.titulo||"",pontos:reward,valor_compra:0,saldo_anterior:old,saldo_novo:next,data:now};
+      }
+      await db.ref().update(updates);
+      return res.status(200).json({success:true,puntos:reward,saldo_nuevo:next});
     }
 
     if(!requireAdmin(req,res))return;
