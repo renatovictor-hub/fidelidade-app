@@ -129,8 +129,8 @@
   function applyMobileSection(view,key){
     const sections=sectionLabels(view);
     currentSection[view]=key ?? sections[0]?.key ?? '0';
-    try{sessionStorage.setItem('uai_admin_sub_'+view,currentSection[view])}catch(_){ }
     const selected=sections.find(s=>s.key===currentSection[view]);
+    try{sessionStorage.setItem('uai_admin_sub_'+view,selected?.label||currentSection[view])}catch(_){ }
     sections.forEach(s=>s.card.classList.toggle('ux-mobile-active',s.key===currentSection[view]));
     toolbar.querySelectorAll('.ux-core-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.section===currentSection[view]));
     if(view==='clientes'){
@@ -151,8 +151,15 @@
       const rank=t=>norm(t).includes('agregar puntos')?0:norm(t).includes('niveles vip')?1:(norm(t).includes('bonus')||norm(t).includes('bono'))?2:norm(t).includes('referidos')?3:9;
       sections=sections.sort((a,b)=>rank(a.label)-rank(b.label));
     }
-    tabs.innerHTML=sections.map((s,i)=>'<button type="button" data-section="'+s.key+'" class="'+(i===0?'active':'')+'">'+s.label+'</button>').join('');
-    const chosen=currentSection[view]||sections[0]?.key;
+    let savedSub='';
+    try{savedSub=sessionStorage.getItem('uai_admin_sub_'+view)||''}catch(_){ }
+    let chosen=currentSection[view];
+    if(!chosen&&savedSub){
+      const match=sections.find(s=>norm(s.label)===norm(savedSub)||s.key===savedSub);
+      if(match)chosen=match.key;
+    }
+    chosen=chosen||sections[0]?.key;
+    tabs.innerHTML=sections.map(s=>'<button type="button" data-section="'+s.key+'" class="'+(s.key===chosen?'active':'')+'">'+s.label+'</button>').join('');
     applyMobileSection(view,chosen);
   }
   toolbar.addEventListener('click',e=>{const b=e.target.closest('button[data-section]');if(!b)return;applyMobileSection(document.body.dataset.uxView,b.dataset.section)});
@@ -189,10 +196,10 @@ let crmData={customers:[],summary:{}};
       '<div class="ux-crm-tools">'+
         '<input class="ux-crm-search" id="uxCrmSearch" placeholder="Buscar cliente por nombre, teléfono o ID…">'+
         '<select class="ux-crm-sort" id="uxCrmSort">'+
-          '<option value="spend">Mayor gasto</option>'+
-          '<option value="purchases">Más compras</option>'+
-          '<option value="recent">Compra más reciente</option>'+
-          '<option value="points">Más puntos</option>'+
+          '<option value="spend">Orden: Mayor gasto</option>'+
+          '<option value="purchases">Orden: Más compras</option>'+
+          '<option value="recent">Orden: Compra más reciente</option>'+
+          '<option value="points">Orden: Más puntos</option>'+
         '</select>'+
       '</div>'+
       '<div class="ux-crm-filters" id="uxCrmFilters">'+
