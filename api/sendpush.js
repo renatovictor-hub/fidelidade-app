@@ -79,10 +79,71 @@ export default async function handler(req, res) {
       }
 
       if (String(req.query?.feedback || "") === "1") {
-        const snap = await db.ref("feedback").limitToLast(50).once("value");
-        const feedback = Object.entries(snap.val() || {}).map(([id,item]) => ({ id, ...(item || {}) }))
-          .sort((a,b) => String(b.data || "").localeCompare(String(a.data || "")));
-        return res.status(200).json({ success:true, feedback });
+        const [feedbackSnap, usersSnap, txSnap] = await Promise.all([
+          db.ref("feedback").limitToLast(100).once("value"),
+          db.ref("users").once("value"),
+          db.ref("transacoes").once("value")
+        ]);
+
+        const users = usersSnap.val() || {};
+        const txRaw = txSnap.val() || {};
+        const txByUser = new Map();
+        for (const tx of Object.values(txRaw)) {
+          const uid = String(tx?.user_id || tx?.uid || "").trim();
+          if (!uid) continue;
+          if (!txByUser.has(uid)) txByUser.set(uid, []);
+          txByUser.get(uid).push(tx || {});
+        }
+        for (const items of txByUser.values()) {
+          items.sort((a,b) => String(b.data || b.created_at || "").localeCompare(String(a.data || a.created_at || "")));
+        }
+
+        const feedback = Object.entries(feedbackSnap.val() || {}).map(([id,item]) => {
+          const base = item || {};
+          const uid = String(base.user_id || base.uid || "").trim();
+          const user = users[uid] || {};
+          const compraRef = String(base.compra_ref || "");
+          const txs = txByUser.get(uid) || [];
+          let compra = null;
+          if (compraRef) {
+            const target = Date.parse(compraRef);
+            compra = txs.find(tx => {
+              const ts = Date.parse(String(tx.data || tx.created_at || ""));
+              return Number.isFinite(target) && Number.isFinite(ts) && Math.abs(ts - target) <= 5 * 60 * 1000;
+            }) || null;
+          }
+          return {
+            id,
+            ...base,
+            user_id: uid,
+            cliente_pontos: Number(user.pontos || 0),
+            google_review_clicked: user.google_review_clicked === true,
+            compra_valor: Number(compra?.valor_compra || 0),
+            compra_pontos: Number(compra?.pontos || 0),
+            atendido: base.atendido === true,
+            atendido_em: base.atendido_em || ""
+          };
+        }).sort((a,b) => String(b.data || "").localeCompare(String(a.data || "")));
+
+        const total = feedback.length;
+        const media = total ? feedback.reduce((s,x)=>s+Number(x.estrelas||0),0) / total : 0;
+        const atencao = feedback.filter(x => Number(x.estrelas||0) <= 2 && !x.atendido).length;
+        const comComentario = feedback.filter(x => String(x.comentario||"").trim()).length;
+        const googleClicks = new Set(
+          feedback.filter(x => x.google_review_clicked && x.user_id).map(x => x.user_id)
+        ).size;
+
+        return res.status(200).json({
+          success:true,
+          feedback,
+          summary:{
+            total,
+            media:Number(media.toFixed(1)),
+            atencao,
+            com_comentario:comComentario,
+            google_clicks:googleClicks
+          }
+        });
       }
 
       const snap = await db.ref("push_historico").limitToLast(30).once("value");
@@ -159,6 +220,20 @@ export default async function handler(req, res) {
       };
       await db.ref("config/bonus_pontos").set(limpio);
       return res.status(200).json({ success:true, config:limpio });
+    }
+
+    if (action === "feedback_attended") {
+      const id = String(req.body?.id || "").trim();
+      const attended = req.body?.atendido !== false;
+      if (!id) return res.status(400).json({ error:"Opinión inválida" });
+      const ref = db.ref(`feedback/${id}`);
+      const snap = await ref.once("value");
+      if (!snap.exists()) return res.status(404).json({ error:"Opinión no encontrada" });
+      await ref.update({
+        atendido: attended,
+        atendido_em: attended ? new Date().toISOString() : null
+      });
+      return res.status(200).json({ success:true, id, atendido:attended });
     }
 
     if (action === "birthday_redeem") {
