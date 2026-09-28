@@ -43,7 +43,7 @@
     <nav class="ux-nav">
       <button data-go="top" class="active"><span>▦</span>Resumen</button>
       <button data-find="Base de Clientes"><span>👥</span>Clientes</button>
-      <button data-find="Niveles VIP"><span>★</span>Programa de Fidelidad</button>
+      <button data-find="Niveles VIP"><span>★</span>Fidelidad</button>
       <button data-find="Recompensas"><span>🎁</span>Recompensas</button>
       <button data-find="Promoción"><span>🔔</span>Ofertas / Push</button>
       <div class="ux-divider"></div>
@@ -75,7 +75,7 @@
     </div>
     <div class="ux-overview-row">
       <div class="ux-welcome"><h2>Visión general de Uai Sô</h2><p>Este dashboard ya está siendo organizado como una plataforma SaaS modular. Cada empresa podrá tener su propia marca, módulos contratados, reglas de fidelidad, catálogo y operación.</p><div class="ux-pill-row"><span>✓ Fidelidad activo</span><span>✓ Delivery activo</span><span>Personalización por empresa</span><span>Multiempresa preparado</span></div></div>
-      <div class="ux-quick"><strong>Acciones rápidas</strong><div class="ux-quick-actions"><button class="primary" data-find="Niveles VIP">Configurar fidelidad</button><button data-find="Recompensas">+ Recompensa</button><button data-find="Promoción">+ Oferta</button><button data-id="ordersAdmin">Ver pedidos</button></div></div>
+      <div class="ux-quick"><strong>Acciones rápidas</strong><div class="ux-quick-actions"><button class="primary" data-find="Niveles VIP">Fidelidad</button><button data-find="Recompensas">+ Recompensa</button><button data-find="Promoción">+ Oferta</button><button data-id="ordersAdmin">Ver pedidos</button></div></div>
     </div>`;
   const main = document.querySelector('.main-container');
   document.body.insertBefore(overview, main || document.body.firstChild);
