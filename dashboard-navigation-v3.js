@@ -86,7 +86,8 @@
   const observer=new MutationObserver(()=>{classify();const current=document.body.dataset.uxView||'resumen';if(current!=='resumen'&&current!=='pedidos'&&current!=='entregas')document.querySelectorAll('.main-container .card').forEach(c=>c.classList.toggle('ux-show',c.dataset.uxGroup===current))});
   observer.observe(document.body,{childList:true,subtree:true});
   setTimeout(()=>{let saved='resumen';try{saved=sessionStorage.getItem('uai_admin_view')||'resumen'}catch(_){ }
-    if(['qr','envio','reportes','ajustes'].includes(saved)){
+    if(saved==='qr'){saved='fidelidad';try{sessionStorage.setItem('uai_admin_view','fidelidad')}catch(_){ }}
+    if(['fidelidad','envio','reportes','ajustes'].includes(saved)){
       const virtualSaved=saved;
       show('resumen');
       try{sessionStorage.setItem('uai_admin_view',virtualSaved)}catch(_){ }
