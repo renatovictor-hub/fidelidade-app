@@ -2,6 +2,8 @@
   if(document.getElementById('uaiHelpStyles')) return;
 
   const HELP=[
+    {keys:['nueva misión'],legend:'Crea un reto con una meta, un plazo y un premio para incentivar una conducta específica.',use:'Sirve para motivar al cliente a comprar más veces, gastar más o acumular puntos dentro de un período.',how:'Define qué debe lograr, cuánto tiempo tiene y qué premio recibe al completar la meta.',example:'3 compras en 30 días → +50 puntos.',benefit:'Convierte la fidelidad en un juego con una meta clara y aumenta la frecuencia de compra.'},
+    {keys:['nueva automatización'],legend:'Crea una regla que detecta automáticamente qué clientes cumplen una condición y prepara una campaña para ellos.',use:'Sirve para encontrar públicos como inactivos, nuevos, frecuentes o clientes cerca de una recompensa.',how:'Elige la condición, define el umbral y escribe el push. El sistema calcula el público y tú confirmas el envío.',example:'30 días sin comprar → enviar “Te extrañamos”.',benefit:'Reduce trabajo manual y permite actuar sobre clientes en el momento correcto.'},
     {keys:['salud de la base'],legend:'Resume la actividad de tus clientes y ayuda a detectar quién necesita una acción.',use:'Muestra rápidamente clientes activos, inactivos y nuevos.',how:'Úsalo como punto de partida para decidir a quién contactar o incentivar.',example:'Si aumentan los inactivos +30d, puedes crear una campaña de regreso.',benefit:'Ayuda a recuperar clientes antes de perderlos.'},
     {keys:['base de clientes'],legend:'Busca, filtra y analiza tus clientes para entender su valor y frecuencia.',use:'Funciona como tu CRM de clientes.',how:'Busca por nombre o teléfono, filtra y abre el perfil para tomar una acción.',example:'Filtra inactivos y envíales una oferta de regreso.',benefit:'Centraliza la relación con el cliente y facilita la retención.'},
     {keys:['opiniones de clientes'],legend:'Analiza la satisfacción de tus clientes y actúa sobre comentarios que necesitan atención.',use:'Agrupa calificaciones y comentarios recibidos.',how:'Filtra por estrellas, abre el cliente y responde con una acción.',example:'Una opinión de 2★ puede generar contacto por WhatsApp y una recompensa compensatoria.',benefit:'Convierte una mala experiencia en una oportunidad de recuperación.'},
@@ -68,7 +70,7 @@
 
   function decorate(root=document){
     root.querySelectorAll('.card,.ux-panel,.fg-card,.ux-client-panel,.reviews-v2').forEach(box=>{
-      if(box.classList.contains('uai-help-ready'))return;
+      if(box.classList.contains('uai-help-ready')||box.classList.contains('uai-no-help'))return;
       const heading=box.querySelector(':scope > h2,:scope > h3,:scope > .review-top h3');
       if(!heading)return;
       const title=heading.textContent.trim(),h=findHelp(title);if(!h)return;
