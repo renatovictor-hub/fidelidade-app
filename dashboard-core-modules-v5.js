@@ -483,6 +483,66 @@ let crmData={customers:[],summary:{}};
     }
   }
 
+  window.uaiOpenCustomerProfile=async function(uid){
+    await loadCRM(true);
+    const customer=crmData.customers.find(c=>c.uid===uid);
+    if(!customer)return false;
+    const clientNav=[...document.querySelectorAll('#uxSidebar .ux-nav button')].find(n=>norm(n.textContent)==='clientes');
+    clientNav?.click();
+    await new Promise(r=>setTimeout(r,80));
+    const sections=sectionLabels('clientes');
+    const base=sections.find(s=>norm(s.label).includes('base de clientes'))||sections[0];
+    if(base){
+      currentSection.clientes=base.key;
+      renderToolbar('clientes');
+      applyMobileSection('clientes',base.key);
+    }
+    crmSelected=uid;
+    renderCRM();
+    renderCRMDetail(uid);
+    setTimeout(()=>{
+      const row=document.querySelector('#uxCrmRows [data-uid="'+CSS.escape(uid)+'"]');
+      row?.scrollIntoView({behavior:'smooth',block:'center'});
+    },80);
+    return true;
+  };
+
+  window.uaiCustomerAction=async function(uid,action){
+    await loadCRM(true);
+    const x=crmData.customers.find(c=>c.uid===uid);
+    if(!x)return false;
+    if(action==='reward'){await directReward(x);return true}
+    if(action==='offer'){directOffer(x);return true}
+    if(action==='opinions'){await directOpinions(x);return true}
+    if(action==='history'){
+      openActionModal('Historial · '+(x.nome||x.telefone||'Cliente'),'<div class="ux-crm-empty">Cargando historial…</div>');
+      try{
+        const items=await fetchClientHistory(x.uid);
+        document.getElementById('uxHistoryBody').innerHTML=renderHistoryHtml(items);
+      }catch(_){
+        document.getElementById('uxHistoryBody').innerHTML='<div class="ux-crm-empty">No se pudo cargar el historial.</div>';
+      }
+      return true;
+    }
+    if(action==='whatsapp'){
+      const digits=String(x.telefone||'').replace(/\D/g,'');
+      if(!digits)return false;
+      const phone=digits.length===10?'52'+digits:digits;
+      const url='https://wa.me/'+phone;
+      const win=window.open(url,'_blank');
+      if(!win)window.location.href=url;
+      return true;
+    }
+    if(action==='points'){
+      if(typeof window.openCajaFidelidadForClient==='function'){
+        await window.openCajaFidelidadForClient(x.uid);
+        return true;
+      }
+      await directAddPoints(x);return true;
+    }
+    return false;
+  };
+
   async function loadCRM(force=false){
     if(!force&&Date.now()-crmLoadedAt<60000&&crmData.customers.length)return;
     prepareCRM();
