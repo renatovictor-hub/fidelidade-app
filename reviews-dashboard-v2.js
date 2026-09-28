@@ -2,6 +2,8 @@
   if(document.getElementById('reviewsDashboardV2')) return;
   const old=document.getElementById('reviewsOpinionesAdminCard');
   if(!old) return;
+  const reviewsHost=old.parentNode;
+  const reviewsAnchor=old.nextSibling;
   old.remove();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const digits=v=>String(v||'').replace(/\D/g,'');
@@ -14,7 +16,7 @@
   card.className='card reviews-v2';
   card.id='reviewsDashboardV2';
   card.innerHTML='<h3>⭐ Opiniones de clientes</h3><div style="font-size:13px;color:#625768;line-height:1.5">Detecta clientes satisfechos, identifica problemas y actúa sin salir del panel.</div><div class="reviews-v2-summary"><div class="reviews-v2-kpi"><small>Nota media</small><b id="rv2Avg">—</b></div><div class="reviews-v2-kpi"><small>Opiniones</small><b id="rv2Total">—</b></div><div class="reviews-v2-kpi"><small>Necesitan atención</small><b id="rv2Attention">—</b></div><div class="reviews-v2-kpi"><small>Google</small><b id="rv2Google">—</b></div></div><div class="reviews-v2-tools"><input class="reviews-v2-search" id="rv2Search" placeholder="Buscar cliente, teléfono o comentario…"><select id="rv2Sort"><option value="recent">Orden: Más recientes</option><option value="low">Orden: Menor nota</option><option value="high">Orden: Mayor nota</option></select><select id="rv2Limit"><option value="5">Mostrar: 5</option><option value="10" selected>Mostrar: 10</option><option value="all">Mostrar: Todas</option></select></div><div class="reviews-v2-filters" id="rv2Filters"><button data-filter="all" class="active">Todas</button><button data-filter="attention">⚠ Atención</button><button data-filter="5">5★</button><button data-filter="4">4★</button><button data-filter="3">3★</button><button data-filter="2">2★</button><button data-filter="1">1★</button><button data-filter="comment">Con comentario</button><button data-filter="30d">Últimos 30 días</button><button data-filter="attended">Atendidas</button><button data-filter="client" id="rv2ClientFilter">Cliente seleccionado</button></div><div class="reviews-v2-count" id="rv2Count">Cargando opiniones…</div><div class="reviews-v2-list" id="rv2List"><div class="review-v2-empty">Cargando…</div></div>';
-  old.parentNode.insertBefore(card,old);
+  if(reviewsAnchor) reviewsHost.insertBefore(card,reviewsAnchor); else reviewsHost.appendChild(card);
   const $=id=>document.getElementById(id);
   function currentClient(){try{return typeof clienteSelecionado!=='undefined'?clienteSelecionado:null}catch(_){return null}}
   function sameClient(item,c){if(!c)return false;const uid=String(c.uid||''),tel=digits(c.telefone),iu=String(item.user_id||item.uid||''),it=digits(item.telefone||item.phone);return (uid&&iu===uid)||(tel&&it===tel)}
