@@ -59,7 +59,7 @@
   const sidebar=document.getElementById('uxSidebar');
   const nav=sidebar?.querySelector('.ux-nav');
   if(nav && ![...nav.querySelectorAll('button')].some(b=>b.textContent.includes('Caja Fidelidad'))){
-    const fidelidadBtn=[...nav.querySelectorAll('button')].find(b=>b.textContent.includes('Fidelidad'));
+    const fidelidadBtn=[...nav.querySelectorAll('button')].find(b=>b.textContent.includes('Programa de Fidelidad')||b.textContent.includes('Fidelidad'));
     if(fidelidadBtn){
       const qr=document.createElement('button');
       qr.innerHTML='<span>▦</span>Caja Fidelidad';
@@ -82,6 +82,7 @@
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
   }
   function showVirtual(view){
+    try{sessionStorage.setItem('uai_admin_view',view)}catch(_){ }
     document.body.dataset.uxView=view;setTitle(view);setActive(view);document.body.classList.remove('ux-drawer');window.scrollTo({top:0,behavior:'auto'});syncAll();
   }
 
@@ -322,4 +323,5 @@
   attr.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
   setInterval(syncAll,2000);
   setTimeout(syncAll,250);
+  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['qr','envio','reportes','ajustes'].includes(saved))showVirtual(saved)},180);
 })();
