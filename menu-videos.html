@@ -161,23 +161,32 @@ function renderCatalog(){
 }
 
 function product(id){return PRODUCTS.find(x=>x.id===id)}
-function openMedia(id){const p=product(id);if(!p)return;if(p.video)return openVideo(id);if(p.image){$('mediaImage').src=p.image;$('mediaImage').alt=p.name;$('imageWrap').classList.add('open')}}
-function closeImage(){$('imageWrap').classList.remove('open');$('mediaImage').removeAttribute('src')}
+function resumeExploreMedia(){
+  if(menuView!=='explore')return;
+  const v=document.querySelector(`.dish[data-index="${activeIndex}"] video`);
+  if(v){if(!v.src&&v.dataset.src)v.src=v.dataset.src;v.muted=muted;v.play().catch(()=>{})}
+}
 function openMedia(id){
   const p=product(id);if(!p)return;
   document.querySelectorAll('.dish video').forEach(v=>v.pause());
-  const player=$('popupVideo'),img=$('popupImage');
-  player.pause();player.removeAttribute('src');player.load();player.classList.add('hidden');
-  img.removeAttribute('src');img.classList.add('hidden');
-  if(p.video){player.src=p.video;player.poster=p.image||p.thumb||'';player.muted=false;player.classList.remove('hidden');player.play().catch(()=>{})}
-  else if(p.image){img.src=p.image;img.alt=p.name;img.classList.remove('hidden')}
-  else return;
-  videoProductId=id;$('videoWrap').classList.add('open');
+  if(p.video)return openVideo(id);
+  if(p.image)return openImage(id);
 }
-function openVideo(id){openMedia(id)}
+function openImage(id){
+  const p=product(id);if(!p?.image)return;
+  $('mediaImage').src=p.image;$('mediaImage').alt=p.name;$('imageWrap').classList.add('open');
+}
+function closeImage(){
+  $('imageWrap').classList.remove('open');$('mediaImage').removeAttribute('src');resumeExploreMedia();
+}
+function openVideo(id){
+  const p=product(id);if(!p?.video)return;
+  const player=$('popupVideo');videoProductId=id;
+  player.pause();player.src=p.video;player.poster=p.image||p.thumb||'';player.muted=false;player.currentTime=0;
+  $('videoWrap').classList.add('open');player.play().catch(()=>{});
+}
 function closeVideo(){
-  const player=$('popupVideo'),img=$('popupImage');player.pause();player.removeAttribute('src');player.load();player.classList.add('hidden');img.removeAttribute('src');img.classList.add('hidden');$('videoWrap').classList.remove('open');videoProductId=null;
-  if(menuView==='explore'){const v=document.querySelector(`.dish[data-index="${activeIndex}"] video`);if(v){if(!v.src&&v.dataset.src)v.src=v.dataset.src;v.muted=muted;v.play().catch(()=>{})}}
+  const player=$('popupVideo');player.pause();player.removeAttribute('src');player.load();$('videoWrap').classList.remove('open');videoProductId=null;resumeExploreMedia();
 }
 function openDetails(id){const p=product(id);if(!p)return;detailState={productId:id,choices:{},extras:new Set()};$('detailName').textContent=p.name;$('detailDescription').textContent=p.description;$('detailIngredients').innerHTML=p.ingredients.map(x=>`<span>${esc(x)}</span>`).join('');$('detailNote').value='';$('detailOrder').onclick=addConfiguredToCart;renderDetailOptions();$('detailsWrap').classList.add('open')}
 function closeDetails(){$('detailsWrap').classList.remove('open');detailState=null}
