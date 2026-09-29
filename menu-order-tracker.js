@@ -1,72 +1,225 @@
 (() => {
-  // Mobile UI hardening: keep the main action buttons fully visible and
-  // normalize button rendering across Android/Brave/Chrome and iPhone PWAs.
-  const style=document.createElement('style');
-  style.id='uaiso-menu-mobile-fixes';
-  style.textContent=`
-    button{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%;min-height:100%;overflow:hidden}
-    .app{height:var(--uaiso-app-height,100dvh)!important;min-height:var(--uaiso-app-height,100dvh)!important;max-height:var(--uaiso-app-height,100dvh)!important}
-    .feed,.catalog{height:100%!important;max-height:100%!important}
-    .dish{height:var(--uaiso-app-height,100dvh)!important;min-height:var(--uaiso-app-height,100dvh)!important;max-height:var(--uaiso-app-height,100dvh)!important}
-    .content{bottom:0!important;padding-bottom:calc(20px + var(--safe-bottom))!important}
-    .view-switch button,.choice-card span,.location-action,.primary,.add-small,.qty button,.mini-qty button,.close,.icon-btn{
-      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-      line-height:1.15;
-      text-rendering:optimizeLegibility;
-    }
-    .view-switch button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;padding:0 10px}
-    .choice-card span{display:flex;align-items:center;justify-content:center;gap:7px;min-height:52px;padding:9px 10px;white-space:normal}
-    .location-action{display:flex;align-items:center;justify-content:center;gap:7px;min-height:50px;padding:9px 10px;line-height:1.2;white-space:normal}
-    .add-small,.qty button,.mini-qty button,.close,.icon-btn{display:flex;align-items:center;justify-content:center;padding:0}
-    .sheet{padding-bottom:calc(30px + var(--safe-bottom));scroll-padding-bottom:calc(40px + var(--safe-bottom));overscroll-behavior:contain}
-    #cartWrap .sheet{padding-bottom:calc(18px + var(--safe-bottom))}
-    #sendOrder{position:sticky;bottom:calc(10px + var(--safe-bottom));z-index:8;display:flex;align-items:center;justify-content:center;margin-top:8px;box-shadow:0 10px 28px rgba(106,13,173,.30)}
-    #checkoutForm>button[type="submit"]{position:static!important;display:flex;align-items:center;justify-content:center;width:100%;margin:18px 0 calc(8px + var(--safe-bottom));box-shadow:0 10px 28px rgba(37,211,102,.28)}
-    .primary{min-height:54px;padding:12px 16px;font-size:14px;letter-spacing:.01em}
-    @media(max-height:760px){
-      .content{gap:8px!important;padding-top:16px!important;padding-bottom:calc(14px + var(--safe-bottom))!important}
-      .dish h1{font-size:27px!important}.desc{font-size:13px!important;line-height:1.3!important}.actions button{min-height:48px!important}.chip{padding:5px 8px!important}
-    }
-    @media(max-width:360px){
-      .choice-card span,.location-action{font-size:11px}
-      .view-switch{width:min(226px,calc(100vw - 112px))}
-      .view-switch button{font-size:11px;padding:0 6px}
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Android PWAs can report an incorrect 100dvh for the first render and only
-  // correct it after the app is backgrounded/resumed. Use the real visual
-  // viewport and refresh it several times during startup/resume instead.
-  let lastViewportHeight=0;
-  function syncViewportHeight(){
-    const vv=window.visualViewport;
-    const inner=Number(window.innerHeight)||0;
-    const visual=Number(vv?.height)||0;
-    let height=visual>0?visual:inner;
-    if(inner>0&&height>0)height=Math.min(inner,height);
-    if(!height)return;
-    height=Math.round(height);
-    if(Math.abs(height-lastViewportHeight)<1)return;
-    lastViewportHeight=height;
-    document.documentElement.style.setProperty('--uaiso-app-height',height+'px');
+  if (!document.querySelector('link[href*="client-readability.css"]')) {
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='/client-readability.css?v=20260927-1';
+    document.head.appendChild(link);
   }
-  function burstViewportSync(){[0,40,120,300,700,1400,2600].forEach(ms=>setTimeout(syncViewportHeight,ms));}
-  syncViewportHeight();
-  burstViewportSync();
-  window.addEventListener('resize',syncViewportHeight,{passive:true});
-  window.addEventListener('orientationchange',burstViewportSync,{passive:true});
-  window.addEventListener('pageshow',burstViewportSync,{passive:true});
-  window.visualViewport?.addEventListener('resize',syncViewportHeight,{passive:true});
-  window.visualViewport?.addEventListener('scroll',syncViewportHeight,{passive:true});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')burstViewportSync()});
+})();
 
-  const original=window.submitOrder;
-  if(typeof original!=='function')return;
+(() => {
+  const originalSubmit=window.submitOrder;
+  if(typeof originalSubmit!=='function')return;
   let sending=false;
+  let upsellCocaQty=0;
+  const COCA_PRICE=35;
+
   function getUid(){return String(new URLSearchParams(location.search).get('uid')||'').trim();}
   function labelPayment(value,change){return value==='cash'?(change?`Efectivo · Cambio para $${change}`:'Efectivo · Sin cambio'):'Transferencia';}
+  function selectedRequired(p){return (Number(p?.choice?.required)||0)*Math.max(1,Number(detailState?.qty)||1);}
+  function extraLimit(p){const qty=Math.max(1,Number(detailState?.qty)||1);return p?.choice?.required?qty*Number(p.choice.required):qty;}
+  function selectableExtras(p){return (p?.extras||[]).filter(x=>x.id!=='coca-600');}
+
+  function injectResidentialFields(){
+    if(document.getElementById('residentialDelivery'))return;
+    const plaza=document.getElementById('insidePlaza')?.closest('label');
+    if(!plaza)return;
+    const wrap=document.createElement('div');
+    wrap.id='residentialAccessBlock';
+    wrap.innerHTML=`<label class="check-row"><input id="residentialDelivery" type="checkbox"><span>La entrega es en un residencial / condominio</span></label><div id="residentialDetails" class="conditional hidden"><label class="check-row"><input id="residentialQr" type="checkbox"><span>El residencial exige QR para entrar</span></label><label class="field"><span>Instrucciones de entrada al residencial</span><textarea id="residentialInstructions" maxlength="220" placeholder="Ej.: Entrada de proveedores por Av. X, caseta 2, dejar nombre al guardia..."></textarea></label></div>`;
+    plaza.insertAdjacentElement('afterend',wrap);
+    const toggle=()=>document.getElementById('residentialDetails')?.classList.toggle('hidden',!document.getElementById('residentialDelivery')?.checked);
+    document.getElementById('residentialDelivery').addEventListener('change',toggle);
+    toggle();
+  }
+  injectResidentialFields();
+
+  function injectUpsell(){
+    if(document.getElementById('checkoutUpsell'))return;
+    const summary=document.getElementById('checkoutSummary');
+    if(!summary)return;
+    const box=document.createElement('div');
+    box.id='checkoutUpsell';
+    box.className='checkout-step';
+    box.innerHTML=`<h3>¿Algo más para tu pedido?</h3><div class="flavor-row"><div><b>🥤 Coca-Cola 600 ml</b><small>Se agrega como producto separado · ${MXN.format(COCA_PRICE)} c/u</small></div><div class="mini-qty"><button id="upsellCocaMinus" type="button" aria-label="Quitar Coca-Cola">−</button><b id="upsellCocaQty">0</b><button id="upsellCocaPlus" type="button" aria-label="Agregar Coca-Cola">+</button></div></div><p class="delivery-note" style="margin-top:8px">Aquí también podremos sugerir postres y otros productos antes de finalizar.</p>`;
+    summary.insertAdjacentElement('beforebegin',box);
+    document.getElementById('upsellCocaMinus').onclick=()=>changeUpsellCoca(-1);
+    document.getElementById('upsellCocaPlus').onclick=()=>changeUpsellCoca(1);
+    renderUpsell();
+  }
+  function changeUpsellCoca(delta){upsellCocaQty=Math.max(0,Math.min(20,upsellCocaQty+Number(delta||0)));renderUpsell();updateCheckout();}
+  function renderUpsell(){const q=document.getElementById('upsellCocaQty'),m=document.getElementById('upsellCocaMinus');if(q)q.textContent=upsellCocaQty;if(m)m.disabled=upsellCocaQty<=0;}
+  injectUpsell();
+
+  if(typeof window.setDeliveryStatus==='function'){
+    const nativeSetDeliveryStatus=window.setDeliveryStatus;
+    window.setDeliveryStatus=function(text,type=''){
+      let clean=String(text??'').replace(/ · aprox\. \d+ min/g,'');
+      if(type==='success'){
+        const distance=clean.match(/^([0-9.,]+ km)/)?.[1]||'';
+        const fee=clean.match(/Envío\s+(\$[0-9.,]+)/i)?.[1]||'';
+        let middle=clean.replace(/^([0-9.,]+ km)\s*·\s*/,'').replace(/Envío\s+\$[0-9.,]+\s*/i,'').replace(/^\s*·\s*/,'').replace(/\s*·\s*$/,'').trim();
+        clean=[distance,middle,fee?`Total envío ${fee}`:''].filter(Boolean).join(' · ');
+      }
+      return nativeSetDeliveryStatus(clean,type);
+    };
+  }
+
+  const nativeUpdateCheckout=window.updateCheckout;
+  window.updateCheckout=function(){
+    nativeUpdateCheckout();
+    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*COCA_PRICE),fee=deliveryFee(),total=subtotal+fee,feeText=delivery?(fee?MXN.format(fee):'Por calcular'):'Sin costo';
+    const summary=document.getElementById('checkoutSummary');
+    if(summary)summary.innerHTML=`<div class="summary-line"><span>Subtotal</span><strong>${MXN.format(subtotal)}</strong></div>${upsellCocaQty?`<div class="summary-line"><span>Coca-Cola 600 ml × ${upsellCocaQty}</span><strong>${MXN.format(upsellCocaQty*COCA_PRICE)}</strong></div>`:''}<div class="summary-line"><span>${delivery?'Envío':'Retiro'}</span><strong>${feeText}</strong></div><div class="summary-line final"><span>Total</span><strong>${MXN.format(total)}</strong></div>`;
+  };
+
+  function normalizeDetailState(){
+    if(!detailState)return;
+    if(!Number.isFinite(Number(detailState.qty))||Number(detailState.qty)<1)detailState.qty=1;
+    if(!detailState.extraQty||typeof detailState.extraQty!=='object')detailState.extraQty={};
+  }
+
+  const nativeOpenDetails=window.openDetails;
+  window.openDetails=function(id){
+    nativeOpenDetails(id);
+    if(!detailState)return;
+    detailState.qty=1;
+    detailState.extraQty={};
+    renderDetailOptions();
+  };
+
+  window.changeProductQty=function(delta){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),oldQty=detailState.qty;
+    detailState.qty=Math.max(1,Math.min(20,oldQty+Number(delta||0)));
+    const maxChoices=selectedRequired(p),maxExtras=extraLimit(p);
+    let total=selectedChoiceCount();
+    if(total>maxChoices){
+      for(const option of [...(p?.choice?.options||[])].reverse()){
+        if(total<=maxChoices)break;
+        const current=Number(detailState.choices[option.id])||0;
+        const remove=Math.min(current,total-maxChoices);
+        const next=current-remove;
+        if(next)detailState.choices[option.id]=next;else delete detailState.choices[option.id];
+        total-=remove;
+      }
+    }
+    Object.keys(detailState.extraQty).forEach(id=>{detailState.extraQty[id]=Math.min(maxExtras,Number(detailState.extraQty[id])||0);});
+    renderDetailOptions();
+  };
+
+  window.changeFlavor=function(id,delta){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),required=selectedRequired(p),current=Math.max(0,Number(detailState.choices[id])||0),total=selectedChoiceCount();
+    if(delta>0&&total>=required)return;
+    const next=Math.max(0,current+delta);
+    if(next)detailState.choices[id]=next;else delete detailState.choices[id];
+    renderDetailOptions();
+  };
+
+  window.changeExtraQty=function(id,delta){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),limit=extraLimit(p),current=Math.max(0,Number(detailState.extraQty[id])||0);
+    detailState.extraQty[id]=Math.max(0,Math.min(limit,current+Number(delta||0)));
+    if(!detailState.extraQty[id])delete detailState.extraQty[id];
+    renderDetailOptions();
+  };
+
+  window.detailTotal=function(){
+    if(!detailState)return 0;
+    normalizeDetailState();
+    const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1);
+    let total=(Number(p?.price)||0)*qty;
+    (p?.choice?.options||[]).forEach(x=>total+=(Number(detailState.choices[x.id])||0)*(Number(x.price)||0));
+    selectableExtras(p).forEach(x=>total+=(Number(detailState.extraQty[x.id])||0)*(Number(x.price)||0));
+    return total;
+  };
+
+  window.updateDetailTotal=function(){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),required=selectedRequired(p),selected=selectedChoiceCount(),complete=!p.choice||selected===required,qty=detailState.qty;
+    $('detailPrice').textContent=MXN.format(detailTotal());
+    $('detailOrder').disabled=!complete;
+    $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}`:`ELIGE ${required-selected} MÁS`;
+  };
+
+  window.renderDetailOptions=function(){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),blocks=[],maxExtras=extraLimit(p),extras=selectableExtras(p);
+    blocks.push(`<div class="option-block"><div class="option-title"><strong>Cantidad</strong><span>${detailState.qty} ${detailState.qty===1?'pieza':'piezas'}</span></div><div class="mini-qty" style="justify-content:flex-end"><button type="button" onclick="changeProductQty(-1)" ${detailState.qty<=1?'disabled':''} aria-label="Quitar una pieza">−</button><b>${detailState.qty}</b><button type="button" onclick="changeProductQty(1)" ${detailState.qty>=20?'disabled':''} aria-label="Agregar una pieza">+</button></div></div>`);
+    if(p.choice){
+      const count=selectedChoiceCount(),required=selectedRequired(p),complete=count===required;
+      blocks.push(`<div class="option-block"><div class="option-title"><strong>Elige ${required} sabores</strong><span class="${complete?'complete':''}">${count} de ${required}</span></div><div class="flavor-list">${p.choice.options.map(x=>{const qty=Number(detailState.choices[x.id])||0,full=count>=required;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>${x.price?`+ ${MXN.format(x.price)} por pieza`:'Sin costo extra'}</small></div><div class="mini-qty"><button type="button" onclick="changeFlavor('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeFlavor('${esc(x.id)}',1)" ${full?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
+    }
+    if(extras.length){
+      blocks.push(`<div class="option-block"><div class="option-title"><strong>Extras</strong><span>Hasta ${maxExtras} por extra</span></div><div class="flavor-list">${extras.map(x=>{const qty=Number(detailState.extraQty[x.id])||0;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>+ ${MXN.format(x.price)} c/u</small></div><div class="mini-qty"><button type="button" onclick="changeExtraQty('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeExtraQty('${esc(x.id)}',1)" ${qty>=maxExtras?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
+    }
+    $('detailOptions').innerHTML=blocks.join('');
+    updateDetailTotal();
+  };
+
+  window.addConfiguredToCart=function(){
+    if(!detailState)return;
+    normalizeDetailState();
+    const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1),required=selectedRequired(p);
+    if(p.choice&&selectedChoiceCount()!==required)return;
+    const choices=(p.choice?.options||[]).map(x=>({id:x.id,name:x.name,qty:Number(detailState.choices[x.id])||0,price:Number(x.price)||0})).filter(x=>x.qty);
+    const extras=selectableExtras(p).map(x=>({id:x.id,name:x.name,price:Number(x.price)||0,qty:Number(detailState.extraQty[x.id])||0})).filter(x=>x.qty);
+    const note=String($('detailNote').value||'').trim(),totalPrice=detailTotal(),unitPrice=totalPrice/qty;
+    const signature=JSON.stringify({productId:p.id,qty,choices:choices.map(x=>[x.id,x.qty]),extras:extras.map(x=>[x.id,x.qty]),note});
+    const batchChoices=choices.map(x=>({...x})),batchExtras=extras.map(x=>({...x}));
+    let line=cart.find(x=>x.signature===signature);
+    if(line){
+      line.qty+=qty;
+      line.choices=(line.choices||[]).map(x=>{const b=batchChoices.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
+      batchChoices.filter(b=>!line.choices.some(x=>x.id===b.id)).forEach(b=>line.choices.push({...b}));
+      line.extras=(line.extras||[]).map(x=>{const b=batchExtras.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
+      batchExtras.filter(b=>!line.extras.some(x=>x.id===b.id)).forEach(b=>line.extras.push({...b}));
+    }else{
+      cart.push({lineId:`${Date.now()}_${Math.random().toString(36).slice(2,7)}`,signature,productId:p.id,qty,unitPrice,choices,extras,note,batchQty:qty,batchChoices,batchExtras});
+    }
+    saveCart();closeDetails();showToast(`${qty} ${qty===1?'pieza agregada':'piezas agregadas'}`);
+  };
+
+  const nativeChangeQty=window.changeQty;
+  window.changeQty=function(lineId,delta){
+    const line=cart.find(x=>x.lineId===lineId);
+    if(!line||!line.batchQty)return nativeChangeQty(lineId,delta);
+    const direction=delta>0?1:-1,batch=Math.max(1,Number(line.batchQty)||1),next=Math.max(0,(Number(line.qty)||0)+direction*batch);
+    if(direction>0){
+      line.qty=next;
+      (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.choices||(line.choices=[])).push({...b});});
+      (line.batchExtras||[]).forEach(b=>{let x=(line.extras||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.extras||(line.extras=[])).push({...b});});
+    }else{
+      line.qty=next;
+      (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=Math.max(0,(Number(x.qty)||0)-(Number(b.qty)||0));});
+      (line.batchExtras||[]).forEach(b=>{let x=(line.extras||[]).find(y=>y.id===b.id);if(x)x.qty=Math.max(0,(Number(x.qty)||0)-(Number(b.qty)||0));});
+      line.choices=(line.choices||[]).filter(x=>Number(x.qty)>0);line.extras=(line.extras||[]).filter(x=>Number(x.qty)>0);
+    }
+    cart=cart.filter(x=>Number(x.qty)>0);saveCart();renderCart();
+  };
+
+  window.lineDetails=function(line){
+    const parts=[];
+    if(line.choices?.length)parts.push(line.choices.map(x=>`${x.qty} ${x.name}`).join(', '));
+    if(line.extras?.length)parts.push(line.extras.map(x=>`${Number(x.qty)||1} ${x.name}`).join(', '));
+    if(line.note)parts.push(`Nota: ${line.note}`);
+    return parts.join(' · ');
+  };
+
+  function whatsappDetails(line){
+    const rows=[];
+    (line.choices||[]).forEach(x=>{if(Number(x.qty)>0)rows.push(`- ${x.qty} ${x.name}`);});
+    (line.extras||[]).forEach(x=>{if(Number(x.qty)>0)rows.push(`- ${x.qty} ${x.name}`);});
+    if(line.note)rows.push(`- Nota: ${line.note}`);
+    return rows.join('\n');
+  }
+
   window.submitOrder=async function(){
     if(sending)return;
     const form=document.getElementById('checkoutForm');
@@ -74,23 +227,31 @@
     if(!form?.reportValidity())return;
     const name=document.getElementById('customerName')?.value.trim()||'',phone=document.getElementById('customerPhone')?.value.trim()||'',digits=phone.replace(/\D/g,'');
     if(digits.length<10){if(typeof checkoutError==='function')checkoutError('Revisa el número de teléfono.');return;}
-    const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),subtotal=cartSubtotal(),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number(document.getElementById('cashChange')?.value)||0);
+    const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),baseSubtotal=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=baseSubtotal+(upsellCocaQty*COCA_PRICE),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number(document.getElementById('cashChange')?.value)||0);
     if(fulfillment==='delivery'&&!fee){if(typeof checkoutError==='function')checkoutError('Calcula el envío o selecciona una tarifa provisional.');return;}
     if(payment==='cash'&&change>0&&change<total){if(typeof checkoutError==='function')checkoutError(`El cambio debe ser para una cantidad igual o mayor a ${MXN.format(total)}.`);return;}
     const btn=form.querySelector('button[type="submit"]'),old=btn?.textContent||'CONFIRMAR POR WHATSAPP';
     sending=true;if(btn){btn.disabled=true;btn.textContent='CREANDO PEDIDO...';}
     const waWindow=window.open('about:blank','_blank');
     try{
-      const items=cartItems().map(x=>({name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,details:lineDetails(x.line)}));
-      const address=document.getElementById('deliveryAddress')?.value.trim()||'',references=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
-      const payload={action:'order_create',uid:getUid(),name,phone,items,fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
+      const items=cartItems().map(x=>({name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,details:whatsappDetails(x.line),line:x.line}));
+      if(upsellCocaQty>0)items.push({name:'Coca-Cola 600 ml',qty:upsellCocaQty,unitPrice:COCA_PRICE,details:'',line:null});
+      const address=document.getElementById('deliveryAddress')?.value.trim()||'',baseReferences=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
+      const isResidential=!!document.getElementById('residentialDelivery')?.checked,needsQr=isResidential&&!!document.getElementById('residentialQr')?.checked,residentialInstructions=isResidential?(document.getElementById('residentialInstructions')?.value.trim()||''):'';
+      const accessParts=[];
+      if(isResidential)accessParts.push('Residencial/condominio');
+      if(needsQr)accessParts.push('Requiere QR para entrar');
+      if(residentialInstructions)accessParts.push(`Acceso: ${residentialInstructions}`);
+      const references=[baseReferences,...accessParts].filter(Boolean).join(' · ');
+      const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
       const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
-      const order=data.order||{},lines=items.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format(i.unitPrice*i.qty)}${i.details?`\n  ${i.details}`:''}`),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km · aprox. ${deliveryQuote.durationMinutes} min${quoteExtrasText(deliveryQuote)}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}\nReferencias: ${references||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
-      const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
+      const order=data.order||{},lines=items.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format(i.unitPrice*i.qty)}${i.details?`\n${i.details}`:''}`),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)} · Total envío ${MXN.format(fee)}`:'',residentialText=isResidential?`\nResidencial: Sí${needsQr?' · Requiere QR':''}${residentialInstructions?`\nInstrucciones de acceso: ${residentialInstructions}`:''}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}${residentialText}\nReferencias: ${baseReferences||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
+      const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
       localStorage.setItem('uaiso_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
       try{cart=[];}catch(_){}
+      upsellCocaQty=0;renderUpsell();
       localStorage.setItem('uaiso_video_cart','[]');
       if(typeof renderCartBadge==='function')renderCartBadge();
       if(waWindow)waWindow.location.href='https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(text);else location.href='https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(text);

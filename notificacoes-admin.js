@@ -54,7 +54,7 @@
       const data = await res.json(); if (!res.ok) throw new Error(data.error || "Error");
       const itens = data.historico || [];
       if (!itens.length) { lista.innerHTML = '<span style="color:#999;">Aún no hay notificaciones registradas.</span>'; return; }
-      lista.innerHTML = itens.slice(0,15).map(item => {
+      lista.innerHTML = itens.map(item => {
         const dataFmt = item.data ? new Date(item.data).toLocaleString("es-MX") : "";
         const destino = item.destinatarios_estimados == null ? item.publico : `${item.publico} · ${item.destinatarios_estimados} cliente(s)`;
         return `<div style="border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:9px;background:#fafafa;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:#6a0dad;">${escapeHtml(item.titulo || "")}</strong><small style="color:#999;white-space:nowrap;">${escapeHtml(dataFmt)}</small></div><div style="font-size:13px;color:#666;margin-top:5px;">${escapeHtml(item.mensagem || "")}</div><div style="font-size:12px;color:#856404;background:#fff9e6;padding:6px 8px;border-radius:7px;margin-top:8px;">🎯 ${escapeHtml(destino || "")}</div></div>`;

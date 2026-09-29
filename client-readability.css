@@ -1,0 +1,31 @@
+
+/* Uai Sô — baseline de legibilidad para app, menú y onboarding */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-size:16px;line-height:1.45}
+small{font-size:12px!important;line-height:1.4!important}
+button,a,input,select,textarea{line-height:1.3}
+button{font-size:13px!important}
+input,select,textarea{font-size:14px!important}
+.hello p,.subhead p,.profile-points-note,.reward .desc,.benefit-main p,.offer p,.system-text,
+.client-greeting-card p,.client-points-label,.client-points-caption,.mini-card-kicker,
+.product-body small,.flavor-row small,.address-suggestion small,.delivery-note,.note{
+  font-size:12px!important;line-height:1.45!important
+}
+.pill,.reward button,.benefit button,.offer-wa,.system-action,.qr-mini,.referral-mini-button{
+  font-size:13px!important;min-height:40px
+}
+.offer-countdown,.reward-availability,.offer .tag,.tag,.eyebrow,.google-attribution{
+  font-size:11px!important
+}
+.data-row,.move .main b,.move .main span,.progress-txt,.stat span{
+  font-size:12px!important;line-height:1.4!important
+}
+.client-points-card .label,.client-points-card .cap,.points .label,.points .cap{
+  font-size:12px!important
+}
+@media(max-width:780px){
+  body{font-size:16px}
+  input,select,textarea{font-size:16px!important;min-height:46px}
+  button{min-height:44px}
+  .actions button,.location-action,.choice-card span{font-size:13px!important}
+}

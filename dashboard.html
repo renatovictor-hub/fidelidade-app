@@ -245,6 +245,7 @@
 
     </style>
 
+<link rel="stylesheet" href="/dashboard-readability.css?v=20260927-1">
 </head>
 
 
@@ -1052,7 +1053,27 @@ async function buscarCliente() {
             pontos:
                 Number(
                     cliente.pontos || 0
-                )
+                ),
+
+            pontos_acumulados:
+                Number(
+                    cliente.pontos_acumulados ?? cliente.pontos ?? 0
+                ),
+
+            nascimento:
+                cliente.nascimento || "",
+
+            created_at:
+                cliente.created_at || "",
+
+            ultima_compra:
+                cliente.ultima_compra || "",
+
+            feedback_last_purchase:
+                cliente.feedback_last_purchase || "",
+
+            google_review_clicked:
+                cliente.google_review_clicked === true
 
         };
 
@@ -2117,6 +2138,7 @@ async function carregarPromos() {
 
 
         Object.entries(data)
+            .sort((a,b)=>Number(b[1]?.exp||0)-Number(a[1]?.exp||0))
             .forEach(
                 ([id, promo]) => {
 
