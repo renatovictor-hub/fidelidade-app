@@ -40,7 +40,8 @@
     const missionHtml=(d.missions||[]).length?`<div class="cfg-card"><h3>🎮 Misiones</h3><p>Completa retos y desbloquea beneficios.</p><div class="cfg-missions">${d.missions.slice(0,4).map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}${m.progress?.completed&&!m.claimed?'<button class="btn-primary cfg-claim" data-mission="'+m.id+'" style="margin-top:8px;width:100%">RECLAMAR PREMIO</button>':m.claimed?'<p class="cfg-complete" style="margin-top:7px">✓ Premio reclamado</p>':''}</div>`).join('')}</div></div>`: '';
     const badges=(d.badges||[]).length?`<div class="cfg-card"><h3>🏅 Tus logros</h3><div class="cfg-badges">${d.badges.map(b=>`<div class="cfg-badge"><span>${b.icon}</span><b>${b.name}</b></div>`).join('')}</div></div>`:'';
     const surprise=d.surprise?`<div class="cfg-card cfg-surprise"><h3>🎁 ${d.surprise.titulo||'Beneficio especial'}</h3><p>${d.surprise.texto||''}</p></div>`:'';
-    shell.innerHTML=nextHtml+surprise+missionHtml+badges;
+    const benefits=(d.benefits||[]).length?`<div class="cfg-card"><h3>👑 Tus beneficios</h3><div class="cfg-missions">${d.benefits.map(b=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b></div><p>${b.text||''}</p></div>`).join('')}</div></div>`:'';
+    shell.innerHTML=nextHtml+surprise+benefits+missionHtml+badges;
     alignHome();
     shell.querySelectorAll('.cfg-claim').forEach(btn=>btn.onclick=async()=>{
       btn.disabled=true;btn.textContent='RECLAMANDO...';
