@@ -73,9 +73,16 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       const config = String(req.query?.config || "").trim();
-      if (config === "cumpleanos" || config === "bonus_pontos" || config === "referidos" || config === "niveles_vip" || config === "reviews") {
+      if (config === "cumpleanos" || config === "bonus_pontos" || config === "referidos" || config === "niveles_vip" || config === "reviews" || config === "loyalty_base") {
         const snap = await db.ref(`config/${config}`).once("value");
         return res.status(200).json({ success:true, config: snap.val() || {} });
+      }
+
+      if (String(req.query?.config_audit || "") === "1") {
+        const snap = await db.ref("config_audit").limitToLast(30).once("value");
+        const items = Object.entries(snap.val() || {}).map(([id,item]) => ({ id, ...(item || {}) }))
+          .sort((a,b) => String(b.data || "").localeCompare(String(a.data || "")));
+        return res.status(200).json({ success:true, items });
       }
 
       if (String(req.query?.feedback || "") === "1") {
@@ -157,9 +164,17 @@ export default async function handler(req, res) {
 
     if (action === "save_config") {
       const config = String(req.body?.config || "").trim();
-      if (!["cumpleanos","bonus_pontos","referidos","niveles_vip","reviews"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
+      if (!["cumpleanos","bonus_pontos","referidos","niveles_vip","reviews","loyalty_base"].includes(config)) return res.status(400).json({ error:"Configuración inválida" });
 
       const value = req.body?.value && typeof req.body.value === "object" ? req.body.value : {};
+      const audit = async (cleanValue) => {
+        await db.ref("config_audit").push().set({
+          config,
+          value: cleanValue,
+          data: new Date().toISOString(),
+          origen: "dashboard"
+        });
+      };
       if (config === "cumpleanos") {
         const limpio = {
           regalo: String(value.regalo || "Regalo especial de cumpleaños").trim(),
@@ -168,7 +183,7 @@ export default async function handler(req, res) {
           ativo: value.ativo === true,
           updated_at: new Date().toISOString()
         };
-        await db.ref("config/cumpleanos").set(limpio);
+        await db.ref("config/cumpleanos").set(limpio); await audit(limpio);
         return res.status(200).json({ success:true, config:limpio });
       }
 
@@ -179,7 +194,7 @@ export default async function handler(req, res) {
           dias_apos_compra: Math.max(1, Math.min(30, Math.floor(Number(value.dias_apos_compra || 3)))),
           updated_at: new Date().toISOString()
         };
-        await db.ref("config/reviews").set(limpio);
+        await db.ref("config/reviews").set(limpio); await audit(limpio);
         return res.status(200).json({ success:true, config:limpio });
       }
 
@@ -190,9 +205,13 @@ export default async function handler(req, res) {
         const limpio = {
           ativo: value.ativo !== false,
           prata, ouro, diamante,
+          beneficio_bronce: String(value.beneficio_bronce || "").trim().slice(0,120),
+          beneficio_plata: String(value.beneficio_plata || "").trim().slice(0,120),
+          beneficio_ouro: String(value.beneficio_ouro || "").trim().slice(0,120),
+          beneficio_diamante: String(value.beneficio_diamante || "").trim().slice(0,120),
           updated_at: new Date().toISOString()
         };
-        await db.ref("config/niveles_vip").set(limpio);
+        await db.ref("config/niveles_vip").set(limpio); await audit(limpio);
         return res.status(200).json({ success:true, config:limpio });
       }
 
@@ -204,7 +223,18 @@ export default async function handler(req, res) {
           compra_minima: Math.max(0, Math.min(100000, Number(value.compra_minima || 100))),
           updated_at: new Date().toISOString()
         };
-        await db.ref("config/referidos").set(limpio);
+        await db.ref("config/referidos").set(limpio); await audit(limpio);
+        return res.status(200).json({ success:true, config:limpio });
+      }
+
+      if (config === "loyalty_base") {
+        const pesosPorPunto = Math.max(1, Math.min(1000, Number(value.pesos_por_punto || 10)));
+        const limpio = {
+          ativo: value.ativo !== false,
+          pesos_por_punto: Math.round(pesosPorPunto * 100) / 100,
+          updated_at: new Date().toISOString()
+        };
+        await db.ref("config/loyalty_base").set(limpio); await audit(limpio);
         return res.status(200).json({ success:true, config:limpio });
       }
 
@@ -218,7 +248,7 @@ export default async function handler(req, res) {
         dias,
         updated_at: new Date().toISOString()
       };
-      await db.ref("config/bonus_pontos").set(limpio);
+      await db.ref("config/bonus_pontos").set(limpio); await audit(limpio);
       return res.status(200).json({ success:true, config:limpio });
     }
 
