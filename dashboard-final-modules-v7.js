@@ -94,7 +94,7 @@
   }
 
   const anchor=document.querySelector('.main-container')||document.body.lastElementChild;
-  const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML="\n<div class=\"ux-fid-tabs\" id=\"uxFidTabs\">\n  <button type=\"button\" data-fid-tab=\"register\" class=\"active\">Registrar compra</button>\n  <button type=\"button\" data-fid-tab=\"redeem\">Canjear recompensa</button>\n  <button type=\"button\" data-fid-tab=\"history\">Movimientos</button>\n  <button type=\"button\" data-fid-tab=\"missions\">Misiones</button>\n  <button type=\"button\" data-fid-tab=\"automations\">Automatizaciones</button>\n  <button type=\"button\" data-fid-tab=\"results\">Resultados</button>\n  <button type=\"button\" data-fid-tab=\"config\">Configuración</button>\n</div>\n<div class=\"ux-fid-pane active\" data-fid-pane=\"register\">\n  <div class=\"ux-section-grid\">\n    <div class=\"ux-panel ux-span-12\">\n      <h2>Registrar compra</h2>\n      <p>Identifica al cliente por teléfono, ID o QR y suma sus puntos.</p>\n      <div class=\"ux-caja-search\">\n        <input id=\"uxCajaLookup\" placeholder=\"Teléfono o ID del cliente\">\n        <button class=\"btn-secondary\" id=\"uxCajaScanner\">📷 QR</button>\n        <button class=\"btn-primary\" id=\"uxCajaBuscar\">BUSCAR</button>\n      </div>\n      <div class=\"ux-caja-client\" id=\"uxCajaClient\">\n        <div class=\"ux-caja-client-head\">\n          <div><h3 id=\"uxCajaName\">Cliente</h3><p id=\"uxCajaMeta\">—</p></div>\n          <div class=\"ux-caja-points\"><span id=\"uxCajaPoints\">0</span> pts</div>\n        </div>\n        <div class=\"ux-caja-purchase\">\n          <div><label>Valor de la compra (MXN)</label><input id=\"uxCajaPurchase\" type=\"number\" min=\"1\" step=\"0.01\" placeholder=\"Ej. 350\"></div>\n          <button class=\"btn-primary\" id=\"uxCajaConfirm\">REGISTRAR COMPRA</button>\n        </div>\n        <div class=\"ux-caja-preview\" id=\"uxCajaPreview\">Ingresa el valor de la compra.</div>\n        <div class=\"ux-fid-rule\"><b>Regla actual</b><small>MX$10 de compra = 1 punto. Los Puntos Bonus pueden multiplicar este valor según la configuración.</small></div>\n        <div class=\"ux-caja-actions\">\n          <button class=\"btn-secondary\" id=\"uxCajaRewards\">🎁 Canjear recompensa</button>\n          <button class=\"btn-secondary\" id=\"uxCajaHistory\">🧾 Ver movimientos</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"redeem\">\n  <div class=\"ux-panel\">\n    <h2>Canjear recompensa</h2>\n    <p id=\"uxRedeemIntro\">Selecciona primero un cliente en Registrar compra.</p>\n    <div class=\"ux-caja-rewards\" id=\"uxCajaRewardsList\"><div class=\"ux-crm-empty\">Selecciona un cliente para ver las recompensas disponibles.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"history\">\n  <div class=\"ux-panel\">\n    <h2>Movimientos</h2>\n    <p id=\"uxFidHistoryIntro\">Consulta compras, puntos acreditados y canjes del cliente seleccionado.</p>\n    <div class=\"ux-actions-row\"><button class=\"btn-secondary\" id=\"uxFidHistoryRefresh\">ACTUALIZAR</button></div>\n    <div class=\"ux-fid-history\" id=\"uxFidHistoryList\"><div class=\"ux-crm-empty\">Selecciona un cliente en Registrar compra.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"missions\"><div id=\"uxFidMissionsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"automations\"><div id=\"uxFidAutomationsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"results\"><div id=\"uxFidResultsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"config\">\n  <div class=\"ux-panel\">\n    <h2>Configuración de fidelidad</h2>\n    <p>Ajustes que no necesitas modificar durante la operación diaria.</p>\n    <div class=\"ux-fid-rule\"><b>Regla base de puntos</b><small>Actualmente: MX$10 = 1 punto. Los multiplicadores de Puntos Bonus se aplican sobre esta base.</small></div>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityConfigHost\"></div>\n  </div>\n</div>";
+  const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML="\n<div class=\"ux-fid-tabs\" id=\"uxFidTabs\">\n  <button type=\"button\" data-fid-tab=\"register\" class=\"active\">Registrar compra</button>\n  <button type=\"button\" data-fid-tab=\"redeem\">Canjear recompensa</button>\n  <button type=\"button\" data-fid-tab=\"history\">Movimientos</button>\n  <button type=\"button\" data-fid-tab=\"missions\">Misiones</button>\n  <button type=\"button\" data-fid-tab=\"automations\">Automatizaciones</button>\n  <button type=\"button\" data-fid-tab=\"results\">Resultados</button>\n  <button type=\"button\" data-fid-tab=\"config\">Configuración</button>\n</div>\n<div class=\"ux-fid-pane active\" data-fid-pane=\"register\">\n  <div class=\"ux-section-grid\">\n    <div class=\"ux-panel ux-span-12\">\n      <h2>Registrar compra</h2>\n      <p>Identifica al cliente por teléfono, ID o QR y suma sus puntos.</p>\n      <div class=\"ux-caja-search\">\n        <input id=\"uxCajaLookup\" placeholder=\"Teléfono o ID del cliente\">\n        <button class=\"btn-secondary\" id=\"uxCajaScanner\">📷 QR</button>\n        <button class=\"btn-primary\" id=\"uxCajaBuscar\">BUSCAR</button>\n      </div>\n      <div class=\"ux-caja-client\" id=\"uxCajaClient\">\n        <div class=\"ux-caja-client-head\">\n          <div><h3 id=\"uxCajaName\">Cliente</h3><p id=\"uxCajaMeta\">—</p></div>\n          <div class=\"ux-caja-points\"><span id=\"uxCajaPoints\">0</span> pts</div>\n        </div>\n        <div class=\"ux-caja-purchase\">\n          <div><label>Valor de la compra (MXN)</label><input id=\"uxCajaPurchase\" type=\"number\" min=\"1\" step=\"0.01\" placeholder=\"Ej. 350\"></div>\n          <button class=\"btn-primary\" id=\"uxCajaConfirm\">REGISTRAR COMPRA</button>\n        </div>\n        <div class=\"ux-caja-preview\" id=\"uxCajaPreview\">Ingresa el valor de la compra.</div>\n        <div class=\"ux-fid-rule\"><b>Regla actual</b><small id=\"uxCajaRuleText\">Cargando regla de puntos…</small></div>\n        <div class=\"ux-caja-actions\">\n          <button class=\"btn-secondary\" id=\"uxCajaRewards\">🎁 Canjear recompensa</button>\n          <button class=\"btn-secondary\" id=\"uxCajaHistory\">🧾 Ver movimientos</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"redeem\">\n  <div class=\"ux-panel\">\n    <h2>Canjear recompensa</h2>\n    <p id=\"uxRedeemIntro\">Selecciona primero un cliente en Registrar compra.</p>\n    <div class=\"ux-caja-rewards\" id=\"uxCajaRewardsList\"><div class=\"ux-crm-empty\">Selecciona un cliente para ver las recompensas disponibles.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"history\">\n  <div class=\"ux-panel\">\n    <h2>Movimientos</h2>\n    <p id=\"uxFidHistoryIntro\">Consulta compras, puntos acreditados y canjes del cliente seleccionado.</p>\n    <div class=\"ux-actions-row\"><button class=\"btn-secondary\" id=\"uxFidHistoryRefresh\">ACTUALIZAR</button></div>\n    <div class=\"ux-fid-history\" id=\"uxFidHistoryList\"><div class=\"ux-crm-empty\">Selecciona un cliente en Registrar compra.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"missions\"><div id=\"uxFidMissionsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"automations\"><div id=\"uxFidAutomationsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"results\"><div id=\"uxFidResultsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"config\">\n  <div class=\"ux-panel\">\n    <h2>Configuración de fidelidad</h2>\n    <p>Ajustes que no necesitas modificar durante la operación diaria.</p>\n    <div class=\"ux-fid-rule\"><b>Regla base de puntos</b><small>Actualmente: MX$10 = 1 punto. Los multiplicadores de Puntos Bonus se aplican sobre esta base.</small></div>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityConfigHost\"></div>\n  </div>\n</div>";
   anchor.parentNode.insertBefore(qr,anchor);
 
   const envio=document.createElement('section');envio.id='uxDeliverySettingsView';envio.className='ux-virtual-view';envio.innerHTML=`
@@ -196,6 +196,172 @@
     configureOrdersView();
   }
 
+
+  let fidPesosPorPunto=10;
+  async function loadFidelityBaseRule(){
+    try{
+      const r=await fetch('/api/sendpush?config=loyalty_base&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json(); if(!r.ok) throw new Error(d.error||'Error');
+      fidPesosPorPunto=Math.max(1,Number(d.config?.pesos_por_punto||10));
+    }catch(_){fidPesosPorPunto=10}
+    const txt=document.getElementById('uxCajaRuleText');
+    if(txt)txt.textContent='MX
+    const valid=['register','redeem','history','missions','automations','results','config'];
+    if(!valid.includes(tab))tab='register';
+    document.querySelectorAll('#uxFidTabs [data-fid-tab]').forEach(b=>b.classList.toggle('active',b.dataset.fidTab===tab));
+    document.querySelectorAll('#uxQrView [data-fid-pane]').forEach(p=>p.classList.toggle('active',p.dataset.fidPane===tab));
+    try{sessionStorage.setItem('uai_fidelity_tab',tab)}catch(_){}
+    if(tab==='redeem')cajaLoadRewards();
+    if(tab==='history')loadFidelityHistory();
+    if(tab==='missions'&&typeof window.loadFidMissions==='function')window.loadFidMissions();
+    if(tab==='automations'&&typeof window.loadFidAutomations==='function')window.loadFidAutomations();
+    if(tab==='results'&&typeof window.loadFidResults==='function')window.loadFidResults();
+    if(tab==='config'){mountFidelityConfig();loadFidelityBaseRule();}
+    if(tab==='register')loadFidelityBaseRule();
+  }
+
+  function mountFidelityConfig(){
+    const host=document.getElementById('uxFidelityConfigHost');
+    if(!host)return;
+    ['nivelesVipAdminCard','bonusPontosAdminCard','referidosAdminCard'].forEach(id=>{
+      const card=document.getElementById(id);
+      if(card&&card.parentNode!==host)host.appendChild(card);
+    });
+  }
+
+  async function loadFidelityHistory(){
+    const box=document.getElementById('uxFidHistoryList');
+    const intro=document.getElementById('uxFidHistoryIntro');
+    if(!box)return;
+    let client=null;
+    try{client=typeof clienteSelecionado!=='undefined'?clienteSelecionado:null}catch(_){}
+    if(!client?.uid){
+      box.innerHTML='<div class="ux-crm-empty">Selecciona un cliente en Registrar compra.</div>';
+      if(intro)intro.textContent='Consulta compras, puntos acreditados y canjes del cliente seleccionado.';
+      return;
+    }
+    if(intro)intro.textContent=(client.nome||'Cliente')+' · '+(client.telefone||client.uid);
+    box.innerHTML='<div class="ux-crm-empty">Cargando movimientos…</div>';
+    try{
+      const res=await fetch('/api/historico?uid='+encodeURIComponent(client.uid)+'&t='+Date.now(),{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+      const items=Array.isArray(data.transacoes)?data.transacoes:[];
+      box.innerHTML=items.length?items.map(item=>{
+        const sign=String(item.tipo||'').toLowerCase()==='debito'?'-':'+';
+        const dt=item.data?new Date(item.data).toLocaleString('es-MX'):'';
+        return '<div class="historico-item"><div class="historico-top"><strong>'+sign+Number(item.pontos||0)+' puntos</strong><span>'+dt+'</span></div><div>Compra: $'+Number(item.valor_compra||0).toLocaleString('es-MX',{maximumFractionDigits:2})+' MXN</div><div style="font-size:12px;color:#777">Saldo: '+Number(item.saldo_anterior||0)+' → '+Number(item.saldo_novo||0)+'</div></div>';
+      }).join(''):'<div class="ux-crm-empty">Sin movimientos.</div>';
+    }catch(_){box.innerHTML='<div class="ux-crm-empty">No se pudieron cargar los movimientos.</div>'}
+  }
+
+  document.getElementById('uxFidTabs').addEventListener('click',e=>{
+    const b=e.target.closest('[data-fid-tab]');
+    if(b)showFidTab(b.dataset.fidTab);
+  });
+
+  async function cajaSelectClient(value){
+    const input=document.getElementById('clienteUid');
+    if(!input||typeof buscarCliente!=='function')return false;
+    input.value=String(value||'').trim();
+    if(!input.value)return false;
+    await buscarCliente();
+    if(typeof clienteSelecionado==='undefined'||!clienteSelecionado)return false;
+    document.getElementById('uxCajaName').textContent=clienteSelecionado.nome||'Sin nombre';
+    document.getElementById('uxCajaMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · '+(clienteSelecionado.uid||'');
+    document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+    document.getElementById('uxCajaClient').classList.add('show');
+    const intro=document.getElementById('uxRedeemIntro');if(intro)intro.textContent=(clienteSelecionado.nome||'Cliente')+' · '+Number(clienteSelecionado.pontos||0)+' puntos disponibles';
+    return true;
+  }
+
+  async function cajaLoadRewards(){
+    const box=document.getElementById('uxCajaRewardsList');
+    box.classList.add('show');
+    box.innerHTML='<div class="ux-crm-empty">Cargando recompensas…</div>';
+    try{
+      const res=await fetch('/api/recompensas?t='+Date.now(),{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'Error');
+      const items=(Array.isArray(data.recompensas)?data.recompensas:[]).filter(i=>i.ativa!==false);
+      box.innerHTML=items.length?items.map(i=>
+        '<div class="ux-caja-reward"><div><b>'+String(i.nome||'Recompensa')+'</b><small>'+Number(i.pontos||0)+' pts</small></div>'+
+        '<button class="btn-success" data-caja-redeem="'+String(i.id)+'" data-name="'+String(i.nome||'Recompensa').replace(/"/g,'&quot;')+'" data-points="'+Number(i.pontos||0)+'">CANJEAR</button></div>'
+      ).join(''):'<div class="ux-crm-empty">No hay recompensas activas.</div>';
+      box.querySelectorAll('[data-caja-redeem]').forEach(btn=>{
+        btn.onclick=async()=>{
+          if(typeof window.resgatarRecompensa!=='function')return alert('No se pudo abrir el canje.');
+          await window.resgatarRecompensa(btn.dataset.cajaRedeem,btn.dataset.name,Number(btn.dataset.points),btn);
+          if(typeof clienteSelecionado!=='undefined'&&clienteSelecionado){
+            document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+          }
+        };
+      });
+    }catch(_){box.innerHTML='<div class="ux-crm-empty">No se pudieron cargar las recompensas.</div>'}
+  }
+
+  window.openCajaFidelidadForClient=async function(uid){
+    showVirtual('fidelidad');
+    showFidTab('register');
+    document.getElementById('uxCajaLookup').value=uid||'';
+    await cajaSelectClient(uid);
+    setTimeout(()=>document.getElementById('uxCajaPurchase')?.focus(),50);
+  };
+
+  document.getElementById('uxCajaBuscar').onclick=()=>cajaSelectClient(document.getElementById('uxCajaLookup').value);
+  document.getElementById('uxCajaLookup').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('uxCajaBuscar').click()});
+  document.getElementById('uxCajaScanner').onclick=()=>{if(typeof abrirScannerQr==='function')abrirScannerQr()};
+  document.getElementById('uxCajaPurchase').addEventListener('input',e=>{
+    const amount=Number(e.target.value||0);
+    document.getElementById('uxCajaPreview').textContent=amount>0?'⭐ '+Math.floor(amount/fidPesosPorPunto)+' puntos base':'Ingresa el valor de la compra.';
+  });
+  document.getElementById('uxCajaConfirm').onclick=async()=>{
+    if(typeof clienteSelecionado==='undefined'||!clienteSelecionado)return alert('Primero identifica al cliente.');
+    const amount=Number(document.getElementById('uxCajaPurchase').value||0);
+    if(!amount||amount<=0)return alert('Ingresa un valor de compra válido.');
+    const hidden=document.getElementById('valorCompra');
+    if(hidden)hidden.value=String(amount);
+    if(typeof calcularPontosCompra==='function')calcularPontosCompra();
+    if(typeof creditarPontos!=='function')return alert('No se pudo registrar la compra.');
+    await creditarPontos();
+    document.getElementById('uxCajaPurchase').value='';
+    document.getElementById('uxCajaPreview').textContent='Compra registrada.';
+    document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+    document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
+  };
+  document.getElementById('uxCajaRewards').onclick=()=>showFidTab('redeem');
+  document.getElementById('uxCajaHistory').onclick=()=>showFidTab('history');
+  document.getElementById('uxFidHistoryRefresh').onclick=loadFidelityHistory;
+
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('#uxSidebar .ux-nav button');if(!b)return;
+    const txt=norm(b.textContent);
+    let view=null;
+    if(txt==='fidelidad'||txt==='programa de fidelidad')view='fidelidad';
+    else if(txt==='configurar envio')view='envio';
+    else if(txt==='reportes')view='reportes';
+    else if(txt==='ajustes')view='ajustes';
+    if(view){e.preventDefault();e.stopImmediatePropagation();showVirtual(view)}
+  },true);
+
+  const attr=new MutationObserver(()=>{
+    const v=document.body.dataset.uxView;
+    if(v==='pedidos'||v==='entregas'){
+      lastOrderView='';
+      setTimeout(()=>configureOrdersView(true),30);
+    }
+  });
+  attr.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
+  setInterval(syncAll,2000);
+  setTimeout(syncAll,250);
+  setTimeout(loadFidelityBaseRule,320);
+  setTimeout(mountFidelityConfig,260);
+  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
+})();+fidPesosPorPunto+' de compra = 1 punto base. Los Puntos Bonus pueden multiplicar este valor.';
+    const amount=Number(document.getElementById('uxCajaPurchase')?.value||0);
+    const prev=document.getElementById('uxCajaPreview');
+    if(prev&&amount>0)prev.textContent='⭐ '+Math.floor(amount/fidPesosPorPunto)+' puntos base';
+  }
 
   function showFidTab(tab){
     const valid=['register','redeem','history','missions','automations','results','config'];
