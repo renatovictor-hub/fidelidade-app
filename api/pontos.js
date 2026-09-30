@@ -13,7 +13,6 @@ if (!admin.apps.length) {
     });
 }
 
-const PESOS_POR_PONTO = 10;
 const VALOR_MAXIMO_COMPRA = 100000;
 
 export default async function handler(req, res) {
@@ -29,13 +28,18 @@ export default async function handler(req, res) {
         if (!Number.isFinite(valor) || valor <= 0 || valor > VALOR_MAXIMO_COMPRA) return res.status(400).json({ error: "Valor de compra inválido" });
 
         const valorNormalizado = Math.round(valor * 100) / 100;
-        const pontosBase = Math.floor(valorNormalizado / PESOS_POR_PONTO);
+        const pontosBase = Math.floor(valorNormalizado / pesosPorPunto);
         if (pontosBase <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
 
         const db = admin.database();
 
-        // Regra de bônus configurável por dia/horário, usando horário local de Cancún.
-        const bonusSnap = await db.ref("config/bonus_pontos").once("value");
+        // Regra-base e bônus configuráveis por restaurante.
+        const [baseSnap, bonusSnap] = await Promise.all([
+            db.ref("config/loyalty_base").once("value"),
+            db.ref("config/bonus_pontos").once("value")
+        ]);
+        const baseCfg = baseSnap.val() || {};
+        const pesosPorPunto = Math.max(1, Math.min(1000, Number(baseCfg.pesos_por_punto || 10)));
         const bonus = bonusSnap.val() || {};
         const agoraCancun = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Cancun" }));
         const dia = agoraCancun.getDay(); // 0 domingo ... 6 sábado
@@ -190,7 +194,7 @@ export default async function handler(req, res) {
             saldo_novo: saldoFinalCliente,
             push,
             indicacao,
-            regra: { pesos_por_ponto: PESOS_POR_PONTO }
+            regra: { pesos_por_ponto: pesosPorPunto }
         });
     } catch (error) {
         console.error("Erro API pontos:", error);
