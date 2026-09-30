@@ -28,9 +28,6 @@ export default async function handler(req, res) {
         if (!Number.isFinite(valor) || valor <= 0 || valor > VALOR_MAXIMO_COMPRA) return res.status(400).json({ error: "Valor de compra inválido" });
 
         const valorNormalizado = Math.round(valor * 100) / 100;
-        const pontosBase = Math.floor(valorNormalizado / pesosPorPunto);
-        if (pontosBase <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
-
         const db = admin.database();
 
         // Regra-base e bônus configuráveis por restaurante.
@@ -40,6 +37,8 @@ export default async function handler(req, res) {
         ]);
         const baseCfg = baseSnap.val() || {};
         const pesosPorPunto = Math.max(1, Math.min(1000, Number(baseCfg.pesos_por_punto || 10)));
+        const pontosBase = Math.floor(valorNormalizado / pesosPorPunto);
+        if (pontosBase <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
         const bonus = bonusSnap.val() || {};
         const agoraCancun = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Cancun" }));
         const dia = agoraCancun.getDay(); // 0 domingo ... 6 sábado
