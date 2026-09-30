@@ -89,6 +89,11 @@
   function showVirtual(view){
     try{sessionStorage.setItem('uai_admin_view',view)}catch(_){ }
     document.body.dataset.uxView=view;
+    if(view==='fidelidad'){
+      try{sessionStorage.removeItem('uai_admin_sub_fidelidad')}catch(_){}
+      const legacyToolbar=document.getElementById('uxCoreToolbar');
+      if(legacyToolbar)legacyToolbar.style.setProperty('display','none','important');
+    }
     document.getElementById('uxEmptyView')?.classList.remove('show');
     setTitle(view);setActive(view);document.body.classList.remove('ux-drawer');window.scrollTo({top:0,behavior:'auto'});syncAll();
   }
