@@ -114,7 +114,7 @@
   const calcOriginal=window.calcularPontosCompra;
   window.calcularPontosCompra=async function(){
     const valor=Number(document.getElementById("valorCompra")?.value||0);
-    const base=Math.floor(valor/10);
+    const base=Math.floor(valor/(Number(typeof PESOS_POR_PONTO!=="undefined"?PESOS_POR_PONTO:10)||10));
     const cfg=await getCfg();
 
     const agora=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Cancun"}));
