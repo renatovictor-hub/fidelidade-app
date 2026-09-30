@@ -203,6 +203,7 @@
       const r=await fetch('/api/sendpush?config=loyalty_base&t='+Date.now(),{cache:'no-store'});
       const d=await r.json(); if(!r.ok) throw new Error(d.error||'Error');
       fidPesosPorPunto=Math.max(1,Number(d.config?.pesos_por_punto||10));
+      try{PESOS_POR_PONTO=fidPesosPorPunto}catch(_){ }
     }catch(_){fidPesosPorPunto=10}
     const txt=document.getElementById('uxCajaRuleText');
     if(txt)txt.textContent='MX
