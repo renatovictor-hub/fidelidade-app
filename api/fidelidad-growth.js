@@ -40,10 +40,11 @@ function missionProgress(m,stats){
 }
 
 async function loadAll(){
-  const [usersSnap,txSnap,rewardsSnap,missionsSnap,autosSnap,vipSnap,surpriseSnap]=await Promise.all([
+  const [usersSnap,txSnap,rewardsSnap,missionsSnap,autosSnap,vipSnap,surpriseSnap,baseSnap]=await Promise.all([
     db.ref("users").once("value"),db.ref("transacoes").once("value"),db.ref("recompensas").once("value"),
     db.ref("fidelity_missions").once("value"),db.ref("fidelity_automations").once("value"),
-    db.ref("config/niveles_vip").once("value"),db.ref("config/fidelity_surprise").once("value")
+    db.ref("config/niveles_vip").once("value"),db.ref("config/fidelity_surprise").once("value"),
+    db.ref("config/loyalty_base").once("value")
   ]);
   const users=usersSnap.val()||{},txRaw=txSnap.val()||{},byUser=new Map();
   Object.values(txRaw).forEach(x=>{const uid=String(x.user_id||x.uid||"");if(!uid)return;if(!byUser.has(uid))byUser.set(uid,[]);byUser.get(uid).push(x||{})});
@@ -53,7 +54,8 @@ async function loadAll(){
     missions:Object.entries(missionsSnap.val()||{}).map(([id,x])=>({id,...x})).sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))),
     automations:Object.entries(autosSnap.val()||{}).map(([id,x])=>({id,...x})),
     vip:vipSnap.val()||{},
-    surprise:surpriseSnap.val()||{}
+    surprise:surpriseSnap.val()||{},
+    base:baseSnap.val()||{}
   };
 }
 
@@ -94,6 +96,7 @@ export default async function handler(req,res){
       const stats=customerStats(uid,user,all.byUser.get(uid)||[]);
       const points=Number(user.pontos||0),acc=Number(user.pontos_acumulados??points);
       const nextReward=all.rewards.find(r=>Number(r.pontos||0)>points)||null;
+      const pesosPorPunto=Math.max(1,Math.min(1000,Number(all.base.pesos_por_punto||10)));
       const vip=all.vip.ativo===false?"":acc>=Number(all.vip.diamante||1500)?"Diamante":acc>=Number(all.vip.ouro||800)?"Oro":acc>=Number(all.vip.prata||300)?"Plata":"Bronce";
       const claims=user.mission_claims||{};
       const missions=all.missions.filter(m=>m.ativa!==false).map(m=>({...m,progress:missionProgress(m,stats),claimed:claims[m.id]===true}));
@@ -105,7 +108,8 @@ export default async function handler(req,res){
       return res.status(200).json({
         success:true,
         client:{uid,nome:user.nome||user.nombre||"",pontos:points,pontos_acumulados:acc,vip,compras:stats.compras,gasto:stats.gasto},
-        next_reward:nextReward?{...nextReward,faltan:Math.max(0,Number(nextReward.pontos||0)-points),compra_aprox:Math.max(0,(Number(nextReward.pontos||0)-points)*10)}:null,
+        next_reward:nextReward?{...nextReward,faltan:Math.max(0,Number(nextReward.pontos||0)-points),compra_aprox:Math.max(0,(Number(nextReward.pontos||0)-points)*pesosPorPunto)}:null,
+        loyalty_rule:{pesos_por_punto:pesosPorPunto},
         missions,badges,
         surprise:(()=>{
           if(all.surprise.ativa===false)return null;
@@ -113,7 +117,10 @@ export default async function handler(req,res){
           return (rank[vip]??0)>=(rank[String(all.surprise.min_nivel||"Bronce")]??0)?all.surprise:null;
         })(),
         benefits:[
-          vip==="Oro"||vip==="Diamante"?{icon:"👑",title:"Beneficio VIP",text:vip==="Diamante"?"Acceso a beneficios Diamante":"Beneficios exclusivos nivel Oro"}:null,
+          vip==="Diamante"&&all.vip.beneficio_diamante?{icon:"💎",title:"Beneficio Diamante",text:all.vip.beneficio_diamante}:null,
+          vip==="Oro"&&all.vip.beneficio_ouro?{icon:"👑",title:"Beneficio Oro",text:all.vip.beneficio_ouro}:null,
+          vip==="Plata"&&all.vip.beneficio_plata?{icon:"🥈",title:"Beneficio Plata",text:all.vip.beneficio_plata}:null,
+          vip==="Bronce"&&all.vip.beneficio_bronce?{icon:"🥉",title:"Beneficio Bronce",text:all.vip.beneficio_bronce}:null,
           stats.compras>=3?{icon:"🔥",title:"Cliente frecuente",text:"Ya formas parte de nuestros clientes frecuentes."}:null
         ].filter(Boolean)
       });
