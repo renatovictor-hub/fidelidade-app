@@ -172,7 +172,8 @@ export default async function handler(req, res) {
           config,
           value: cleanValue,
           data: new Date().toISOString(),
-          origen: "dashboard"
+          origen: "dashboard",
+          actor: "Administrador"
         });
       };
       if (config === "cumpleanos") {
