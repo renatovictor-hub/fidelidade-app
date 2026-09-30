@@ -6,6 +6,7 @@
   card.innerHTML=`
     <h3>👑 Niveles VIP</h3>
     <div style="font-size:13px;color:#666;margin-bottom:14px;">Los niveles usan puntos acumulados históricos. Canjear una recompensa no baja el nivel del cliente.</div>
+    <div class="input-group"><label>🥉 Beneficio Bronce</label><input id="vipBeneficioBronce" maxlength="120" placeholder="Ej. Acceso al programa de puntos"><small>Beneficio base para clientes que todavía no alcanzaron Plata.</small></div>
     <div class="input-group"><label>🥈 Plata desde</label><input id="vipPlata" type="number" min="1" value="300"><small>Puntos acumulados históricos necesarios para alcanzar Plata.</small></div>
     <div class="input-group"><label>Beneficio Plata</label><input id="vipBeneficioPlata" maxlength="120" placeholder="Ej. Acceso anticipado a promociones"></div>
     <div class="input-group"><label>🥇 Oro desde</label><input id="vipOro" type="number" min="2" value="800"><small>Debe ser mayor que Plata.</small></div>
@@ -25,6 +26,7 @@
       const c=d.config||{};
       $("vipPlata").value=Number(c.prata??300); $("vipOro").value=Number(c.ouro??800); $("vipDiamante").value=Number(c.diamante??1500);
       $("vipAtivo").checked=c.ativo!==false;
+      $("vipBeneficioBronce").value=String(c.beneficio_bronce||"");
       $("vipBeneficioPlata").value=String(c.beneficio_plata||"");
       $("vipBeneficioOro").value=String(c.beneficio_ouro||"");
       $("vipBeneficioDiamante").value=String(c.beneficio_diamante||"");
@@ -32,7 +34,7 @@
     }catch(e){$("vipEstado").textContent="No se pudo cargar: "+e.message;}
   }
   $("vipSalvar").onclick=async()=>{
-    const value={ativo:$("vipAtivo").checked,prata:Number($("vipPlata").value),ouro:Number($("vipOro").value),diamante:Number($("vipDiamante").value),beneficio_plata:$("vipBeneficioPlata").value.trim(),beneficio_ouro:$("vipBeneficioOro").value.trim(),beneficio_diamante:$("vipBeneficioDiamante").value.trim()};
+    const value={ativo:$("vipAtivo").checked,prata:Number($("vipPlata").value),ouro:Number($("vipOro").value),diamante:Number($("vipDiamante").value),beneficio_bronce:$("vipBeneficioBronce").value.trim(),beneficio_plata:$("vipBeneficioPlata").value.trim(),beneficio_ouro:$("vipBeneficioOro").value.trim(),beneficio_diamante:$("vipBeneficioDiamante").value.trim()};
     if(!(value.prata<value.ouro&&value.ouro<value.diamante)) return alert("Los límites deben cumplir: Plata < Oro < Diamante.");
     const btn=$("vipSalvar");btn.disabled=true;btn.textContent="GUARDANDO...";
     const r=await fetch("/api/sendpush",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save_config",config:"niveles_vip",value})});
