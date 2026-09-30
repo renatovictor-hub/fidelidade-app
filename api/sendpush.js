@@ -239,7 +239,7 @@ export default async function handler(req, res) {
       }
 
       const dias = Array.isArray(value.dias) ? [...new Set(value.dias.map(Number).filter(n => n >= 0 && n <= 6))] : [];
-      if (!dias.length) return res.status(400).json({ error:"Selecciona por lo menos un día" });
+      if (value.ativo === true && !dias.length) return res.status(400).json({ error:"Selecciona por lo menos un día para activar el bonus" });
       const limpio = {
         ativo: value.ativo === true,
         multiplicador: Math.max(1, Math.min(5, Number(value.multiplicador || 1))),
