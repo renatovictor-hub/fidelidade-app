@@ -26,7 +26,7 @@
     <label style="display:flex;align-items:center;gap:8px;margin:4px 0 12px;font-weight:700;">
       <input id="refAtivo" type="checkbox" checked style="width:auto;"> Programa activo
     </label>
-    <button id="refSalvar" class="btn-primary">GUARDAR INDICACIONES</button>
+    <button id="refSalvar" class="btn-primary">GUARDAR REFERIDOS</button>
     <div id="refEstado" style="font-size:12px;color:#777;margin-top:9px;"></div>
   `;
   aside.appendChild(card);
@@ -56,6 +56,8 @@
       pontos_amigo:Number($("refPuntosAmigo").value||0),
       compra_minima:Number($("refCompraMinima").value||0)
     };
+    if(value.ativo&&value.pontos_indicador<=0&&value.pontos_amigo<=0) return alert("Define por lo menos un premio en puntos para activar referidos.");
+    const btn=$("refSalvar");btn.disabled=true;btn.textContent="GUARDANDO...";
     const r=await fetch("/api/sendpush",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -65,6 +67,8 @@
     $("refEstado").textContent=r.ok
       ? (value.ativo?"✅ Programa guardado y activo":"✅ Guardado; programa desactivado")
       : "❌ "+(data.error||"Error al guardar.");
+    btn.disabled=false;btn.textContent="GUARDAR REFERIDOS";
+    if(r.ok) window.dispatchEvent(new CustomEvent("uai:fidelity-config-saved",{detail:{config:"referidos"}}));
   };
 
   carregar();
