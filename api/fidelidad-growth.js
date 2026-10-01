@@ -113,6 +113,8 @@ export default async function handler(req,res){
         missions,badges,
         surprise:(()=>{
           if(all.surprise.ativa===false)return null;
+          const titulo=String(all.surprise.titulo||"").trim(),texto=String(all.surprise.texto||"").trim();
+          if(!titulo&&!texto)return null;
           const rank={Bronce:0,Plata:1,Oro:2,Diamante:3};
           return (rank[vip]??0)>=(rank[String(all.surprise.min_nivel||"Bronce")]??0)?all.surprise:null;
         })(),
@@ -120,8 +122,7 @@ export default async function handler(req,res){
           vip==="Diamante"&&all.vip.beneficio_diamante?{icon:"💎",title:"Beneficio Diamante",text:all.vip.beneficio_diamante}:null,
           vip==="Oro"&&all.vip.beneficio_ouro?{icon:"👑",title:"Beneficio Oro",text:all.vip.beneficio_ouro}:null,
           vip==="Plata"&&all.vip.beneficio_plata?{icon:"🥈",title:"Beneficio Plata",text:all.vip.beneficio_plata}:null,
-          vip==="Bronce"&&all.vip.beneficio_bronce?{icon:"🥉",title:"Beneficio Bronce",text:all.vip.beneficio_bronce}:null,
-          stats.compras>=3?{icon:"🔥",title:"Cliente frecuente",text:"Ya formas parte de nuestros clientes frecuentes."}:null
+          vip==="Bronce"&&all.vip.beneficio_bronce?{icon:"🥉",title:"Beneficio Bronce",text:all.vip.beneficio_bronce}:null
         ].filter(Boolean)
       });
     }
