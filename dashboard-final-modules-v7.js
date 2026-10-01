@@ -212,7 +212,13 @@
       try{PESOS_POR_PONTO=fidPesosPorPunto}catch(_){}
     }catch(_){fidPesosPorPunto=10}
     const txt=document.getElementById('uxCajaRuleText');
-    if(txt)txt.textContent='MX
+    if(txt)txt.textContent='MX$'+fidPesosPorPunto+' de compra = 1 punto base. Los Puntos Bonus pueden multiplicar este valor.';
+    const amount=Number(document.getElementById('uxCajaPurchase')?.value||0);
+    const prev=document.getElementById('uxCajaPreview');
+    if(prev&&amount>0)prev.textContent='⭐ '+Math.floor(amount/fidPesosPorPunto)+' puntos base';
+  }
+
+  function showFidTab(tab){
     const valid=['register','redeem','history','missions','automations','results','config'];
     if(!valid.includes(tab))tab='register';
     document.querySelectorAll('#uxFidTabs [data-fid-tab]').forEach(b=>b.classList.toggle('active',b.dataset.fidTab===tab));
@@ -362,162 +368,6 @@
   setInterval(syncAll,2000);
   setTimeout(syncAll,250);
   setTimeout(loadFidelityBaseRule,320);
-  setTimeout(mountFidelityConfig,260);
-  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
-})();+fidPesosPorPunto+' de compra = 1 punto base. Los Puntos Bonus pueden multiplicar este valor.';
-    const amount=Number(document.getElementById('uxCajaPurchase')?.value||0);
-    const prev=document.getElementById('uxCajaPreview');
-    if(prev&&amount>0)prev.textContent='⭐ '+Math.floor(amount/fidPesosPorPunto)+' puntos base';
-  }
-
-  function showFidTab(tab){
-    const valid=['register','redeem','history','missions','automations','results','config'];
-    if(!valid.includes(tab))tab='register';
-    document.querySelectorAll('#uxFidTabs [data-fid-tab]').forEach(b=>b.classList.toggle('active',b.dataset.fidTab===tab));
-    document.querySelectorAll('#uxQrView [data-fid-pane]').forEach(p=>p.classList.toggle('active',p.dataset.fidPane===tab));
-    try{sessionStorage.setItem('uai_fidelity_tab',tab)}catch(_){}
-    if(tab==='redeem')cajaLoadRewards();
-    if(tab==='history')loadFidelityHistory();
-    if(tab==='missions'&&typeof window.loadFidMissions==='function')window.loadFidMissions();
-    if(tab==='automations'&&typeof window.loadFidAutomations==='function')window.loadFidAutomations();
-    if(tab==='results'&&typeof window.loadFidResults==='function')window.loadFidResults();
-    if(tab==='config')mountFidelityConfig();
-  }
-
-  function mountFidelityConfig(){
-    const host=document.getElementById('uxFidelityConfigHost');
-    if(!host)return;
-    ['nivelesVipAdminCard','bonusPontosAdminCard','referidosAdminCard'].forEach(id=>{
-      const card=document.getElementById(id);
-      if(card&&card.parentNode!==host)host.appendChild(card);
-    });
-  }
-
-  async function loadFidelityHistory(){
-    const box=document.getElementById('uxFidHistoryList');
-    const intro=document.getElementById('uxFidHistoryIntro');
-    if(!box)return;
-    let client=null;
-    try{client=typeof clienteSelecionado!=='undefined'?clienteSelecionado:null}catch(_){}
-    if(!client?.uid){
-      box.innerHTML='<div class="ux-crm-empty">Selecciona un cliente en Registrar compra.</div>';
-      if(intro)intro.textContent='Consulta compras, puntos acreditados y canjes del cliente seleccionado.';
-      return;
-    }
-    if(intro)intro.textContent=(client.nome||'Cliente')+' · '+(client.telefone||client.uid);
-    box.innerHTML='<div class="ux-crm-empty">Cargando movimientos…</div>';
-    try{
-      const res=await fetch('/api/historico?uid='+encodeURIComponent(client.uid)+'&t='+Date.now(),{cache:'no-store'});
-      const data=await res.json();
-      if(!res.ok)throw new Error(data.error||'Error');
-      const items=Array.isArray(data.transacoes)?data.transacoes:[];
-      box.innerHTML=items.length?items.map(item=>{
-        const sign=String(item.tipo||'').toLowerCase()==='debito'?'-':'+';
-        const dt=item.data?new Date(item.data).toLocaleString('es-MX'):'';
-        return '<div class="historico-item"><div class="historico-top"><strong>'+sign+Number(item.pontos||0)+' puntos</strong><span>'+dt+'</span></div><div>Compra: $'+Number(item.valor_compra||0).toLocaleString('es-MX',{maximumFractionDigits:2})+' MXN</div><div style="font-size:12px;color:#777">Saldo: '+Number(item.saldo_anterior||0)+' → '+Number(item.saldo_novo||0)+'</div></div>';
-      }).join(''):'<div class="ux-crm-empty">Sin movimientos.</div>';
-    }catch(_){box.innerHTML='<div class="ux-crm-empty">No se pudieron cargar los movimientos.</div>'}
-  }
-
-  document.getElementById('uxFidTabs').addEventListener('click',e=>{
-    const b=e.target.closest('[data-fid-tab]');
-    if(b)showFidTab(b.dataset.fidTab);
-  });
-
-  async function cajaSelectClient(value){
-    const input=document.getElementById('clienteUid');
-    if(!input||typeof buscarCliente!=='function')return false;
-    input.value=String(value||'').trim();
-    if(!input.value)return false;
-    await buscarCliente();
-    if(typeof clienteSelecionado==='undefined'||!clienteSelecionado)return false;
-    document.getElementById('uxCajaName').textContent=clienteSelecionado.nome||'Sin nombre';
-    document.getElementById('uxCajaMeta').textContent=(clienteSelecionado.telefone||'Sin teléfono')+' · '+(clienteSelecionado.uid||'');
-    document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
-    document.getElementById('uxCajaClient').classList.add('show');
-    const intro=document.getElementById('uxRedeemIntro');if(intro)intro.textContent=(clienteSelecionado.nome||'Cliente')+' · '+Number(clienteSelecionado.pontos||0)+' puntos disponibles';
-    return true;
-  }
-
-  async function cajaLoadRewards(){
-    const box=document.getElementById('uxCajaRewardsList');
-    box.classList.add('show');
-    box.innerHTML='<div class="ux-crm-empty">Cargando recompensas…</div>';
-    try{
-      const res=await fetch('/api/recompensas?t='+Date.now(),{cache:'no-store'});
-      const data=await res.json();
-      if(!res.ok)throw new Error(data.error||'Error');
-      const items=(Array.isArray(data.recompensas)?data.recompensas:[]).filter(i=>i.ativa!==false);
-      box.innerHTML=items.length?items.map(i=>
-        '<div class="ux-caja-reward"><div><b>'+String(i.nome||'Recompensa')+'</b><small>'+Number(i.pontos||0)+' pts</small></div>'+
-        '<button class="btn-success" data-caja-redeem="'+String(i.id)+'" data-name="'+String(i.nome||'Recompensa').replace(/"/g,'&quot;')+'" data-points="'+Number(i.pontos||0)+'">CANJEAR</button></div>'
-      ).join(''):'<div class="ux-crm-empty">No hay recompensas activas.</div>';
-      box.querySelectorAll('[data-caja-redeem]').forEach(btn=>{
-        btn.onclick=async()=>{
-          if(typeof window.resgatarRecompensa!=='function')return alert('No se pudo abrir el canje.');
-          await window.resgatarRecompensa(btn.dataset.cajaRedeem,btn.dataset.name,Number(btn.dataset.points),btn);
-          if(typeof clienteSelecionado!=='undefined'&&clienteSelecionado){
-            document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
-          }
-        };
-      });
-    }catch(_){box.innerHTML='<div class="ux-crm-empty">No se pudieron cargar las recompensas.</div>'}
-  }
-
-  window.openCajaFidelidadForClient=async function(uid){
-    showVirtual('fidelidad');
-    showFidTab('register');
-    document.getElementById('uxCajaLookup').value=uid||'';
-    await cajaSelectClient(uid);
-    setTimeout(()=>document.getElementById('uxCajaPurchase')?.focus(),50);
-  };
-
-  document.getElementById('uxCajaBuscar').onclick=()=>cajaSelectClient(document.getElementById('uxCajaLookup').value);
-  document.getElementById('uxCajaLookup').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('uxCajaBuscar').click()});
-  document.getElementById('uxCajaScanner').onclick=()=>{if(typeof abrirScannerQr==='function')abrirScannerQr()};
-  document.getElementById('uxCajaPurchase').addEventListener('input',e=>{
-    const amount=Number(e.target.value||0);
-    document.getElementById('uxCajaPreview').textContent=amount>0?'⭐ '+Math.floor(amount/10)+' puntos':'Ingresa el valor de la compra.';
-  });
-  document.getElementById('uxCajaConfirm').onclick=async()=>{
-    if(typeof clienteSelecionado==='undefined'||!clienteSelecionado)return alert('Primero identifica al cliente.');
-    const amount=Number(document.getElementById('uxCajaPurchase').value||0);
-    if(!amount||amount<=0)return alert('Ingresa un valor de compra válido.');
-    const hidden=document.getElementById('valorCompra');
-    if(hidden)hidden.value=String(amount);
-    if(typeof calcularPontosCompra==='function')calcularPontosCompra();
-    if(typeof creditarPontos!=='function')return alert('No se pudo registrar la compra.');
-    await creditarPontos();
-    document.getElementById('uxCajaPurchase').value='';
-    document.getElementById('uxCajaPreview').textContent='Compra registrada.';
-    document.getElementById('uxCajaPoints').textContent=String(Number(clienteSelecionado.pontos||0));
-    document.getElementById('uxQrPoints').textContent=String(Number(clienteSelecionado.pontos||0));
-  };
-  document.getElementById('uxCajaRewards').onclick=()=>showFidTab('redeem');
-  document.getElementById('uxCajaHistory').onclick=()=>showFidTab('history');
-  document.getElementById('uxFidHistoryRefresh').onclick=loadFidelityHistory;
-
-  document.addEventListener('click',e=>{
-    const b=e.target.closest('#uxSidebar .ux-nav button');if(!b)return;
-    const txt=norm(b.textContent);
-    let view=null;
-    if(txt==='fidelidad'||txt==='programa de fidelidad')view='fidelidad';
-    else if(txt==='configurar envio')view='envio';
-    else if(txt==='reportes')view='reportes';
-    else if(txt==='ajustes')view='ajustes';
-    if(view){e.preventDefault();e.stopImmediatePropagation();showVirtual(view)}
-  },true);
-
-  const attr=new MutationObserver(()=>{
-    const v=document.body.dataset.uxView;
-    if(v==='pedidos'||v==='entregas'){
-      lastOrderView='';
-      setTimeout(()=>configureOrdersView(true),30);
-    }
-  });
-  attr.observe(document.body,{attributes:true,attributeFilter:['data-ux-view']});
-  setInterval(syncAll,2000);
-  setTimeout(syncAll,250);
   setTimeout(mountFidelityConfig,260);
   setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
 })();
