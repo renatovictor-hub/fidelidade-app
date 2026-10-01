@@ -101,10 +101,12 @@ export default async function handler(req,res){
       const claims=user.mission_claims||{};
       const missions=all.missions.filter(m=>m.ativa!==false).map(m=>({...m,progress:missionProgress(m,stats),claimed:claims[m.id]===true}));
       const badges=[];
-      if(stats.compras>=1)badges.push({icon:"🥉",name:"Primera compra"});
-      if(stats.compras>=3)badges.push({icon:"🔥",name:"Cliente frecuente"});
-      if(stats.compras>=10)badges.push({icon:"🏆",name:"10 compras"});
-      if(stats.gasto>=2500)badges.push({icon:"💎",name:"Cliente premium"});
+      if(stats.compras>=1)badges.push({icon:"🛍️",name:"Primera compra",text:"Realizaste tu primera compra."});
+      if(stats.compras>=10)badges.push({icon:"🏆",name:"10 compras",text:"Llegaste a 10 compras registradas."});
+      if(stats.canjes>=1)badges.push({icon:"🎁",name:"Primer canje",text:"Canjeaste tu primera recompensa."});
+      if(Number(user.referidos_recompensados||0)>=1)badges.push({icon:"🤝",name:"Primer referido",text:"Un amigo referido completó su primera compra válida."});
+      const memberDays=daysSince(user.created_at);
+      if(memberDays!=null&&memberDays>=365)badges.push({icon:"🎂",name:"1 año como cliente",text:"Cumpliste un año en el programa de fidelidad."});
       return res.status(200).json({
         success:true,
         client:{uid,nome:user.nome||user.nombre||"",pontos:points,pontos_acumulados:acc,vip,compras:stats.compras,gasto:stats.gasto},
