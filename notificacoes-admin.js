@@ -25,21 +25,42 @@
         <small id="pushValorAjuda" style="display:block;margin-top:5px;color:#777;"></small>
       </div>
       <div id="pushSegmentoResumo" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#f8f5ff;color:#6a0dad;font-size:13px;font-weight:700;">Se enviará a todos los clientes con notificaciones activas.</div>
+      <button type="button" id="pushPreviewBtn" class="btn-secondary" style="margin-top:10px;width:100%;">CALCULAR PÚBLICO</button>
     </div>`;
   botao.parentNode.insertBefore(box, botao);
 
-  const segmento = $("pushSegmento"), wrap = $("pushValorWrap"), valor = $("pushValorSegmento"), label = $("pushValorLabel"), ajuda = $("pushValorAjuda"), resumo = $("pushSegmentoResumo");
+  const segmento = $("pushSegmento"), wrap = $("pushValorWrap"), valor = $("pushValorSegmento"), label = $("pushValorLabel"), ajuda = $("pushValorAjuda"), resumo = $("pushSegmentoResumo"), previewBtn = $("pushPreviewBtn");
+  let audiencePreview = null;
   function atualizarSegmento() {
     const tipo = segmento.value;
     wrap.style.display = tipo === "todos" ? "none" : "block";
     valor.type = "text"; valor.value = "";
+    audiencePreview = null;
     if (tipo === "todos") resumo.textContent = "Se enviará a todos los clientes con notificaciones activas.";
     if (tipo === "cliente") { label.textContent = "Teléfono o ID del cliente"; valor.placeholder = "Ej: 9981234567 o user_123"; ajuda.textContent = "La notificación se enviará solamente a ese cliente."; resumo.textContent = "Envío individual."; }
     if (tipo === "pontos_min") { label.textContent = "Puntos mínimos"; valor.type = "number"; valor.min = "0"; valor.placeholder = "Ej: 100"; ajuda.textContent = "Solo clientes con ese saldo o superior."; resumo.textContent = "Segmentación por saldo de puntos."; }
     if (tipo === "inativos_dias") { label.textContent = "Días sin comprar"; valor.type = "number"; valor.min = "1"; valor.placeholder = "Ej: 30"; ajuda.textContent = "Usa la última compra registrada del cliente."; resumo.textContent = "Campaña para recuperar clientes inactivos."; }
     if (tipo === "perto_recompensa") { label.textContent = "Máximo de puntos que pueden faltar"; valor.type = "number"; valor.min = "1"; valor.placeholder = "Ej: 20"; ajuda.textContent = "Ej.: 20 = clientes a 20 puntos o menos de una recompensa activa."; resumo.textContent = "Clientes próximos de alcanzar una recompensa."; }
   }
-  segmento.addEventListener("change", atualizarSegmento); atualizarSegmento();
+  segmento.addEventListener("change", atualizarSegmento);
+  valor.addEventListener("input",()=>{ audiencePreview=null; resumo.textContent = "Cambiaste el criterio. Calcula el público nuevamente antes de enviar."; });
+  atualizarSegmento();
+
+  async function calcularPublico(){
+    const tipo=segmento.value, valorSeg=valor.value.trim();
+    if(tipo!=="todos"&&!valorSeg) return alert("Completa el dato de segmentación.");
+    previewBtn.disabled=true; previewBtn.textContent="CALCULANDO...";
+    try{
+      const res=await fetch("/api/sendpush",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"preview_segment",segmento:tipo,valorSegmento:valorSeg})});
+      const data=await res.json(); if(!res.ok||!data.success) throw new Error(data.error||"No se pudo calcular el público.");
+      audiencePreview={segmento:tipo,valor:valorSeg,...data};
+      if(data.todos) resumo.textContent="👥 Público: todos los clientes con notificaciones activas.";
+      else resumo.textContent=`🎯 ${data.publico} · ${Number(data.destinatarios_estimados||0)} cliente(s) disponibles`;
+      return audiencePreview;
+    }catch(e){audiencePreview=null;resumo.textContent="No se pudo calcular el público.";alert(e.message)}
+    finally{previewBtn.disabled=false;previewBtn.textContent="CALCULAR PÚBLICO"}
+  }
+  previewBtn.addEventListener("click",calcularPublico);
 
   const historicoCard = document.createElement("div");
   historicoCard.className = "card";
@@ -70,6 +91,13 @@
     const exp = Date.now() + segundos * 1000;
     const link = `https://fidelidad-uai-so.vercel.app/?promo=${encodeURIComponent(tituloVal)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
     const btn = card.querySelector('button[onclick="enviarPush()"]');
+
+    if(!audiencePreview || audiencePreview.segmento!==tipo || audiencePreview.valor!==valorSeg){
+      const p=await calcularPublico();
+      if(!p)return;
+    }
+    const qty=audiencePreview?.todos?"todos los clientes con notificaciones activas":`${Number(audiencePreview?.destinatarios_estimados||0)} cliente(s)`;
+    if(!confirm(`¿Enviar esta campaña ahora?\n\nTítulo: ${tituloVal}\nPúblico: ${audiencePreview?.publico||"Todos"}\nDestinatarios: ${qty}\n\nLa notificación se enviará inmediatamente.`)) return;
     try {
       btn.disabled = true; btn.textContent = "ENVIANDO...";
       const res = await fetch("/api/sendpush", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ titulo:tituloVal, desc, link, imagem, segmento:tipo, valorSegmento:valorSeg }) });
@@ -78,6 +106,8 @@
       const destino = data.destinatarios_estimados == null ? data.publico : `${data.publico} (${data.destinatarios_estimados} cliente(s))`;
       alert(`✅ Notificación enviada.\n\nPúblico: ${destino}`);
       $("titulo").value = ""; $("desc").value = ""; $("imagem").value = ""; if ($("previewImagemBox")) $("previewImagemBox").style.display = "none";
+      audiencePreview=null;
+      atualizarSegmento();
       await carregarHistoricoPush();
     } catch (e) { alert("No se pudo enviar la notificación.\n\n" + e.message); }
     finally { btn.disabled = false; btn.textContent = "ENVIAR PUSH AHORA"; }
