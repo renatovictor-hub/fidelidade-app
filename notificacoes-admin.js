@@ -29,6 +29,29 @@
     </div>`;
   botao.parentNode.insertBefore(box, botao);
 
+  const duracionInput = $("duracion");
+  if (duracionInput && !duracionInput.dataset.uxDurationReady) {
+    duracionInput.dataset.uxDurationReady = "1";
+    const group = duracionInput.closest(".input-group");
+    const durationLabel = group?.querySelector("label");
+    const durationHelp = group?.querySelector("small");
+    if (durationLabel) durationLabel.textContent = "Duración de la oferta";
+    const preset = document.createElement("select");
+    preset.id = "pushDuracionPreset";
+    preset.innerHTML = '<option value="3600">1 hora</option><option value="10800">3 horas</option><option value="21600">6 horas</option><option value="86400">24 horas</option><option value="259200">3 días</option><option value="604800">7 días</option><option value="custom">Personalizada</option>';
+    preset.style.cssText = "width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:15px;";
+    duracionInput.insertAdjacentElement("beforebegin", preset);
+    duracionInput.style.display = "none";
+    duracionInput.value = "3600";
+    if (durationHelp) durationHelp.textContent = "Define cuánto tiempo aparecerá la promoción como activa en el app.";
+    preset.addEventListener("change",()=>{
+      const custom=preset.value==="custom";
+      duracionInput.style.display=custom?"block":"none";
+      if(!custom)duracionInput.value=preset.value;
+      if(custom){duracionInput.type="number";duracionInput.min="60";duracionInput.placeholder="Duración en segundos";duracionInput.focus();}
+    });
+  }
+
   const segmento = $("pushSegmento"), wrap = $("pushValorWrap"), valor = $("pushValorSegmento"), label = $("pushValorLabel"), ajuda = $("pushValorAjuda"), resumo = $("pushSegmentoResumo"), previewBtn = $("pushPreviewBtn");
   let audiencePreview = null;
   function atualizarSegmento() {
