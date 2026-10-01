@@ -30,7 +30,7 @@
     body.ux3[data-ux-view="recompensas"][data-growth-sub="catalogo"] .ux-reward-panel.create{display:none}
     .ux-reward-panel.catalog{border-left:1px solid #eee7f1;padding-left:14px}
     .ux-reward-panel h4{margin:0 0 11px;color:#3b2d42;font-size:16px}
-    .ux-reward-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .ux-reward-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
     .ux-reward-metric{border:1px solid #eee7f1;background:#faf8fb;border-radius:11px;padding:10px}
     .ux-reward-metric small{display:block;font-size:11px;color:#625768;font-weight:700}.ux-reward-metric b{display:block;font-size:18px;color:#5f0fa8;margin-top:3px}
     #listaRecompensas{margin-top:0!important;max-height:560px;overflow:auto;padding-right:3px}
@@ -67,7 +67,7 @@
       body.ux3[data-ux-view="recompensas"] .ux-reward-panel{display:none}
       body.ux3[data-ux-view="recompensas"][data-growth-sub="crear"] .ux-reward-panel.create,body.ux3[data-ux-view="recompensas"]:not([data-growth-sub]) .ux-reward-panel.create{display:block}
       body.ux3[data-ux-view="recompensas"][data-growth-sub="catalogo"] .ux-reward-panel.catalog{display:block;border:0;padding:0}
-      .ux-reward-summary{grid-template-columns:repeat(3,1fr)}
+      .ux-reward-summary{grid-template-columns:repeat(2,1fr)}
     }
   `;
   document.head.appendChild(style);
@@ -115,7 +115,7 @@
     const create=document.createElement('div');create.className='ux-reward-panel create';
     create.innerHTML='<h4>Crear recompensa</h4>';
     const catalog=document.createElement('div');catalog.className='ux-reward-panel catalog';
-    catalog.innerHTML='<h4>Catálogo de recompensas</h4><div class="ux-reward-summary"><div class="ux-reward-metric"><small>Total</small><b id="uxRewardTotal">—</b></div><div class="ux-reward-metric"><small>Activas</small><b id="uxRewardActive">—</b></div><div class="ux-reward-metric"><small>Inactivas</small><b id="uxRewardInactive">—</b></div></div>';
+    catalog.innerHTML='<h4>Catálogo de recompensas</h4><p style="margin:-4px 0 11px;color:#6a5d70;font-size:12px;line-height:1.45">Administra los premios visibles para el cliente y revisa cuáles realmente se están canjeando.</p><div class="ux-reward-summary"><div class="ux-reward-metric"><small>Total</small><b id="uxRewardTotal">—</b></div><div class="ux-reward-metric"><small>Activas</small><b id="uxRewardActive">—</b></div><div class="ux-reward-metric"><small>Inactivas</small><b id="uxRewardInactive">—</b></div><div class="ux-reward-metric"><small>Canjes</small><b id="uxRewardRedeems">—</b></div></div>';
     const children=[...card.children].filter(x=>x!==h);
     children.forEach(el=>{if(el===list)catalog.appendChild(el);else create.appendChild(el)});
     shell.append(create,catalog);card.appendChild(shell);
@@ -146,8 +146,9 @@
     const items=[...document.querySelectorAll('#listaRecompensas .reward-item')];
     const active=items.filter(x=>!x.classList.contains('inactive')).length;
     const inactive=items.length-active;
-    const a=document.getElementById('uxRewardTotal'),b=document.getElementById('uxRewardActive'),c=document.getElementById('uxRewardInactive');
-    if(a)a.textContent=String(items.length);if(b)b.textContent=String(active);if(c)c.textContent=String(inactive);
+    const redeems=items.reduce((n,x)=>n+Number(x.dataset.canjes||0),0);
+    const a=document.getElementById('uxRewardTotal'),b=document.getElementById('uxRewardActive'),c=document.getElementById('uxRewardInactive'),d=document.getElementById('uxRewardRedeems');
+    if(a)a.textContent=String(items.length);if(b)b.textContent=String(active);if(c)c.textContent=String(inactive);if(d)d.textContent=String(redeems);
   }
   function offerMetrics(){
     const active=document.querySelectorAll('#listaPromos .promo-item').length;
