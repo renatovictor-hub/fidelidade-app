@@ -61,6 +61,7 @@
             itens.forEach(item => {
                 const div = document.createElement('div');
                 div.className = `reward-item${item.ativa === false ? ' inactive' : ''}`;
+                div.dataset.canjes = String(Number(item.canjes || 0));
 
                 const nome = String(item.nome || 'Sin nombre');
                 const descricao = String(item.descricao || '');
