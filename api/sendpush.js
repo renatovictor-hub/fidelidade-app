@@ -8,6 +8,52 @@ if (!admin.apps.length) {
 
 function telefoneValido(v) { const t = String(v || "").replace(/\D/g, ""); return t.length === 10 ? t : ""; }
 
+async function resolverPublico(db, segmento, valorSegmento) {
+  const todos = segmento === "todos";
+  if (todos) return { todos:true, telefones:[], publico:"Todos los clientes", destinatarios_estimados:null };
+
+  const [usersSnap, recompensasSnap] = await Promise.all([
+    db.ref("users").once("value"),
+    db.ref("recompensas").once("value")
+  ]);
+  const usuarios = Object.entries(usersSnap.val() || {}).map(([uid,u]) => ({ uid, ...(u || {}) }));
+  let telefones = [], publico = "Segmento seleccionado";
+
+  if (segmento === "cliente") {
+    const busca = String(valorSegmento || "").trim(), nums = busca.replace(/\D/g, "");
+    const encontrados = usuarios.filter(u => u.uid === busca || telefoneValido(u.telefone) === nums);
+    telefones = encontrados.map(u => telefoneValido(u.telefone)).filter(Boolean);
+    publico = encontrados[0] ? `Cliente: ${encontrados[0].nome || encontrados[0].nombre || encontrados[0].telefone || encontrados[0].uid}` : "Cliente específico";
+  } else if (segmento === "pontos_min") {
+    const minimo = Math.max(0, Number(valorSegmento || 0));
+    telefones = usuarios.filter(u => Number(u.pontos || 0) >= minimo).map(u => telefoneValido(u.telefone)).filter(Boolean);
+    publico = `Clientes con ${minimo}+ puntos`;
+  } else if (segmento === "inativos_dias") {
+    const dias = Math.max(1, Number(valorSegmento || 30)), limite = Date.now() - dias * 86400000;
+    telefones = usuarios.filter(u => {
+      const base = u.ultima_compra || u.updated_at || u.created_at;
+      const ts = base ? new Date(base).getTime() : 0;
+      return !ts || ts <= limite;
+    }).map(u => telefoneValido(u.telefone)).filter(Boolean);
+    publico = `Clientes sin comprar hace ${dias}+ días`;
+  } else if (segmento === "perto_recompensa") {
+    const faltamMax = Math.max(1, Number(valorSegmento || 20));
+    const recompensas = Object.values(recompensasSnap.val() || {})
+      .filter(r => r && r.ativa !== false && Number(r.pontos || 0) > 0)
+      .map(r => Number(r.pontos));
+    telefones = usuarios.filter(u => {
+      const saldo = Number(u.pontos || 0);
+      return recompensas.some(custo => custo > saldo && custo - saldo <= faltamMax);
+    }).map(u => telefoneValido(u.telefone)).filter(Boolean);
+    publico = `A ≤${faltamMax} puntos de una recompensa`;
+  } else {
+    throw new Error("Segmento inválido");
+  }
+
+  telefones = [...new Set(telefones)];
+  return { todos:false, telefones, publico, destinatarios_estimados:telefones.length };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (!["GET","POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
@@ -253,6 +299,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ success:true, config:limpio });
     }
 
+    if (action === "preview_segment") {
+      const segmento = String(req.body?.segmento || "todos").trim();
+      const valorSegmento = req.body?.valorSegmento;
+      const audiencia = await resolverPublico(db, segmento, valorSegmento);
+      return res.status(200).json({
+        success:true,
+        publico:audiencia.publico,
+        destinatarios_estimados:audiencia.todos ? null : audiencia.destinatarios_estimados,
+        todos:audiencia.todos
+      });
+    }
+
     if (action === "feedback_attended") {
       const id = String(req.body?.id || "").trim();
       const attended = req.body?.atendido !== false;
@@ -283,35 +341,9 @@ export default async function handler(req, res) {
     const valorSegmento = req.body?.valorSegmento;
     if (!titulo || !desc) return res.status(400).json({ error: "Título y mensaje son obligatorios" });
 
-    let telefones = [], publico = "Todos los clientes", todos = segmento === "todos";
-    if (!todos) {
-      const [usersSnap, recompensasSnap] = await Promise.all([db.ref("users").once("value"), db.ref("recompensas").once("value")]);
-      const usuarios = Object.entries(usersSnap.val() || {}).map(([uid,u]) => ({ uid, ...(u || {}) }));
-      if (segmento === "cliente") {
-        const busca = String(valorSegmento || "").trim(), nums = busca.replace(/\D/g, "");
-        const encontrados = usuarios.filter(u => u.uid === busca || telefoneValido(u.telefone) === nums);
-        telefones = encontrados.map(u => telefoneValido(u.telefone)).filter(Boolean);
-        publico = encontrados[0] ? `Cliente: ${encontrados[0].nome || encontrados[0].nombre || encontrados[0].telefone || encontrados[0].uid}` : "Cliente específico";
-      }
-      if (segmento === "pontos_min") {
-        const minimo = Math.max(0, Number(valorSegmento || 0));
-        telefones = usuarios.filter(u => Number(u.pontos || 0) >= minimo).map(u => telefoneValido(u.telefone)).filter(Boolean);
-        publico = `Clientes con ${minimo}+ puntos`;
-      }
-      if (segmento === "inativos_dias") {
-        const dias = Math.max(1, Number(valorSegmento || 30)), limite = Date.now() - dias * 86400000;
-        telefones = usuarios.filter(u => { const base = u.ultima_compra || u.updated_at || u.created_at; const ts = base ? new Date(base).getTime() : 0; return !ts || ts <= limite; }).map(u => telefoneValido(u.telefone)).filter(Boolean);
-        publico = `Clientes sin comprar hace ${dias}+ días`;
-      }
-      if (segmento === "perto_recompensa") {
-        const faltamMax = Math.max(1, Number(valorSegmento || 20));
-        const recompensas = Object.values(recompensasSnap.val() || {}).filter(r => r && r.ativa !== false && Number(r.pontos || 0) > 0).map(r => Number(r.pontos));
-        telefones = usuarios.filter(u => { const saldo = Number(u.pontos || 0); return recompensas.some(custo => custo > saldo && custo - saldo <= faltamMax); }).map(u => telefoneValido(u.telefone)).filter(Boolean);
-        publico = `A ≤${faltamMax} puntos de una recompensa`;
-      }
-      telefones = [...new Set(telefones)];
-      if (!telefones.length) return res.status(400).json({ error: "No hay clientes con notificaciones disponibles en este segmento." });
-    }
+    const audiencia = await resolverPublico(db, segmento, valorSegmento);
+    const { todos, telefones, publico } = audiencia;
+    if (!todos && !telefones.length) return res.status(400).json({ error: "No hay clientes con notificaciones disponibles en este segmento." });
 
     const data = await enviarNotificacao({ titulo, mensagem: desc, url: link, imagem, todos, telefones });
     if (data?.skipped) return res.status(500).json({ error: "ONESIGNAL_REST_KEY no configurada en Vercel." });
