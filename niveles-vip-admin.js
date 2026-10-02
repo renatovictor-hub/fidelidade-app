@@ -32,7 +32,7 @@
   document.head.appendChild(style);
 
   const card=document.createElement("div");
-  card.className="card"; card.id="nivelesVipAdminCard";
+  card.className="card"; card.id="nivelesVipAdminCard"; card.style.display="none";
   const levelBlock=(key,label,icon)=>`
     <section class="vip-level-card">
       <div class="vip-level-title"><span>${icon} ${label}</span><small>Hasta 2 beneficios</small></div>
@@ -166,7 +166,8 @@
       el.querySelector('.vip-active').checked=b.active!==false;
       bindEditor(el);
       refreshEditor(el);
-      if(b.title)el.classList.add('is-open');
+      el.classList.remove('is-open');
+      el.querySelector('.vip-benefit-head')?.setAttribute('aria-expanded','false');
     });
   }
   card.querySelectorAll('.vip-benefit-editor').forEach(bindEditor);
