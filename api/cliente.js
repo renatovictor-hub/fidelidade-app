@@ -58,6 +58,9 @@ function publicOrder(id, order) {
         subtotal: Number(order.subtotal || 0),
         deliveryFee: Number(order.deliveryFee || 0),
         total: Number(order.total || 0),
+        discount: Number(order.discount || 0),
+        vipBenefitRequestId: order.vipBenefitRequestId || "",
+        vipBenefit: order.vipBenefit || null,
         address: order.address || "",
         references: order.references || "",
         payment: order.payment || "",
@@ -80,6 +83,55 @@ async function notifyOrderStatus(order) {
     }).catch(() => null);
 }
 
+async function getVipRequestForOrder(db, requestId, uid) {
+    const id = cleanOrderText(requestId, 120);
+    if (!id || !uid) return null;
+    const snap = await db.ref(`vip_benefit_requests/${id}`).once("value");
+    if (!snap.exists()) return null;
+    const request = snap.val() || {};
+    if (request.status !== "pending" || String(request.uid || "") !== uid) return null;
+    if (Date.parse(String(request.expires_at || "")) <= Date.now()) {
+        await db.ref(`vip_benefit_requests/${id}`).update({ status:"expired", processed_at:new Date().toISOString() });
+        return null;
+    }
+    return { id, ...request };
+}
+
+function applyVipBenefitToOrder(request, subtotal, deliveryFee) {
+    let discount = 0;
+    let fee = deliveryFee;
+    const type = String(request?.benefit_type || "");
+    const value = Math.max(0, Number(request?.benefit_value || 0));
+    if (type === "free_delivery") fee = 0;
+    else if (type === "percent_discount") discount = Math.min(subtotal, Math.round((subtotal * Math.min(100, value) / 100) * 100) / 100);
+    else if (type === "fixed_discount") discount = Math.min(subtotal, value);
+    return { discount, deliveryFee: fee, total: Math.max(0, Math.round((subtotal - discount + fee) * 100) / 100) };
+}
+
+async function confirmVipRequestForOrder(db, requestId, orderId) {
+    const snap = await db.ref(`vip_benefit_requests/${requestId}`).once("value");
+    if (!snap.exists()) return { ok:false };
+    const request = snap.val() || {};
+    if (request.status === "confirmed") return { ok:true, already:true };
+    if (request.status !== "pending" || Date.parse(String(request.expires_at || "")) <= Date.now()) return { ok:false };
+    const usageRef = db.ref(`users/${request.uid}/vip_benefit_usage/${request.benefit_id}/${request.period_key}`);
+    const limit = Math.max(1, Math.min(20, Number(request.limit || 1)));
+    const tx = await usageRef.transaction(current => {
+        const used = Math.max(0, Number(current || 0));
+        if (used >= limit) return;
+        return used + 1;
+    }, undefined, false);
+    if (!tx.committed) return { ok:false, exhausted:true };
+    const used = Math.max(0, Number(tx.snapshot.val() || 0)), now = new Date().toISOString();
+    await db.ref(`vip_benefit_requests/${requestId}`).update({
+        status:"confirmed", processed_at:now, processed_by:"Pedido integrado", order_id:orderId || "", use_number:used
+    });
+    await db.ref("vip_benefit_redemptions").push().set({
+        ...request, request_id:requestId, status:"redeemed", order_id:orderId || "", use_number:used, confirmed_at:now
+    });
+    return { ok:true, used, remaining:Math.max(0, limit-used) };
+}
+
 async function handleOrderCreate(req, res) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
@@ -97,6 +149,10 @@ async function handleOrderCreate(req, res) {
         if (snap.exists()) profile = snap.val() || {};
     }
     const status = "received";
+    const vipRequest = await getVipRequestForOrder(db, body.benefit_request_id, uid);
+    const subtotal = cleanOrderMoney(body.subtotal);
+    const originalDeliveryFee = cleanOrderMoney(body.deliveryFee);
+    const vipPricing = vipRequest ? applyVipBenefitToOrder(vipRequest, subtotal, originalDeliveryFee) : { discount:0, deliveryFee:originalDeliveryFee, total:cleanOrderMoney(body.total) };
     const order = {
         code,
         uid,
@@ -107,9 +163,17 @@ async function handleOrderCreate(req, res) {
         updatedAt: now,
         fulfillment: body.fulfillment === "pickup" ? "pickup" : "delivery",
         scheduledAt: cleanOrderText(body.scheduledAt, 40),
-        subtotal: cleanOrderMoney(body.subtotal),
-        deliveryFee: cleanOrderMoney(body.deliveryFee),
-        total: cleanOrderMoney(body.total),
+        subtotal,
+        deliveryFee: vipPricing.deliveryFee,
+        discount: vipPricing.discount,
+        total: vipPricing.total,
+        vipBenefitRequestId: vipRequest?.id || "",
+        vipBenefit: vipRequest ? {
+            title: vipRequest.benefit_title || "",
+            type: vipRequest.benefit_type || "custom",
+            value: Number(vipRequest.benefit_value || 0),
+            code: vipRequest.code || ""
+        } : null,
         address: cleanOrderText(body.address, 260),
         references: cleanOrderText(body.references, 180),
         payment: cleanOrderText(body.payment, 80),
@@ -255,6 +319,10 @@ async function handleOrderStatus(req, res) {
         [`history/${status}`]: { at:now, label:ORDER_STATUS[status].label }
     });
     if (current.uid) await db.ref(`users/${current.uid}/ultimo_pedido`).set({ id, code:current.code || id, status, updatedAt:now });
+    if (status === "accepted" && current.vipBenefitRequestId) {
+        const confirmed = await confirmVipRequestForOrder(db, current.vipBenefitRequestId, id);
+        if (!confirmed.ok) return res.status(409).json({ error: confirmed.exhausted ? "El beneficio VIP ya fue utilizado" : "La solicitud VIP ya no es válida" });
+    }
     const order = {
         ...current,
         status,
