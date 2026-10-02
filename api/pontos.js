@@ -1,6 +1,8 @@
 import { getFirebaseAdmin } from "./_firebase.js";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { getRestaurantConfig } from "./_restaurant-config.js";
+const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
 
@@ -150,7 +152,7 @@ export default async function handler(req, res) {
             mensagem: bonusAtivo
                 ? `¡Bonus x${multiplicadorAplicado}! Sumaste ${pontosGanhos} puntos. Tu saldo ahora es ${saldoFinalCliente}.`
                 : `Sumaste ${pontosGanhos} punto${pontosGanhos === 1 ? "" : "s"}. Tu saldo ahora es ${saldoFinalCliente}.`,
-            url: "https://fidelidad-uai-so.vercel.app/"
+            url: CFG.domain+"/"
         }).catch(error => ({ error: true, details: error.message }));
 
         if (indicacao.aplicada) {
@@ -160,14 +162,14 @@ export default async function handler(req, res) {
                     telefone: cliente.telefone || "",
                     titulo: "🎁 ¡Bonus por invitación!",
                     mensagem: `Ganaste ${indicacao.pontos_amigo} puntos extra por tu primera compra con invitación.`,
-                    url: "https://fidelidad-uai-so.vercel.app/"
+                    url: CFG.domain+"/"
                 }),
                 enviarNotificacao({
                     uid: indicacao.indicador_uid,
                     telefone: indicadorCliente?.telefone || "",
                     titulo: "🤝 ¡Tu amigo compró!",
                     mensagem: `Ganaste ${indicacao.pontos_indicador} puntos porque tu amigo hizo su primera compra válida.`,
-                    url: "https://fidelidad-uai-so.vercel.app/"
+                    url: CFG.domain+"/"
                 })
             ]);
         }
