@@ -1,5 +1,5 @@
-import { requireAdmin } from "./_admin-auth.js";
-import { getRestaurantConfig } from "./_restaurant-config.js";
+import { requireAdmin } from "../lib/server/admin-auth.js";
+import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 const CFG=getRestaurantConfig();
 export default async function handler(req, res) {
     if (!requireAdmin(req,res)) return;
