@@ -28,6 +28,13 @@
   .vip-benefit-inline p{font-size:10px!important;margin:4px 0 0!important;color:#756d79!important}
   .vip-benefit-inline button{width:100%;margin-top:7px;border:0;border-radius:9px;background:#6a0dad;color:#fff;padding:8px;font-size:10px;font-weight:900}
   .vip-benefit-inline .used{color:#20844e;font-weight:800;margin-top:6px;font-size:10px}
+  .vip-use-modal{position:fixed;inset:0;background:rgba(28,12,36,.48);display:flex;align-items:flex-end;justify-content:center;z-index:9999;padding:14px}
+  .vip-use-sheet{width:min(100%,460px);background:#fff;border-radius:20px 20px 14px 14px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.24)}
+  .vip-use-sheet h3{margin:0;color:#5d277e;font-size:18px}.vip-use-sheet>p{font-size:12px;color:#6f6574;line-height:1.45}
+  .vip-use-options{display:grid;gap:9px;margin-top:12px}.vip-use-options button{width:100%;border:1px solid #e4d8ea;border-radius:12px;background:#fff;color:#5d277e;padding:12px;font-weight:900;text-align:left}
+  .vip-use-close{width:100%;border:0;background:transparent;color:#786d7d;padding:10px;margin-top:4px}
+  .vip-use-code{text-align:center;font-weight:900;font-size:20px;color:#6a0dad;letter-spacing:1px;margin:10px 0}
+  .vip-use-qr{width:190px;height:190px;margin:10px auto;display:grid;place-items:center}
   @media(max-width:370px){.cfg-badges{grid-template-columns:1fr 1fr}.cfg-badge{padding:10px 6px}}
   `;document.head.appendChild(style);
 
@@ -93,7 +100,7 @@
         <div class="vip-benefit-inline-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span>${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
         <p>${b.text}</p>
         <p>${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
-        ${b.available?'<button type="button" class="cfg-vip-redeem" data-benefit="'+b.id+'">USAR BENEFICIO</button>':'<div class="used">✓ Usos agotados</div>'}
+        ${b.available?'<button type="button" class="cfg-vip-redeem" data-benefit="'+b.id+'">VER CÓMO USAR</button>':'<div class="used">✓ Usos agotados</div>'}
       </div>`).join('')}`:'<div class="vip-benefits-inline-title">Beneficios de tu nivel</div><p style="font-size:10px;color:#756d79;margin:0">Este nivel no tiene beneficios activos.</p>';
     if(!vipCard.dataset.growthHeightBound){
       vipCard.dataset.growthHeightBound='1';
@@ -103,6 +110,42 @@
       },0));
     }
     if(vipCard.classList.contains('expanded')&&row)row.style.minHeight=vipCard.scrollHeight+'px';
+  }
+
+  async function createBenefitRequest(benefit,channel){
+    const r=await fetch('/api/fidelidad-growth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_vip_benefit',uid,benefit_id:benefit.id,channel})});
+    const out=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(out.error||'No se pudo crear la solicitud');
+    return out;
+  }
+  function ensureBenefitModal(){
+    let modal=document.getElementById('vipUseModal');
+    if(modal)return modal;
+    modal=document.createElement('div');modal.id='vipUseModal';modal.className='vip-use-modal';modal.style.display='none';
+    modal.innerHTML='<div class="vip-use-sheet" onclick="event.stopPropagation()"><div id="vipUseBody"></div><button class="vip-use-close" type="button">CERRAR</button></div>';
+    modal.onclick=()=>modal.style.display='none';
+    modal.querySelector('.vip-use-close').onclick=()=>modal.style.display='none';
+    document.body.appendChild(modal);return modal;
+  }
+  function openBenefitUsage(benefit){
+    const modal=ensureBenefitModal(),body=modal.querySelector('#vipUseBody');
+    body.innerHTML='<h3>'+(benefit.icon||'🎁')+' '+(benefit.title||'Beneficio VIP')+'</h3><p>'+(benefit.text||'')+'</p><p>El beneficio solo se descuenta cuando el restaurante confirma el uso.</p><div class="vip-use-options"><button type="button" data-channel="whatsapp">💬 <b>Pedir por WhatsApp</b><br><small>Genera una solicitud de 30 minutos para que el restaurante la confirme a distancia.</small></button><button type="button" data-channel="qr">▦ <b>Usar en el restaurante</b><br><small>Genera un QR temporal para validar en caja.</small></button></div>';
+    body.querySelectorAll('[data-channel]').forEach(btn=>btn.onclick=async()=>{
+      const channel=btn.dataset.channel;btn.disabled=true;
+      try{
+        const out=await createBenefitRequest(benefit,channel);
+        if(channel==='whatsapp'){
+          const msg='Hola, quiero usar mi beneficio VIP: '+(out.title||benefit.title)+'. Código: '+out.code+'. La solicitud vence en 30 minutos.';
+          window.open('https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(msg),'_blank','noopener');
+          body.innerHTML='<h3>Solicitud enviada</h3><p>Envía el mensaje por WhatsApp y espera que el restaurante confirme el beneficio.</p><div class="vip-use-code">'+out.code+'</div><p>Tu beneficio todavía no fue descontado.</p>';
+        }else{
+          body.innerHTML='<h3>Mostrar en el restaurante</h3><p>El restaurante debe validar este QR antes de aplicar el beneficio.</p><div id="vipTempQr" class="vip-use-qr"></div><div class="vip-use-code">'+out.code+'</div><p>Válido por 30 minutos. El uso solo se descuenta después de la confirmación.</p>';
+          const q=body.querySelector('#vipTempQr');
+          try{if(typeof QRCode==='function')new QRCode(q,{text:'UAI_VIP:'+out.request_id+':'+out.code,width:190,height:190,colorDark:'#190022',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});else throw new Error()}catch(_){q.innerHTML='<small>No se pudo generar el QR. Usa el código mostrado.</small>'}
+        }
+      }catch(err){alert(err.message)}finally{btn.disabled=false}
+    });
+    modal.style.display='flex';
   }
 
   function render(d){
@@ -129,18 +172,9 @@
       card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();toggle()}});
     });
     alignHome();
-    document.querySelectorAll('.cfg-vip-redeem').forEach(btn=>btn.onclick=async(e)=>{e?.stopPropagation?.();
+    document.querySelectorAll('.cfg-vip-redeem').forEach(btn=>btn.onclick=(e)=>{e?.stopPropagation?.();
       const benefit=realBenefits.find(x=>String(x.id)===String(btn.dataset.benefit));
-      if(!benefit)return;
-      if(!confirm('¿Usar ahora este beneficio?\n\n'+benefit.title+'\n'+benefit.text+'\n\nEste uso quedará registrado.'))return;
-      btn.disabled=true;btn.textContent='REGISTRANDO...';
-      try{
-        const r=await fetch('/api/fidelidad-growth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem_vip_benefit',uid,benefit_id:benefit.id})});
-        const out=await r.json().catch(()=>({}));
-        if(!r.ok)throw new Error(out.error||'No se pudo usar el beneficio');
-        alert('✅ Beneficio registrado\n\n'+out.title+'\nCódigo: '+out.code+'\nUsos restantes: '+out.remaining);
-        await load();
-      }catch(e){alert(e.message)}finally{btn.disabled=false}
+      if(benefit)openBenefitUsage(benefit);
     });
     shell.querySelectorAll('.cfg-claim').forEach(btn=>btn.onclick=async()=>{
       btn.disabled=true;btn.textContent='RECLAMANDO...';
