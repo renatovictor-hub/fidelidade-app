@@ -123,9 +123,8 @@
     if(!confirm(`¿Enviar esta campaña ahora?\n\nTítulo: ${tituloVal}\nPúblico: ${audiencePreview?.publico||"Todos"}\nDestinatarios: ${qty}\n\nLa notificación se enviará inmediatamente.`)) return;
     try {
       btn.disabled = true; btn.textContent = "ENVIANDO...";
-      const res = await fetch("/api/sendpush", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ titulo:tituloVal, desc, link, imagem, segmento:tipo, valorSegmento:valorSeg }) });
+      const res = await fetch("/api/sendpush", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ titulo:tituloVal, desc, link, imagem, exp, segmento:tipo, valorSegmento:valorSeg }) });
       const data = await res.json(); if (!res.ok || !data.success) throw new Error(data.error || JSON.stringify(data.details || data));
-      if (typeof window.salvarPromoNoFirebase === "function") await window.salvarPromoNoFirebase(tituloVal, desc, exp, imagem);
       const destino = data.destinatarios_estimados == null ? data.publico : `${data.publico} (${data.destinatarios_estimados} cliente(s))`;
       alert(`✅ Notificación enviada.\n\nPúblico: ${destino}`);
       $("titulo").value = ""; $("desc").value = ""; $("imagem").value = ""; if ($("previewImagemBox")) $("previewImagemBox").style.display = "none";
