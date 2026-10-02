@@ -32,9 +32,14 @@
       for(let i=PRODUCTS.length-1;i>=0;i--){
         const p=PRODUCTS[i],cp=cfg[p.id];
         if(!cp||cp.active===false){PRODUCTS.splice(i,1);continue}
-        p.name=String(cp.name||p.name);p.price=Number(cp.price??p.price);
+        p.name=String(cp.name||p.name);p.category=String(cp.category||p.category||'OTROS');p.price=Number(cp.price??p.price);
+        if(cp.image)p.image=String(cp.image);if(cp.description)p.description=String(cp.description);
         p.extras=Array.isArray(cp.modifiers)?cp.modifiers.filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name),price:Number(x.price||0)})):[];
       }
+      Object.entries(cfg).forEach(([id,cp])=>{
+        if(!cp||cp.active===false||PRODUCTS.some(p=>p.id===id))return;
+        PRODUCTS.push({id,name:String(cp.name||id),category:String(cp.category||'OTROS'),price:Number(cp.price||0),image:String(cp.image||'/logo.png'),thumb:String(cp.image||'/logo.png'),description:String(cp.description||''),ingredients:[],extras:Array.isArray(cp.modifiers)?cp.modifiers.filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name),price:Number(x.price||0)})):[]});
+      });
       const coca=cfg['coca-600']; if(coca&&coca.active!==false)COCA_PRICE=Number(coca.price||35);
       cart=cart.filter(line=>PRODUCTS.some(p=>p.id===line.productId));
       cart.forEach(line=>{
@@ -341,7 +346,7 @@
     sending=true;if(btn){btn.disabled=true;btn.textContent='CREANDO PEDIDO...';}
     const waWindow=window.open('about:blank','_blank');
     try{
-      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:x.qty})),details:whatsappDetails(x.line),line:x.line}));
+      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:Math.max(1,Number(m.qty)||x.qty)})),details:whatsappDetails(x.line),line:x.line}));
       if(upsellCocaQty>0)items.push({productId:'coca-600',name:'Coca-Cola 600 ml',qty:upsellCocaQty,unitPrice:COCA_PRICE,details:'',line:null});
       const address=document.getElementById('deliveryAddress')?.value.trim()||'',baseReferences=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
       const isResidential=!!document.getElementById('residentialDelivery')?.checked,needsQr=isResidential&&!!document.getElementById('residentialQr')?.checked,residentialInstructions=isResidential?(document.getElementById('residentialInstructions')?.value.trim()||''):'';
