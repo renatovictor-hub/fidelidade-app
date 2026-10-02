@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { requireAdmin } from "./_admin-auth.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
             error: "Method not allowed"
         });
     }
+    if (!requireAdmin(req,res)) return;
 
     try {
 
