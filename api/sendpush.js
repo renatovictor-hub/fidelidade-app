@@ -383,6 +383,7 @@ export default async function handler(req, res) {
     const desc = String(req.body?.desc || "").trim();
     const link = String(req.body?.link || "https://fidelidad-uai-so.vercel.app/").trim();
     const imagem = String(req.body?.imagem || "").trim();
+    const exp = Math.max(Date.now()+60000, Number(req.body?.exp||0) || (Date.now()+86400000));
     const segmento = String(req.body?.segmento || "todos").trim();
     const valorSegmento = req.body?.valorSegmento;
     if (!titulo || !desc) return res.status(400).json({ error: "Título y mensaje son obligatorios" });
@@ -395,7 +396,12 @@ export default async function handler(req, res) {
     if (data?.skipped) return res.status(500).json({ error: "ONESIGNAL_REST_KEY no configurada en Vercel." });
     if (data?.error) return res.status(data.status || 502).json({ error: "OneSignal rechazó la notificación", details: data.details });
 
-    await db.ref("push_historico").push().set({ titulo, mensagem: desc, segmento, publico, destinatarios_estimados: todos ? null : telefones.length, imagem: imagem || "", data: new Date().toISOString(), onesignal_id: data?.id || "" });
-    return res.status(200).json({ success: true, data, publico, destinatarios_estimados: todos ? null : telefones.length });
+    const now=new Date().toISOString();
+    const promoRef=db.ref("promos").push();
+    await db.ref().update({
+      [`push_historico/${db.ref("push_historico").push().key}`]: { titulo, mensagem: desc, segmento, valor_segmento:String(valorSegmento??""), publico, destinatarios_estimados: todos ? null : telefones.length, imagem: imagem || "", data: now, onesignal_id: data?.id || "", delivery_status:"accepted_by_provider" },
+      [`promos/${promoRef.key}`]: { titulo, desc, exp, imagem:imagem||"", segmento, valor_segmento:String(valorSegmento??""), publico, created_at:now, ativa:true }
+    });
+    return res.status(200).json({ success: true, data, publico, promo_id:promoRef.key, destinatarios_estimados: todos ? null : telefones.length });
   } catch (err) { return res.status(500).json({ error: err.message }); }
 }
