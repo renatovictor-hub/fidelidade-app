@@ -818,6 +818,15 @@ export default async function handler(req, res) {
             .sort((a,b)=>Number(b.exp||0)-Number(a.exp||0));
         const contact=contactSnap.val()||{};
         return res.status(200).json({
+            restaurant:{
+                id:RESTAURANT_CONFIG.id,
+                name:RESTAURANT_CONFIG.name,
+                short_name:RESTAURANT_CONFIG.shortName,
+                logo:RESTAURANT_CONFIG.logo,
+                primary_color:RESTAURANT_CONFIG.primaryColor,
+                accent_color:RESTAURANT_CONFIG.accentColor,
+                modules:RESTAURANT_CONFIG.modules
+            },
             vip:vipSnap.val()||{},
             bonus:bonusSnap.val()||{},
             birthday:birthdaySnap.val()||{},
