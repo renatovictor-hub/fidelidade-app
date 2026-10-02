@@ -83,18 +83,19 @@ async function notifyOrderStatus(order) {
     }).catch(() => null);
 }
 
-async function getVipRequestForOrder(db, requestId, uid) {
+async function claimVipRequestForOrder(db, requestId, uid, orderId) {
     const id = cleanOrderText(requestId, 120);
-    if (!id || !uid) return null;
-    const snap = await db.ref(`vip_benefit_requests/${id}`).once("value");
-    if (!snap.exists()) return null;
-    const request = snap.val() || {};
-    if (request.status !== "pending" || String(request.uid || "") !== uid) return null;
-    if (Date.parse(String(request.expires_at || "")) <= Date.now()) {
-        await db.ref(`vip_benefit_requests/${id}`).update({ status:"expired", processed_at:new Date().toISOString() });
-        return null;
-    }
-    return { id, ...request };
+    if (!id || !uid || !orderId) return null;
+    const ref = db.ref(`vip_benefit_requests/${id}`);
+    const tx = await ref.transaction(current => {
+        if (!current || current.status !== "pending" || String(current.uid || "") !== uid) return;
+        if (Date.parse(String(current.expires_at || "")) <= Date.now()) return;
+        if (current.channel !== "delivery") return;
+        if (current.order_id && current.order_id !== orderId) return;
+        return { ...current, order_id:orderId, linked_at:current.linked_at || new Date().toISOString() };
+    }, undefined, false);
+    if (!tx.committed) return null;
+    return { id, ...(tx.snapshot.val() || {}) };
 }
 
 function applyVipBenefitToOrder(request, subtotal, deliveryFee) {
@@ -112,8 +113,8 @@ async function confirmVipRequestForOrder(db, requestId, orderId) {
     const snap = await db.ref(`vip_benefit_requests/${requestId}`).once("value");
     if (!snap.exists()) return { ok:false };
     const request = snap.val() || {};
-    if (request.status === "confirmed") return { ok:true, already:true };
-    if (request.status !== "pending" || Date.parse(String(request.expires_at || "")) <= Date.now()) return { ok:false };
+    if (request.status === "confirmed") return { ok:request.order_id === orderId, already:true };
+    if (request.status !== "pending" || request.channel !== "delivery" || request.order_id !== orderId || Date.parse(String(request.expires_at || "")) <= Date.now()) return { ok:false };
     const usageRef = db.ref(`users/${request.uid}/vip_benefit_usage/${request.benefit_id}/${request.period_key}`);
     const limit = Math.max(1, Math.min(20, Number(request.limit || 1)));
     const tx = await usageRef.transaction(current => {
@@ -149,7 +150,7 @@ async function handleOrderCreate(req, res) {
         if (snap.exists()) profile = snap.val() || {};
     }
     const status = "received";
-    const vipRequest = await getVipRequestForOrder(db, body.benefit_request_id, uid);
+    const vipRequest = await claimVipRequestForOrder(db, body.benefit_request_id, uid, orderRef.key);
     const subtotal = cleanOrderMoney(body.subtotal);
     const originalDeliveryFee = cleanOrderMoney(body.deliveryFee);
     const vipPricing = vipRequest ? applyVipBenefitToOrder(vipRequest, subtotal, originalDeliveryFee) : { discount:0, deliveryFee:originalDeliveryFee, total:cleanOrderMoney(body.total) };
@@ -313,16 +314,16 @@ async function handleOrderStatus(req, res) {
     if (!snap.exists()) return res.status(404).json({ error:"Pedido no encontrado" });
     const current = snap.val() || {};
     const now = new Date().toISOString();
+    if (status === "accepted" && current.vipBenefitRequestId) {
+        const confirmed = await confirmVipRequestForOrder(db, current.vipBenefitRequestId, id);
+        if (!confirmed.ok) return res.status(409).json({ error: confirmed.exhausted ? "El beneficio VIP ya fue utilizado" : "La solicitud VIP ya no es válida para este pedido" });
+    }
     await ref.update({
         status,
         updatedAt: now,
         [`history/${status}`]: { at:now, label:ORDER_STATUS[status].label }
     });
     if (current.uid) await db.ref(`users/${current.uid}/ultimo_pedido`).set({ id, code:current.code || id, status, updatedAt:now });
-    if (status === "accepted" && current.vipBenefitRequestId) {
-        const confirmed = await confirmVipRequestForOrder(db, current.vipBenefitRequestId, id);
-        if (!confirmed.ok) return res.status(409).json({ error: confirmed.exhausted ? "El beneficio VIP ya fue utilizado" : "La solicitud VIP ya no es válida" });
-    }
     const order = {
         ...current,
         status,
