@@ -145,6 +145,16 @@
       <div id="vipRequestsList" class="vip-requests-list"><div style="color:#777;font-size:12px">Cargando solicitudes…</div></div>
     </section>
   `;
+  const requestSection=card.querySelector('.vip-requests');
+  let requestCard=document.getElementById('vipBenefitRequestsCard');
+  if(!requestCard){
+    requestCard=document.createElement('div');
+    requestCard.id='vipBenefitRequestsCard';
+    requestCard.className='card';
+    requestCard.style.display='none';
+    if(requestSection)requestCard.appendChild(requestSection);
+    staging.appendChild(requestCard);
+  }
   staging.appendChild(card);
   const $=id=>document.getElementById(id);
 
@@ -252,6 +262,15 @@
       loop();
     }catch(e){close();alert("No pudimos abrir la cámara. Ingresa el código VIP manualmente.")}
   }
+
+  function mountRequestsHost(){
+    const host=document.getElementById('uxVipRequestsHost');
+    const requestCard=document.getElementById('vipBenefitRequestsCard');
+    if(host&&requestCard&&requestCard.parentNode!==host)host.appendChild(requestCard);
+    if(requestCard&&host)requestCard.style.display='block';
+  }
+  setInterval(mountRequestsHost,1000);
+  mountRequestsHost();
 
   async function loadRequests(){
     const box=$("vipRequestsList"); if(!box)return;
