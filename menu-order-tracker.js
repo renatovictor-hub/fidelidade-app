@@ -14,7 +14,7 @@
   let upsellCocaQty=0;
   let restaurantWhatsApp='5219986023759';
   let checkoutVipBenefits=[],selectedVipBenefit=null,selectedVipRequestId='';
-  const COCA_PRICE=35;
+  let COCA_PRICE=35;
 
   async function loadRestaurantContact(){
     try{
@@ -23,6 +23,35 @@
     }catch(_){}
   }
   loadRestaurantContact();
+
+  async function loadMenuCatalog(){
+    try{
+      const r=await fetch('/api/cliente?action=menu_catalog&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json(); if(!r.ok)throw new Error();
+      const cfg=d.catalog||{};
+      for(let i=PRODUCTS.length-1;i>=0;i--){
+        const p=PRODUCTS[i],cp=cfg[p.id];
+        if(!cp||cp.active===false){PRODUCTS.splice(i,1);continue}
+        p.name=String(cp.name||p.name);p.price=Number(cp.price??p.price);
+        p.extras=Array.isArray(cp.modifiers)?cp.modifiers.filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name),price:Number(x.price||0)})):[];
+      }
+      const coca=cfg['coca-600']; if(coca&&coca.active!==false)COCA_PRICE=Number(coca.price||35);
+      cart=cart.filter(line=>PRODUCTS.some(p=>p.id===line.productId));
+      cart.forEach(line=>{
+        const p=PRODUCTS.find(x=>x.id===line.productId); if(!p)return;
+        let unit=Number(p.price||0);
+        const selected=new Set((line.extras||[]).map(x=>String(x.id)));
+        line.extras=(p.extras||[]).filter(x=>selected.has(String(x.id))).map(x=>({id:x.id,name:x.name,price:Number(x.price||0)}));
+        unit+=line.extras.reduce((s,x)=>s+Number(x.price||0),0);
+        line.unitPrice=unit;
+      });
+      saveCart();
+      if(typeof renderCatalog==='function')renderCatalog();
+      if(typeof renderFeed==='function')renderFeed();
+      renderUpsell();
+    }catch(e){console.warn('Menu catalog sync',e)}
+  }
+  loadMenuCatalog();
 
   function getUid(){return String(new URLSearchParams(location.search).get('uid')||'').trim();}
   function labelPayment(value,change){return value==='cash'?(change?`Efectivo · Cambio para $${change}`:'Efectivo · Sin cambio'):'Transferencia';}
@@ -312,7 +341,7 @@
     sending=true;if(btn){btn.disabled=true;btn.textContent='CREANDO PEDIDO...';}
     const waWindow=window.open('about:blank','_blank');
     try{
-      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,details:whatsappDetails(x.line),line:x.line}));
+      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:1})),details:whatsappDetails(x.line),line:x.line}));
       if(upsellCocaQty>0)items.push({productId:'coca-600',name:'Coca-Cola 600 ml',qty:upsellCocaQty,unitPrice:COCA_PRICE,details:'',line:null});
       const address=document.getElementById('deliveryAddress')?.value.trim()||'',baseReferences=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
       const isResidential=!!document.getElementById('residentialDelivery')?.checked,needsQr=isResidential&&!!document.getElementById('residentialQr')?.checked,residentialInstructions=isResidential?(document.getElementById('residentialInstructions')?.value.trim()||''):'';
