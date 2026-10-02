@@ -1,5 +1,5 @@
 (() => {
-  const APP_ID="10fd0812-370f-408a-9ea5-cbb349f5d635";
+  let APP_ID="";
   const qs=new URLSearchParams(location.search);
   const uid=String(qs.get("uid")||localStorage.getItem("uid")||"").trim();
   if(!/^user_\d+$/.test(uid)) return;
@@ -53,11 +53,22 @@
     }
   }
 
+  async function getAppId(){
+    if(APP_ID)return APP_ID;
+    try{
+      const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json();if(r.ok&&d.onesignal_app_id)APP_ID=String(d.onesignal_app_id).trim();
+    }catch(_){}
+    return APP_ID;
+  }
+
   window.OneSignalDeferred=window.OneSignalDeferred||[];
   window.OneSignalDeferred.push(async function(OS){
+    const appId=await getAppId();
+    if(!appId){console.warn("OneSignal app id missing");return}
     try{
       await OS.init({
-        appId:APP_ID,
+        appId,
         notifyButton:{enable:false},
         serviceWorkerPath:"OneSignalSDKWorker.js",
         serviceWorkerParam:{scope:"/"}
