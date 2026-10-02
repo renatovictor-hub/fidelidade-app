@@ -50,7 +50,7 @@
   }
   const uid=new URLSearchParams(location.search).get('uid')||'';
   if(!/^user_\d+$/.test(uid))return;
-  const currentPlan=String(new URLSearchParams(location.search).get('plan')||'fidelity_delivery').toLowerCase();
+  const currentPlan=String(new URLSearchParams(location.search).get('plan')||'fidelity').toLowerCase();
   const hasIntegratedDelivery=currentPlan!=='fidelity';
   if(!window.__uaiVipFetchPatched){
     window.__uaiVipFetchPatched=true;
