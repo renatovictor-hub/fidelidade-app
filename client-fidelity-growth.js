@@ -131,7 +131,7 @@
         <div class="vip-benefit-inline-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span>${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
         <p>${b.text}</p>
         <p>${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
-        ${b.available?'<button type="button" class="cfg-vip-redeem" data-benefit="'+b.id+'">VER CÓMO USAR</button>':'<div class="used">✓ Usos agotados</div>'}
+        ${b.available?'<button type="button" class="cfg-vip-redeem" data-benefit="'+b.id+'">USAR BENEFICIO</button>':'<div class="used">✓ Usos agotados</div>'}
       </div>`).join('')}`:'<div class="vip-benefits-inline-title">Beneficios de tu nivel</div><p style="font-size:10px;color:#756d79;margin:0">Este nivel no tiene beneficios activos.</p>';
     if(!vipCard.dataset.growthHeightBound){
       vipCard.dataset.growthHeightBound='1';
@@ -160,26 +160,22 @@
   }
   function openBenefitUsage(benefit){
     const modal=ensureBenefitModal(),body=modal.querySelector('#vipUseBody');
-    body.innerHTML='<h3>'+(benefit.icon||'🎁')+' '+(benefit.title||'Beneficio VIP')+'</h3><p>'+(benefit.text||'')+'</p><p>El beneficio solo se descuenta cuando el restaurante confirma el uso.</p><div class="vip-use-options">'+(hasIntegratedDelivery?'<button type="button" data-channel="delivery">🛒 <b>Aplicar al próximo pedido</b><br><small>Se vincula automáticamente al próximo pedido hecho dentro del app.</small></button>':'')+'<button type="button" data-channel="whatsapp">💬 <b>Pedir por WhatsApp</b><br><small>Genera una solicitud de 30 minutos para que el restaurante la confirme a distancia.</small></button><button type="button" data-channel="qr">▦ <b>Usar en el restaurante</b><br><small>Genera un QR temporal para validar en caja.</small></button></div>';
-    body.querySelectorAll('[data-channel]').forEach(btn=>btn.onclick=async()=>{
-      const channel=btn.dataset.channel;btn.disabled=true;
-      try{
-        const out=await createBenefitRequest(benefit,channel);
-        const actualChannel=out.channel||channel;
-        if(actualChannel==='delivery'){
-          localStorage.setItem('vip_benefit_request_id',out.request_id);
-          body.innerHTML='<h3>Beneficio listo para tu pedido</h3><p>Se aplicará automáticamente al próximo pedido realizado dentro del app durante los próximos 30 minutos.</p><div class="vip-use-code">'+out.code+'</div><p>El beneficio solo se descontará cuando el restaurante acepte el pedido.</p>';
-        }else if(actualChannel==='whatsapp'){
-          const msg='Hola, quiero usar mi beneficio VIP: '+(out.title||benefit.title)+'. Código: '+out.code+'. La solicitud vence en 30 minutos.';
-          window.open('https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(msg),'_blank','noopener');
-          body.innerHTML='<h3>Solicitud enviada</h3><p>Envía el mensaje por WhatsApp y espera que el restaurante confirme el beneficio.</p><div class="vip-use-code">'+out.code+'</div><p>Tu beneficio todavía no fue descontado.</p>';
-        }else{
-          body.innerHTML='<h3>Mostrar en el restaurante</h3><p>El restaurante debe validar este QR antes de aplicar el beneficio.</p><div id="vipTempQr" class="vip-use-qr"></div><div class="vip-use-code">'+out.code+'</div><p>Válido por 30 minutos. El uso solo se descuenta después de la confirmación.</p>';
-          const q=body.querySelector('#vipTempQr');
-          try{if(typeof QRCode==='function')new QRCode(q,{text:'UAI_VIP:'+out.request_id+':'+out.code,width:190,height:190,colorDark:'#190022',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});else throw new Error()}catch(_){q.innerHTML='<small>No se pudo generar el QR. Usa el código mostrado.</small>'}
-        }
-      }catch(err){alert(err.message)}finally{btn.disabled=false}
-    });
+    if(hasIntegratedDelivery){
+      body.innerHTML='<h3>'+(benefit.icon||'🎁')+' '+(benefit.title||'Beneficio VIP')+'</h3><p>'+(benefit.text||'')+'</p><div class="vip-use-simple"><b>Disponible en tu próximo pedido</b><p>Cuando abras el checkout, este beneficio aparecerá allí para aplicarlo con un toque. No necesitas código ni QR.</p><button type="button" id="vipGoMenu">IR AL MENÚ</button></div>';
+      const go=body.querySelector('#vipGoMenu');
+      if(go)go.onclick=()=>{location.href='/menu-videos.html?uid='+encodeURIComponent(uid)+'&plan=fidelity_delivery'};
+    }else{
+      body.innerHTML='<h3>'+(benefit.icon||'🎁')+' '+(benefit.title||'Beneficio VIP')+'</h3><p>'+(benefit.text||'')+'</p><div class="vip-use-simple"><b>Solicitar uso</b><p>El restaurante recibirá la solicitud en su panel. No necesitas enviar código ni mostrar QR.</p><button type="button" id="vipRequestUse">SOLICITAR USO</button><small id="vipRequestState"></small></div>';
+      const btn=body.querySelector('#vipRequestUse'),state=body.querySelector('#vipRequestState');
+      if(btn)btn.onclick=async()=>{
+        btn.disabled=true;btn.textContent='ENVIANDO...';
+        try{
+          const out=await createBenefitRequest(benefit,'remote');
+          if(state)state.textContent='✓ Solicitud enviada. El restaurante la verá en el panel durante los próximos 30 minutos.';
+          btn.textContent='SOLICITUD ENVIADA';
+        }catch(err){if(state)state.textContent=err.message;btn.disabled=false;btn.textContent='SOLICITAR USO'}
+      };
+    }
     modal.style.display='flex';
   }
 
