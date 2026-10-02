@@ -1584,54 +1584,9 @@ async function restaurarSessaoCliente(){
 ========================== */
 
 function abrirApp() {
-
-    document
-        .querySelectorAll(".step-box")
-        .forEach(e =>
-            e.classList.remove("active")
-        );
-
-
-    const main =
-        document.getElementById(
-            "mainApp"
-        );
-
-    if (main) {
-        main.style.display =
-            "block";
-    }
-
-
-    const greeting =
-        document.getElementById(
-            "greeting"
-        );
-
-    if (greeting) {
-
-        greeting.innerText =
-            "Hola, " +
-            (
-                localStorage.getItem(
-                    "nome"
-                ) || ""
-            );
-    }
-
-
-    carregarPromos();
-
-    atualizarContador();
-
-    carregarPontos();
-    carregarBeneficioCumpleanos();
-    carregarBonusPontos();
-    carregarIndicacoes();
-    carregarNivelVip();
-    verificarPedidoFeedback();
+    const target='/app-v11-next.html?uid='+encodeURIComponent(uid)+'#home';
+    if(location.pathname+location.search+location.hash!==target)location.replace(target);
 }
-
 
 /* ==========================
    FEEDBACK / GOOGLE REVIEWS
