@@ -45,6 +45,8 @@
     .ux-crm-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ux-crm-stat{padding:9px;background:#fff;border:1px solid #eee7f1;border-radius:10px}.ux-crm-stat small{display:block;font-size:11px;color:#655b69;font-weight:700}.ux-crm-stat b{display:block;font-size:19px;color:#5f178f;margin-top:2px}
     .ux-crm-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}.ux-crm-actions button{min-height:42px;font-size:12px!important;padding:10px 11px!important}.ux-crm-actions .wide{grid-column:1/-1}
     .ux-crm-insight{margin-top:11px;padding:11px;border-radius:10px;background:#f4ecf9;color:#51365a;font-size:12px;line-height:1.55}
+    .ux-push-health{display:flex;align-items:center;gap:7px;margin:8px 0 11px;padding:9px 10px;border-radius:10px;font-size:12px;font-weight:800}
+    .ux-push-health.ok{background:#e9f8ef;color:#187849}.ux-push-health.warn{background:#fff6df;color:#8a6200}.ux-push-health.off{background:#f3eef5;color:#7a6d80}
     .ux-client-result{display:none;grid-column:1/-1;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:16px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-client-result.show{display:block}.ux-client-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ux-client-result h3{margin:0!important;color:#35273c!important;font-size:17px!important}
     .ux-client-result-meta{font-size:13px;color:#655b69;margin-top:4px}.ux-client-result-points{background:#f2e8f7;color:#6a0dad;font-weight:900;border-radius:12px;padding:9px 11px;white-space:nowrap}
@@ -297,9 +299,14 @@ let crmData={customers:[],summary:{}};
 
     box.classList.add('show');
     const bday=x.aniversario_em_dias==null?'—':x.aniversario_em_dias===0?'Hoy':x.aniversario_em_dias+' días';
+    const ps=x.push_status||{},pushOk=ps.permission==='granted'&&ps.opted_in===true&&ps.token_present===true;
+    const pushClass=pushOk?'ok':ps.permission==='denied'?'off':'warn';
+    const pushLabel=pushOk?'🔔 Push activo':ps.permission==='denied'?'🚫 Notificaciones bloqueadas':'⚠ Sin suscripción activa';
+    const lastPush=ps.last_sync?new Date(ps.last_sync).toLocaleString('es-MX'):'Sin sincronización registrada';
     box.innerHTML=
       '<h4>'+esc(x.nome||'Sin nombre')+'</h4>'+
       '<div class="meta">'+esc(x.telefone||'Sin teléfono')+' · '+esc(x.uid)+'</div>'+
+      '<div class="ux-push-health '+pushClass+'"><span>'+pushLabel+'</span><small style="margin-left:auto;font-weight:600">'+esc(lastPush)+'</small></div>'+
       '<div class="ux-crm-stats">'+
         '<div class="ux-crm-stat"><small>Puntos</small><b>'+Number(x.pontos||0)+'</b></div>'+
         '<div class="ux-crm-stat"><small>Compras</small><b>'+Number(x.compras||0)+'</b></div>'+
