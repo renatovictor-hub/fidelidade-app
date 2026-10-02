@@ -50,6 +50,14 @@
   }
   const uid=new URLSearchParams(location.search).get('uid')||'';
   if(!/^user_\d+$/.test(uid))return;
+  let restaurantWhatsApp='5219986023759';
+  async function loadRestaurantContact(){
+    try{
+      const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json();if(r.ok&&d.whatsapp)restaurantWhatsApp=String(d.whatsapp).replace(/\D/g,'');
+    }catch(_){}
+  }
+  loadRestaurantContact();
   const currentPlan=String(new URLSearchParams(location.search).get('plan')||'fidelity').toLowerCase();
   const hasIntegratedDelivery=currentPlan!=='fidelity';
   if(!window.__uaiVipFetchPatched){
@@ -163,7 +171,7 @@
           body.innerHTML='<h3>Beneficio listo para tu pedido</h3><p>Se aplicará automáticamente al próximo pedido realizado dentro del app durante los próximos 30 minutos.</p><div class="vip-use-code">'+out.code+'</div><p>El beneficio solo se descontará cuando el restaurante acepte el pedido.</p>';
         }else if(actualChannel==='whatsapp'){
           const msg='Hola, quiero usar mi beneficio VIP: '+(out.title||benefit.title)+'. Código: '+out.code+'. La solicitud vence en 30 minutos.';
-          window.open('https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(msg),'_blank','noopener');
+          window.open('https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(msg),'_blank','noopener');
           body.innerHTML='<h3>Solicitud enviada</h3><p>Envía el mensaje por WhatsApp y espera que el restaurante confirme el beneficio.</p><div class="vip-use-code">'+out.code+'</div><p>Tu beneficio todavía no fue descontado.</p>';
         }else{
           body.innerHTML='<h3>Mostrar en el restaurante</h3><p>El restaurante debe validar este QR antes de aplicar el beneficio.</p><div id="vipTempQr" class="vip-use-qr"></div><div class="vip-use-code">'+out.code+'</div><p>Válido por 30 minutos. El uso solo se descuenta después de la confirmación.</p>';
