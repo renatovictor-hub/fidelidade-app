@@ -5,16 +5,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#6a0dad">
 <title>Uai Sô Fidelidad</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/api/manifest">
+<script>
+window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'})
+  .then(r=>r.ok?r.json():null).catch(()=>null).then(cfg=>{
+    if(cfg){
+      window.__restaurantConfig=cfg;
+      const shortName=cfg.short_name||cfg.name||'Fidelidad';
+      document.title=shortName+' Fidelidad';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content',cfg.primary_color||'#6a0dad');
+      document.documentElement.style.setProperty('--p',cfg.primary_color||'#6a0dad');
+      document.querySelectorAll('img.logo').forEach(x=>{if(cfg.logo)x.src=cfg.logo;x.alt=shortName});
+      const h1=document.querySelector('.card h1');if(h1)h1.textContent='Instala '+shortName+' y recibe tus beneficios';
+      const ios=document.getElementById('iosGuide');if(ios)ios.innerHTML=ios.innerHTML.replaceAll('Uai Sô',shortName);
+      const installed=document.getElementById('installedMsg');if(installed)installed.textContent='✓ App instalada. Abriendo '+shortName+'…';
+    }
+    return cfg;
+  });
+</script>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OS) {
   try {
-    await OS.init({
-      appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
-      notifyButton: { enable: false }
-    });
+    const cfg=await window.__restaurantConfigPromise;
+    const appId=String(cfg?.onesignal_app_id||'').trim();
+    if(!appId)return;
+    await OS.init({ appId, notifyButton: { enable:false } });
   } catch (e) {
     console.warn("OneSignal init onboarding:", e);
   }
