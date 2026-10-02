@@ -40,6 +40,27 @@ const ORDER_TRANSITIONS = {
     cancelled:new Set()
 };
 
+function requestIp(req){
+    return String(req.headers?.["x-forwarded-for"]||req.headers?.["x-real-ip"]||"unknown").split(",")[0].trim().slice(0,100);
+}
+async function authRateLimit(db,req,phone){
+    const key=crypto.createHash("sha256").update(requestIp(req)+"|"+String(phone||"")).digest("hex");
+    const ref=db.ref("security/auth_attempts/"+key),now=Date.now(),windowMs=15*60*1000,max=8;
+    let blocked=false;
+    const tx=await ref.transaction(current=>{
+        const cur=current||{};
+        const start=Number(cur.window_start||0);
+        const count=Number(cur.count||0);
+        if(!start||now-start>windowMs)return {window_start:now,count:1,last_at:now};
+        if(count>=max){blocked=true;return cur}
+        return {window_start:start,count:count+1,last_at:now};
+    },undefined,false);
+    const value=tx.snapshot?.val()||{};
+    if(Number(value.count||0)>max)blocked=true;
+    return {allowed:!blocked,key,ref};
+}
+async function clearAuthRate(ref){try{await ref?.remove()}catch(_){}}
+
 function cleanOrderText(value, max = 220) {
     return String(value ?? "").trim().slice(0, max);
 }
@@ -301,8 +322,54 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
     if(!tx.committed)return {awarded:false,duplicate:true};
     const t=db.ref("transacoes").push();
     await t.set({user_id:order.uid,nome:order.name||"",telefone:order.phone||"",tipo:"credito",origem:"delivery",order_id:id,valor_compra:amount,pontos:points,pontos_base:basePts,multiplicador_bonus:mult,saldo_anterior:before,saldo_novo:after,data:new Date().toISOString()});
-    await db.ref("pedidos/"+id).update({loyalty_awarded:true,loyalty_points:points,loyalty_awarded_at:new Date().toISOString()});
-    return {awarded:true,points};
+    let referral={applied:false,friend_points:0,referrer_points:0};
+    const deliveredUser=tx.snapshot.val()||{};
+    const refUid=String(deliveredUser.referido_por||"").trim();
+    if(/^user_\d+$/.test(refUid)&&refUid!==order.uid&&deliveredUser.referido_recompensado!==true){
+        const cfgSnap=await db.ref("config/referidos").once("value"),cfg=cfgSnap.val()||{};
+        const min=Math.max(0,Number(cfg.compra_minima||100));
+        if(cfg.ativo!==false&&amount>=min){
+            const friendPts=Math.max(0,Math.floor(Number(cfg.pontos_amigo||10)));
+            const refPts=Math.max(0,Math.floor(Number(cfg.pontos_indicador||20)));
+            let friendBefore=0,friendAfter=0;
+            const claim=await userRef.transaction(user=>{
+                if(!user||user.referido_recompensado===true)return;
+                friendBefore=Number(user.pontos||0);friendAfter=friendBefore+friendPts;
+                user.pontos=friendAfter;
+                user.pontos_acumulados=Number(user.pontos_acumulados??friendBefore)+friendPts;
+                user.referido_recompensado=true;
+                user.referido_recompensado_em=new Date().toISOString();
+                return user;
+            },undefined,false);
+            if(claim.committed){
+                const refRef=db.ref("users/"+refUid),refSnap=await refRef.once("value");
+                if(refSnap.exists()){
+                    let refBefore=0,refAfter=0;
+                    await refRef.transaction(user=>{
+                        if(!user)return;
+                        refBefore=Number(user.pontos||0);refAfter=refBefore+refPts;
+                        user.pontos=refAfter;
+                        user.pontos_acumulados=Number(user.pontos_acumulados??refBefore)+refPts;
+                        user.referidos_recompensados=Number(user.referidos_recompensados||0)+1;
+                        user.pontos_indicacao_total=Number(user.pontos_indicacao_total||0)+refPts;
+                        return user;
+                    },undefined,false);
+                    const now=new Date().toISOString(),updates={};
+                    if(friendPts>0){const a=db.ref("transacoes").push();updates[`transacoes/${a.key}`]={user_id:order.uid,nome:order.name||"",telefone:order.phone||"",tipo:"credito",origem:"indicacao",descricao:"Bonus por primera compra indicada",pontos:friendPts,saldo_anterior:friendBefore,saldo_novo:friendAfter,data:now}}
+                    if(refPts>0){const b=db.ref("transacoes").push();updates[`transacoes/${b.key}`]={user_id:refUid,tipo:"credito",origem:"indicacao",descricao:"Amigo indicado realizó su primera compra válida",referido_uid:order.uid,pontos:refPts,saldo_anterior:refBefore,saldo_novo:refAfter,data:now}}
+                    if(Object.keys(updates).length)await db.ref().update(updates);
+                    referral={applied:true,friend_points:friendPts,referrer_points:refPts,referrer_uid:refUid};
+                    await Promise.allSettled([
+                        friendPts?enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"🎁 ¡Bonus por invitación!",mensagem:`Ganaste ${friendPts} puntos extra por tu primera compra con invitación.`,url:"https://fidelidad-uai-so.vercel.app/"}):null,
+                        refPts?enviarNotificacao({uid:refUid,telefone:refSnap.val()?.telefone||"",titulo:"🤝 ¡Tu amigo compró!",mensagem:`Ganaste ${refPts} puntos porque tu amigo hizo su primera compra válida.`,url:"https://fidelidad-uai-so.vercel.app/"}):null
+                    ]);
+                }
+            }
+        }
+    }
+    await db.ref("pedidos/"+id).update({loyalty_awarded:true,loyalty_points:points,loyalty_awarded_at:new Date().toISOString(),loyalty_referral:referral});
+    await enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"⭐ ¡Ganaste puntos!",mensagem:`Sumaste ${points} puntos por tu pedido. Ya están disponibles en tu cuenta.`,url:"https://fidelidad-uai-so.vercel.app/"}).catch(()=>null);
+    return {awarded:true,points,referral};
 }
 
 async function handleOrderCreate(req, res) {
@@ -664,6 +731,8 @@ export default async function handler(req, res) {
             const referidoPor=cleanOrderText(req.body?.referido_por,80);
             if(nome.length<2||telefone.length!==10||!/^\d{4}-\d{2}-\d{2}$/.test(nascimento))return res.status(400).json({error:"Datos de registro inválidos"});
             const db=admin.database();
+            const rate=await authRateLimit(db,req,telefone);
+            if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
             const existingSnap=await db.ref("users").orderByChild("telefone").equalTo(telefone).once("value");
             let uid,user,recovered=false;
             if(existingSnap.exists()){
@@ -685,6 +754,7 @@ export default async function handler(req, res) {
                 });
             }
             setClientSession(res,uid);
+            await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user?.nome||user?.nombre||nome,telefone,nascimento,recovered});
         } catch(error) {
             return res.status(500).json({error:"No se pudo crear la sesión del cliente",details:error.message});
@@ -697,13 +767,17 @@ export default async function handler(req, res) {
             const telefone=String(req.body?.telefone||"").replace(/\D/g,"");
             const nascimento=String(req.body?.nascimento||"").trim();
             if(!/^user_\d+$/.test(uid)||telefone.length!==10)return res.status(400).json({error:"Datos de sesión inválidos"});
-            const snap=await admin.database().ref(`users/${uid}`).once("value");
+            const db=admin.database();
+            const rate=await authRateLimit(db,req,telefone);
+            if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
+            const snap=await db.ref(`users/${uid}`).once("value");
             if(!snap.exists())return res.status(404).json({error:"Cliente no encontrado"});
             const user=snap.val()||{};
             if(String(user.telefone||"").replace(/\D/g,"")!==telefone)return res.status(403).json({error:"No pudimos validar esta sesión"});
             const savedBirth=String(user.nascimento||user.cumpleanos||"").trim();
             if(savedBirth&&(!nascimento||savedBirth!==nascimento))return res.status(403).json({error:"No pudimos validar esta sesión"});
             setClientSession(res,uid);
+            await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",nascimento:savedBirth});
         }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
     }
