@@ -30,6 +30,12 @@
   async function reconcile(OS,reason="app_open"){
     try{
       await OS.login(uid);
+      const telefone=String(localStorage.getItem("telefone")||"").replace(/\D/g,"");
+      const nome=String(localStorage.getItem("nome")||"").trim();
+      try{
+        if(telefone.length===10)await OS.User.addTag("telefone",telefone);
+        if(nome)await OS.User.addTag("user_name",nome.slice(0,80));
+      }catch(e){console.warn("push tag refresh",e)}
 
       const permission=typeof Notification!=="undefined"?Notification.permission:"default";
       const previouslyEnabled=localStorage.getItem("push")==="true";
