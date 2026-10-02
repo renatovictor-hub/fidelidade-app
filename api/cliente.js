@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
 import crypto from "crypto";
-import { requireAdmin } from "./_admin-auth.js";
+import { requireAdmin, isValidSession as isAdminSession } from "./_admin-auth.js";
 import { requireClient, setClientSession } from "./_client-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
 
@@ -26,6 +26,10 @@ const ORDER_STATUS = {
     cancelled: { label:"Cancelado", push:"Tu pedido fue cancelado. Contáctanos si necesitas ayuda." }
 };
 const ACTIVE_ORDER_STATUS = new Set(["received","accepted","preparing","waiting_driver","out_for_delivery"]);
+function requireClientOrAdmin(req,res,uid){
+    if(isAdminSession(req))return true;
+    return requireClient(req,res,uid);
+}
 const ORDER_TRANSITIONS = {
     received:new Set(["accepted","cancelled"]),
     accepted:new Set(["preparing","cancelled"]),
@@ -888,7 +892,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: "UID obligatorio" });
         }
         if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
-        if (!requireClient(req,res,uid)) return;
+        if (!requireClientOrAdmin(req,res,uid)) return;
 
         const snapshot = await admin.database().ref(`users/${uid}`).once("value");
 
