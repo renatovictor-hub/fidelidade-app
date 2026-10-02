@@ -712,6 +712,71 @@ export default async function handler(req, res) {
         return handleOrderStatus(req, res);
     }
 
+    if (req.method === "GET" && String(req.query.action || "") === "app_data") {
+        const uid=cleanOrderText(req.query.uid,80);
+        if(!/^user_\d+$/.test(uid))return res.status(400).json({error:"Cliente inválido"});
+        if(!requireClient(req,res,uid))return;
+        const db=admin.database();
+        const [userSnap,vipSnap,bonusSnap,birthdaySnap,reviewsSnap,promosSnap,rewardsSnap,contactSnap]=await Promise.all([
+            db.ref("users/"+uid).once("value"),
+            db.ref("config/niveles_vip").once("value"),
+            db.ref("config/bonus_pontos").once("value"),
+            db.ref("config/cumpleanos").once("value"),
+            db.ref("config/reviews").once("value"),
+            db.ref("promos").once("value"),
+            db.ref("recompensas").once("value"),
+            db.ref("config/restaurant_contact").once("value")
+        ]);
+        if(!userSnap.exists())return res.status(404).json({error:"Cliente no encontrado"});
+        const user=userSnap.val()||{};
+        const rewards=Object.values(rewardsSnap.val()||{}).filter(r=>r&&r.ativa!==false&&Number(r.pontos||0)>0);
+        const promos=Object.entries(promosSnap.val()||{}).map(([id,p])=>({id,...(p||{})}))
+            .filter(p=>promoEligibleForUser(p,user,rewards,uid))
+            .sort((a,b)=>Number(b.exp||0)-Number(a.exp||0));
+        const contact=contactSnap.val()||{};
+        return res.status(200).json({
+            vip:vipSnap.val()||{},
+            bonus:bonusSnap.val()||{},
+            birthday:birthdaySnap.val()||{},
+            reviews:reviewsSnap.val()||{},
+            promos,
+            whatsapp:String(contact.whatsapp||"5219986023759").replace(/\D/g,"").slice(0,15)
+        });
+    }
+
+    if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
+        const snap=await admin.database().ref("config/menu_catalog").once("value");
+        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG)});
+    }
+
+    if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
+        if(!requireAdmin(req,res))return;
+        const snap=await admin.database().ref("config/menu_catalog").once("value");
+        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG)});
+    }
+
+    if (req.method === "POST" && req.body?.action === "catalog_save") {
+        if(!requireAdmin(req,res))return;
+        const incoming=req.body?.catalog&&typeof req.body.catalog==="object"?req.body.catalog:{};
+        const clean={};
+        for(const [id,p] of Object.entries(incoming).slice(0,200)){
+            const pid=cleanOrderText(id,80);
+            const name=cleanOrderText(p?.name,120);
+            const price=Math.max(0,Math.round(Number(p?.price||0)*100)/100);
+            if(!pid||!name||!Number.isFinite(price))continue;
+            const modifiers=(Array.isArray(p?.modifiers)?p.modifiers:[]).slice(0,30).map(m=>({
+                id:cleanOrderText(m?.id,80),
+                name:cleanOrderText(m?.name,100),
+                price:Math.max(0,Math.round(Number(m?.price||0)*100)/100),
+                active:m?.active!==false
+            })).filter(m=>m.id&&m.name);
+            clean[pid]={name,price,active:p?.active!==false,modifiers};
+        }
+        if(!Object.keys(clean).length)return res.status(400).json({error:"El catálogo no puede quedar vacío"});
+        await admin.database().ref("config/menu_catalog").set(clean);
+        return res.status(200).json({success:true,catalog:clean});
+    }
+
     if (req.method === "GET" && String(req.query.action || "") === "public_config") {
         const snap = await admin.database().ref("config/restaurant_contact").once("value");
         const cfg = snap.val() || {};
