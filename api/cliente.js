@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { requireAdmin, isValidSession as isAdminSession } from "./_admin-auth.js";
 import { requireClient, setClientSession } from "./_client-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { getRestaurantConfig } from "./_restaurant-config.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -15,7 +16,8 @@ if (!admin.apps.length) {
     });
 }
 
-const RESTAURANT = { latitude: 21.119855, longitude: -86.87269 };
+const RESTAURANT_CONFIG=getRestaurantConfig();
+const RESTAURANT = RESTAURANT_CONFIG.location;
 const ORDER_STATUS = {
     received: { label:"Pedido enviado", push:"Recibimos tu pedido. En breve lo confirmaremos." },
     accepted: { label:"Pedido aceptado", push:"✅ Tu pedido fue aceptado." },
@@ -171,9 +173,9 @@ async function notifyOrderStatus(order) {
     await enviarNotificacao({
         uid: order.uid || "",
         telefone: order.phone || "",
-        titulo: `${meta.label} · ${order.code || "Uai Sô"}`,
+        titulo: `${meta.label} · ${order.code || RESTAURANT_CONFIG.shortName}`,
         mensagem: meta.push,
-        url: "https://fidelidad-uai-so.vercel.app/"
+        url: RESTAURANT_CONFIG.domain+"/"
     }).catch(() => null);
 }
 
@@ -782,14 +784,17 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST" && req.body?.action === "delivery_quote") {
+        if(!RESTAURANT_CONFIG.modules.delivery)return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
         return handleDeliveryQuote(req, res);
     }
 
     if (req.method === "POST" && req.body?.action === "place_autocomplete") {
+        if(!RESTAURANT_CONFIG.modules.delivery)return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
         return handlePlaceAutocomplete(req, res);
     }
 
     if (req.method === "POST" && req.body?.action === "order_create") {
+        if(!RESTAURANT_CONFIG.modules.delivery)return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
         const uid=cleanOrderText(req.body?.uid,80);
         if(!requireClient(req,res,uid))return;
         return handleOrderCreate(req, res);
@@ -828,7 +833,7 @@ export default async function handler(req, res) {
             birthday_claims:user.cumpleanos_canjes||{},
             reviews:reviewsSnap.val()||{},
             promos,
-            whatsapp:String(contact.whatsapp||"5219986023759").replace(/\D/g,"").slice(0,15)
+            whatsapp:String(contact.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
         });
     }
 
@@ -868,8 +873,18 @@ export default async function handler(req, res) {
     if (req.method === "GET" && String(req.query.action || "") === "public_config") {
         const snap = await admin.database().ref("config/restaurant_contact").once("value");
         const cfg = snap.val() || {};
-        const whatsapp = String(cfg.whatsapp || "5219986023759").replace(/\D/g,"").slice(0,15);
-        return res.status(200).json({ whatsapp: whatsapp || "5219986023759" });
+        const whatsapp = String(cfg.whatsapp || RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15);
+        return res.status(200).json({
+            restaurant_id:RESTAURANT_CONFIG.id,
+            name:RESTAURANT_CONFIG.name,
+            short_name:RESTAURANT_CONFIG.shortName,
+            whatsapp: whatsapp || RESTAURANT_CONFIG.whatsapp,
+            primary_color:RESTAURANT_CONFIG.primaryColor,
+            accent_color:RESTAURANT_CONFIG.accentColor,
+            logo:RESTAURANT_CONFIG.logo,
+            modules:RESTAURANT_CONFIG.modules,
+            onesignal_app_id:RESTAURANT_CONFIG.oneSignalAppId
+        });
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "orders") {
