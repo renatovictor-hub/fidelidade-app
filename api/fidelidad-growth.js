@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { requireAdmin } from "./_admin-auth.js";
+import { requireAdmin, isValidSession as isAdminSession } from "./_admin-auth.js";
 import { requireClient } from "./_client-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
 
@@ -113,7 +113,7 @@ export default async function handler(req,res){
     if(req.method==="GET"&&req.query.uid){
       const uid=String(req.query.uid||"").trim();
       if(!validUid(uid))return res.status(400).json({error:"Cliente inválido"});
-      if(!requireClient(req,res,uid))return;
+      if(!isAdminSession(req)&&!requireClient(req,res,uid))return;
       const all=await loadAll(),user=all.users[uid];
       if(!user)return res.status(404).json({error:"Cliente no encontrado"});
       const stats=customerStats(uid,user,all.byUser.get(uid)||[]);
@@ -147,7 +147,9 @@ export default async function handler(req,res){
       const uid=String(req.body?.uid||"").trim(),benefitId=String(req.body?.benefit_id||"").trim();
       const channel=["remote","counter","delivery"].includes(String(req.body?.channel||""))?String(req.body.channel):"remote";
       if(!validUid(uid)||!benefitId)return res.status(400).json({error:"Datos inválidos"});
-      if(!requireClient(req,res,uid))return;
+      if(channel==="counter"){
+        if(!requireAdmin(req,res))return;
+      }else if(!requireClient(req,res,uid))return;
       const all=await loadAll(),user=all.users[uid];
       if(!user)return res.status(404).json({error:"Cliente no encontrado"});
       if(all.vip.ativo===false)return res.status(400).json({error:"Los niveles VIP están desactivados"});
