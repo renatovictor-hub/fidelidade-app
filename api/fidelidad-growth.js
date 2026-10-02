@@ -62,10 +62,10 @@ function benefitDescription(b){
 }
 
 async function loadAll(){
-  const [usersSnap,txSnap,rewardsSnap,missionsSnap,autosSnap,vipSnap,surpriseSnap,baseSnap]=await Promise.all([
+  const [usersSnap,txSnap,rewardsSnap,missionsSnap,autosSnap,vipSnap,baseSnap]=await Promise.all([
     db.ref("users").once("value"),db.ref("transacoes").once("value"),db.ref("recompensas").once("value"),
     db.ref("fidelity_missions").once("value"),db.ref("fidelity_automations").once("value"),
-    db.ref("config/niveles_vip").once("value"),db.ref("config/fidelity_surprise").once("value"),
+    db.ref("config/niveles_vip").once("value"),
     db.ref("config/loyalty_base").once("value")
   ]);
   const users=usersSnap.val()||{},txRaw=txSnap.val()||{},byUser=new Map();
@@ -76,7 +76,6 @@ async function loadAll(){
     missions:Object.entries(missionsSnap.val()||{}).map(([id,x])=>({id,...x})).sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))),
     automations:Object.entries(autosSnap.val()||{}).map(([id,x])=>({id,...x})),
     vip:vipSnap.val()||{},
-    surprise:surpriseSnap.val()||{},
     base:baseSnap.val()||{}
   };
 }
@@ -135,13 +134,6 @@ export default async function handler(req,res){
         next_reward:nextReward?{...nextReward,faltan:Math.max(0,Number(nextReward.pontos||0)-points),compra_aprox:Math.max(0,(Number(nextReward.pontos||0)-points)*pesosPorPunto)}:null,
         loyalty_rule:{pesos_por_punto:pesosPorPunto},
         missions,badges,
-        surprise:(()=>{
-          if(all.surprise.ativa===false)return null;
-          const titulo=String(all.surprise.titulo||"").trim(),texto=String(all.surprise.texto||"").trim();
-          if(!titulo&&!texto)return null;
-          const rank={Bronce:0,Plata:1,Oro:2,Diamante:3};
-          return (rank[vip]??0)>=(rank[String(all.surprise.min_nivel||"Bronce")]??0)?all.surprise:null;
-        })(),
         benefits:vipBenefitsFor(all.vip,vip).map(b=>{
           const period_key=benefitPeriodKey(b,vip),used=Math.max(0,Number(user?.vip_benefit_usage?.[b.id]?.[period_key]||0)),limit=Math.max(1,Number(b.uses||1));
           return {id:b.id,icon:benefitIcon(b.type),title:b.title,text:benefitDescription(b),description:String(b.description||""),type:b.type||"custom",value:Number(b.value||0),period:b.period||"monthly",period_key,limit,used,remaining:Math.max(0,limit-used),available:used<limit};
@@ -229,10 +221,6 @@ export default async function handler(req,res){
         await ref.set(value);return res.status(200).json({success:true,id:ref.key});
       }
       if(action==="delete_automation"){await db.ref("fidelity_automations/"+String(req.body?.id||"")).remove();return res.status(200).json({success:true})}
-      if(action==="save_surprise"){
-        const value={ativa:req.body?.ativa!==false,titulo:String(req.body?.titulo||"").trim().slice(0,80),texto:String(req.body?.texto||"").trim().slice(0,180),min_nivel:String(req.body?.min_nivel||"Bronce"),updated_at:new Date().toISOString()};
-        await db.ref("config/fidelity_surprise").set(value);return res.status(200).json({success:true});
-      }
       if(action==="run_automation"){
         const id=String(req.body?.id||""),all=await loadAll(),a=all.automations.find(x=>x.id===id);
         if(!a)return res.status(404).json({error:"Automatización no encontrada"});
