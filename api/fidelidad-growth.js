@@ -39,6 +39,28 @@ function missionProgress(m,stats){
   return {value:money(value),target,percent:Math.min(100,Math.round((value/target)*100)),completed:value>=target};
 }
 
+function vipKey(level){return String(level||"").toLowerCase().replace("plata","plata").replace("oro","oro").replace("diamante","diamante").replace("bronce","bronce")}
+function vipBenefitsFor(config,level){
+  const key=vipKey(level), structured=Array.isArray(config?.benefits?.[key])?config.benefits[key].filter(x=>x&&x.active!==false&&String(x.title||"").trim()).slice(0,2):[];
+  if(structured.length)return structured;
+  const legacyMap={Bronce:config?.beneficio_bronce,Plata:config?.beneficio_plata,Oro:config?.beneficio_ouro,Diamante:config?.beneficio_diamante};
+  const text=String(legacyMap[level]||"").trim();
+  return text?[{id:key+"_1",title:text,description:"",type:"custom",value:0,uses:1,period:"monthly",active:true}]:[];
+}
+function benefitPeriodKey(benefit,level,now=new Date()){
+  if(String(benefit?.period||"monthly")==="level")return "level_"+vipKey(level);
+  return now.toISOString().slice(0,7);
+}
+function benefitIcon(type){return type==="free_delivery"?"🚚":type==="percent_discount"?"%":type==="fixed_discount"?"💵":type==="gift"?"🎁":"👑"}
+function benefitDescription(b){
+  const desc=String(b?.description||"").trim();if(desc)return desc;
+  if(b?.type==="free_delivery")return "Envío gratis";
+  if(b?.type==="percent_discount")return Number(b?.value||0)+"% de descuento";
+  if(b?.type==="fixed_discount")return "MX$"+Number(b?.value||0)+" de descuento";
+  if(b?.type==="gift")return "Beneficio de cortesía";
+  return String(b?.title||"Beneficio VIP");
+}
+
 async function loadAll(){
   const [usersSnap,txSnap,rewardsSnap,missionsSnap,autosSnap,vipSnap,surpriseSnap,baseSnap]=await Promise.all([
     db.ref("users").once("value"),db.ref("transacoes").once("value"),db.ref("recompensas").once("value"),
@@ -120,13 +142,40 @@ export default async function handler(req,res){
           const rank={Bronce:0,Plata:1,Oro:2,Diamante:3};
           return (rank[vip]??0)>=(rank[String(all.surprise.min_nivel||"Bronce")]??0)?all.surprise:null;
         })(),
-        benefits:[
-          vip==="Diamante"&&all.vip.beneficio_diamante?{icon:"💎",title:"Beneficio Diamante",text:all.vip.beneficio_diamante}:null,
-          vip==="Oro"&&all.vip.beneficio_ouro?{icon:"👑",title:"Beneficio Oro",text:all.vip.beneficio_ouro}:null,
-          vip==="Plata"&&all.vip.beneficio_plata?{icon:"🥈",title:"Beneficio Plata",text:all.vip.beneficio_plata}:null,
-          vip==="Bronce"&&all.vip.beneficio_bronce?{icon:"🥉",title:"Beneficio Bronce",text:all.vip.beneficio_bronce}:null
-        ].filter(Boolean)
+        benefits:vipBenefitsFor(all.vip,vip).map(b=>{
+          const period_key=benefitPeriodKey(b,vip),used=Math.max(0,Number(user?.vip_benefit_usage?.[b.id]?.[period_key]||0)),limit=Math.max(1,Number(b.uses||1));
+          return {id:b.id,icon:benefitIcon(b.type),title:b.title,text:benefitDescription(b),description:String(b.description||""),type:b.type||"custom",value:Number(b.value||0),period:b.period||"monthly",period_key,limit,used,remaining:Math.max(0,limit-used),available:used<limit};
+        })
       });
+    }
+
+    if(req.method==="POST"&&String(req.body?.action||"")==="redeem_vip_benefit"){
+      const uid=String(req.body?.uid||"").trim(),benefitId=String(req.body?.benefit_id||"").trim();
+      if(!validUid(uid)||!benefitId)return res.status(400).json({error:"Datos inválidos"});
+      const all=await loadAll(),user=all.users[uid];
+      if(!user)return res.status(404).json({error:"Cliente no encontrado"});
+      if(all.vip.ativo===false)return res.status(400).json({error:"Los niveles VIP están desactivados"});
+      const points=Number(user.pontos||0),acc=Number(user.pontos_acumulados??points);
+      const vip=acc>=Number(all.vip.diamante||1500)?"Diamante":acc>=Number(all.vip.ouro||800)?"Oro":acc>=Number(all.vip.prata||300)?"Plata":"Bronce";
+      const benefit=vipBenefitsFor(all.vip,vip).find(b=>String(b.id)===benefitId&&b.active!==false);
+      if(!benefit)return res.status(404).json({error:"Este beneficio no está disponible para tu nivel actual"});
+      const periodKey=benefitPeriodKey(benefit,vip),limit=Math.max(1,Math.min(20,Number(benefit.uses||1)));
+      const usageRef=db.ref(`users/${uid}/vip_benefit_usage/${benefitId}/${periodKey}`);
+      const tx=await usageRef.transaction(current=>{
+        const used=Math.max(0,Number(current||0));
+        if(used>=limit)return;
+        return used+1;
+      },undefined,false);
+      if(!tx.committed)return res.status(409).json({error:"Ya utilizaste todos los usos disponibles de este beneficio",remaining:0});
+      const used=Math.max(0,Number(tx.snapshot.val()||0)),remaining=Math.max(0,limit-used),now=new Date().toISOString();
+      const redemptionRef=db.ref("vip_benefit_redemptions").push();
+      const code=("VIP-"+redemptionRef.key.slice(-6)).toUpperCase();
+      await redemptionRef.set({
+        uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",level:vip,benefit_id:benefitId,
+        benefit_title:benefit.title||"",benefit_type:benefit.type||"custom",benefit_value:Number(benefit.value||0),
+        period_key:periodKey,use_number:used,limit,code,status:"redeemed",created_at:now
+      });
+      return res.status(200).json({success:true,code,title:benefit.title||"Beneficio VIP",text:benefitDescription(benefit),used,limit,remaining,period:benefit.period||"monthly"});
     }
 
     if(req.method==="POST"&&String(req.body?.action||"")==="claim_mission"){
