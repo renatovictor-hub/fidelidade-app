@@ -33,6 +33,7 @@
   .vip-use-sheet h3{margin:0;color:#5d277e;font-size:18px}.vip-use-sheet>p{font-size:12px;color:#6f6574;line-height:1.45}
   .vip-use-options{display:grid;gap:9px;margin-top:12px}.vip-use-options button{width:100%;border:1px solid #e4d8ea;border-radius:12px;background:#fff;color:#5d277e;padding:12px;font-weight:900;text-align:left}
   .vip-use-close{width:100%;border:0;background:transparent;color:#786d7d;padding:10px;margin-top:4px}
+  .vip-use-simple{margin-top:12px;padding:12px;border:1px solid #e7d9ef;border-radius:12px;background:#faf7fc}.vip-use-simple>b{display:block;color:#54276f;margin-bottom:5px}.vip-use-simple p{margin:4px 0 10px;font-size:12px;color:#6e6473;line-height:1.45}.vip-use-simple button{width:100%;border:0;border-radius:10px;background:#6a0dad;color:#fff;padding:11px;font-weight:900}.vip-use-simple small{display:block;margin-top:8px;color:#5f9a73;font-size:11px}
   .vip-use-code{text-align:center;font-weight:900;font-size:20px;color:#6a0dad;letter-spacing:1px;margin:10px 0}
   .vip-use-qr{width:190px;height:190px;margin:10px auto;display:grid;place-items:center}
   @media(max-width:370px){.cfg-badges{grid-template-columns:1fr 1fr}.cfg-badge{padding:10px 6px}}
