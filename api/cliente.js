@@ -34,14 +34,47 @@ function cleanOrderMoney(value) {
     return Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : 0;
 }
 
-function cleanOrderItems(items) {
-    if (!Array.isArray(items)) return [];
-    return items.slice(0, 50).map(item => ({
-        name: cleanOrderText(item?.name, 100),
-        qty: Math.max(1, Math.min(99, Math.floor(Number(item?.qty) || 1))),
-        unitPrice: cleanOrderMoney(item?.unitPrice),
-        details: cleanOrderText(item?.details, 300)
-    })).filter(item => item.name);
+const ORDER_CATALOG = Object.freeze({
+    "carne":{ name:"Carne", price:45 },
+    "carne-queso":{ name:"Carne con Queso", price:45 },
+    "queso-cremoso":{ name:"Queso Cremoso", price:45 },
+    "marguerita":{ name:"Marguerita", price:45 },
+    "portuguesa":{ name:"Portuguesa", price:45 },
+    "brasilena":{ name:"Brasileña", price:45 },
+    "brasilena-habanero":{ name:"Brasileña Habanero", price:45 },
+    "dulce-leche":{ name:"Dulce de Leche", price:50 },
+    "platano-lechera":{ name:"Plátano con Lechera", price:50 },
+    "chabacano-macha":{ name:"Chabacano con Macha", price:50 },
+    "romeo-julieta":{ name:"Romeo y Julieta", price:50 },
+    "coxinha":{ name:"Coxinha", price:50 },
+    "coca-600":{ name:"Coca-Cola 600 ml", price:35 }
+});
+
+function normalizeOrderName(value){
+    return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+}
+const ORDER_CATALOG_BY_NAME = Object.fromEntries(Object.entries(ORDER_CATALOG).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
+
+function secureOrderItems(items) {
+    if (!Array.isArray(items)) return { items:[], invalid:true };
+    const priced=[];
+    let invalid=false;
+    for (const raw of items.slice(0,50)) {
+        const requestedId=cleanOrderText(raw?.productId,80);
+        const byId=requestedId ? ORDER_CATALOG[requestedId] : null;
+        const byName=ORDER_CATALOG_BY_NAME[normalizeOrderName(raw?.name)];
+        const product=byId ? {id:requestedId,...byId} : byName;
+        if(!product){invalid=true;continue}
+        const qty=Math.max(1,Math.min(99,Math.floor(Number(raw?.qty)||1)));
+        priced.push({
+            productId:product.id,
+            name:product.name,
+            qty,
+            unitPrice:product.price,
+            details:cleanOrderText(raw?.details,300)
+        });
+    }
+    return { items:priced, invalid };
 }
 
 function publicOrder(id, order) {
@@ -133,11 +166,43 @@ async function confirmVipRequestForOrder(db, requestId, orderId) {
     return { ok:true, used, remaining:Math.max(0, limit-used) };
 }
 
+async function secureDeliveryQuote(body){
+    const destination=destinationWaypoint(body?.deliveryDestination);
+    if(!destination)throw Object.assign(new Error("Dirección de entrega inválida."),{status:400});
+    const apiKey=String(process.env.GOOGLE_ROUTES_API_KEY||"").trim();
+    if(!apiKey)throw Object.assign(new Error("No podemos validar la tarifa de envío en este momento."),{status:503});
+    const response=await fetch("https://routes.googleapis.com/directions/v2:computeRoutes",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","X-Goog-Api-Key":apiKey,"X-Goog-FieldMask":"routes.distanceMeters,routes.duration"},
+        body:JSON.stringify({origin:{location:{latLng:RESTAURANT}},destination,travelMode:"DRIVE",routingPreference:"TRAFFIC_UNAWARE",languageCode:"es-MX",units:"METRIC"})
+    });
+    const data=await response.json();
+    if(!response.ok)throw Object.assign(new Error("No pudimos validar la ruta de entrega."),{status:502});
+    const route=data?.routes?.[0],distanceMeters=Number(route?.distanceMeters);
+    if(!Number.isFinite(distanceMeters)||distanceMeters<=0)throw Object.assign(new Error("No encontramos una ruta válida para esta dirección."),{status:422});
+    const distanceKm=Math.round(distanceMeters/100)/10,tariff=calculateDeliveryFee(distanceMeters/1000);
+    const address=String(body?.deliveryDestination?.address||"").trim();
+    const bonfil=/(^|\b)(alfredo v\.? bonfil|bonfil)(\b|$)/i.test(address)?20:0;
+    const plaza=body?.insidePlaza===true?20:0;
+    const outsideHours=isOutsideServiceHours(body?.deliveryAt)?20:0;
+    const rain=String(process.env.DELIVERY_RAIN_ACTIVE||"").toLowerCase()==="true"?10:0;
+    const fee=tariff.distanceFee+bonfil+plaza+outsideHours+rain;
+    const durationSeconds=Math.max(0,Number.parseInt(String(route.duration||"0s"),10)||0);
+    return {
+        distanceKm,
+        durationMinutes:Math.max(1,Math.ceil(durationSeconds/60)),
+        fee,
+        breakdown:{distance:tariff.distanceFee,base:tariff.baseFee,extraKm:tariff.extraKm,bonfil,plaza,outsideHours,rain}
+    };
+}
+
 async function handleOrderCreate(req, res) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
-    const items = cleanOrderItems(body.items);
+    const secure = secureOrderItems(body.items);
+    const items = secure.items;
+    if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
 
     const db = admin.database();
@@ -153,9 +218,14 @@ async function handleOrderCreate(req, res) {
     const requestedVipId = cleanOrderText(body.benefit_request_id, 120);
     const vipRequest = requestedVipId ? await claimVipRequestForOrder(db, requestedVipId, uid, orderRef.key) : null;
     if (requestedVipId && !vipRequest) return res.status(409).json({ error:"El beneficio VIP ya no está disponible para este pedido. Vuelve a solicitarlo." });
-    const subtotal = cleanOrderMoney(body.subtotal);
-    const originalDeliveryFee = cleanOrderMoney(body.deliveryFee);
-    const vipPricing = vipRequest ? applyVipBenefitToOrder(vipRequest, subtotal, originalDeliveryFee) : { discount:0, deliveryFee:originalDeliveryFee, total:cleanOrderMoney(body.total) };
+    const subtotal = Math.round(items.reduce((sum,item)=>sum+(item.unitPrice*item.qty),0)*100)/100;
+    const fulfillment = body.fulfillment === "pickup" ? "pickup" : "delivery";
+    let secureRoute=null, originalDeliveryFee=0;
+    if(fulfillment==="delivery"){
+        try{secureRoute=await secureDeliveryQuote(body);originalDeliveryFee=secureRoute.fee}
+        catch(error){return res.status(error.status||500).json({error:error.message||"No pudimos validar el envío."})}
+    }
+    const vipPricing = vipRequest ? applyVipBenefitToOrder(vipRequest, subtotal, originalDeliveryFee) : { discount:0, deliveryFee:originalDeliveryFee, total:Math.max(0,Math.round((subtotal+originalDeliveryFee)*100)/100) };
     const order = {
         code,
         uid,
@@ -164,7 +234,7 @@ async function handleOrderCreate(req, res) {
         status,
         createdAt: now,
         updatedAt: now,
-        fulfillment: body.fulfillment === "pickup" ? "pickup" : "delivery",
+        fulfillment,
         scheduledAt: cleanOrderText(body.scheduledAt, 40),
         subtotal,
         deliveryFee: vipPricing.deliveryFee,
@@ -180,9 +250,10 @@ async function handleOrderCreate(req, res) {
         address: cleanOrderText(body.address, 260),
         references: cleanOrderText(body.references, 180),
         payment: cleanOrderText(body.payment, 80),
-        route: body.route && typeof body.route === "object" ? {
-            distanceKm: Number(body.route.distanceKm || 0),
-            durationMinutes: Number(body.route.durationMinutes || 0)
+        route: secureRoute ? {
+            distanceKm: secureRoute.distanceKm,
+            durationMinutes: secureRoute.durationMinutes,
+            breakdown: secureRoute.breakdown
         } : null,
         items,
         history: { received: { at: now, label: ORDER_STATUS.received.label } }
