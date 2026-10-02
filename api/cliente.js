@@ -362,15 +362,15 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
                     if(Object.keys(updates).length)await db.ref().update(updates);
                     referral={applied:true,friend_points:friendPts,referrer_points:refPts,referrer_uid:refUid};
                     await Promise.allSettled([
-                        friendPts?enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"🎁 ¡Bonus por invitación!",mensagem:`Ganaste ${friendPts} puntos extra por tu primera compra con invitación.`,url:"https://fidelidad-uai-so.vercel.app/"}):null,
-                        refPts?enviarNotificacao({uid:refUid,telefone:refSnap.val()?.telefone||"",titulo:"🤝 ¡Tu amigo compró!",mensagem:`Ganaste ${refPts} puntos porque tu amigo hizo su primera compra válida.`,url:"https://fidelidad-uai-so.vercel.app/"}):null
+                        friendPts?enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"🎁 ¡Bonus por invitación!",mensagem:`Ganaste ${friendPts} puntos extra por tu primera compra con invitación.`,url:RESTAURANT_CONFIG.domain+"/"}):null,
+                        refPts?enviarNotificacao({uid:refUid,telefone:refSnap.val()?.telefone||"",titulo:"🤝 ¡Tu amigo compró!",mensagem:`Ganaste ${refPts} puntos porque tu amigo hizo su primera compra válida.`,url:RESTAURANT_CONFIG.domain+"/"}):null
                     ]);
             }
             }
         }
     }
     await db.ref("pedidos/"+id).update({loyalty_awarded:true,loyalty_points:points,loyalty_awarded_at:new Date().toISOString(),loyalty_referral:referral});
-    await enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"⭐ ¡Ganaste puntos!",mensagem:`Sumaste ${points} puntos por tu pedido. Ya están disponibles en tu cuenta.`,url:"https://fidelidad-uai-so.vercel.app/"}).catch(()=>null);
+    await enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"⭐ ¡Ganaste puntos!",mensagem:`Sumaste ${points} puntos por tu pedido. Ya están disponibles en tu cuenta.`,url:RESTAURANT_CONFIG.domain+"/"}).catch(()=>null);
     return {awarded:true,points,referral};
 }
 
