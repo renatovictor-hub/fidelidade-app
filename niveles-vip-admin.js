@@ -33,6 +33,15 @@
     .vip-benefit-desc{margin-top:8px}
     .vip-inline-help{margin-top:8px;padding:8px 9px;border-radius:9px;background:#f4eef8;color:#65586b;font-size:11px;line-height:1.4}
     .vip-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid #eee7f1}
+    .vip-requests{margin-top:18px;padding-top:16px;border-top:1px solid #eee7f1}
+    .vip-requests-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+    .vip-requests-list{display:grid;gap:9px}
+    .vip-request{border:1px solid #eadff0;border-radius:12px;padding:11px;background:#fff}
+    .vip-request-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .vip-request strong{display:block;color:#4d3657;font-size:13px}.vip-request small{display:block;color:#776a7d;margin-top:2px}
+    .vip-request-code{font-weight:900;color:#6a0dad;background:#f4eaff;border-radius:8px;padding:5px 7px;font-size:11px}
+    .vip-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+    .vip-request-actions button{min-height:38px!important}
     @media(max-width:980px){.vip-levels-layout{grid-template-columns:1fr}.vip-thresholds{grid-template-columns:1fr 1fr 1fr}}
     @media(max-width:700px){.vip-thresholds,.vip-field-grid,.vip-benefit-row{grid-template-columns:1fr}.vip-benefit-summary{max-width:50%}.vip-footer{align-items:stretch;flex-direction:column}.vip-footer button{width:100%!important}}
   `;
@@ -116,6 +125,13 @@
       <button id="vipSalvar" class="btn-primary">GUARDAR NIVELES Y BENEFICIOS</button>
     </div>
     <div id="vipEstado" style="font-size:12px;color:#777;margin-top:9px;"></div>
+    <section class="vip-requests">
+      <div class="vip-requests-head">
+        <div><h3 style="margin:0">Solicitudes de beneficios</h3><small style="color:#746979">WhatsApp y uso presencial. Solo al confirmar se descuenta el beneficio.</small></div>
+        <button type="button" class="btn-secondary" id="vipRefreshRequests" style="width:auto!important">ACTUALIZAR</button>
+      </div>
+      <div id="vipRequestsList" class="vip-requests-list"><div style="color:#777;font-size:12px">Cargando solicitudes…</div></div>
+    </section>
   `;
   staging.appendChild(card);
   const $=id=>document.getElementById(id);
@@ -178,6 +194,43 @@
     });
   }
   card.querySelectorAll('.vip-benefit-editor').forEach(bindEditor);
+  async function loadRequests(){
+    const box=$("vipRequestsList"); if(!box)return;
+    try{
+      const r=await fetch("/api/fidelidad-growth?t="+Date.now(),{cache:"no-store"});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||"No se pudieron cargar las solicitudes");
+      const rows=Array.isArray(d.benefit_requests)?d.benefit_requests:[];
+      if(!rows.length){box.innerHTML='<div style="padding:12px;border:1px dashed #ddd;border-radius:10px;color:#777;font-size:12px">No hay solicitudes pendientes.</div>';return}
+      box.innerHTML=rows.map(x=>{
+        const left=Math.max(0,Math.ceil((Date.parse(x.expires_at)-Date.now())/60000));
+        const channel=x.channel==="whatsapp"?"WhatsApp":x.channel==="delivery"?"Delivery":"QR / presencial";
+        return `<div class="vip-request" data-id="${x.id}">
+          <div class="vip-request-top">
+            <div><strong>${x.nome||x.uid||"Cliente"} · ${x.level||""}</strong><small>${x.benefit_title||"Beneficio"} · ${channel}</small><small>Expira en ${left} min</small></div>
+            <div class="vip-request-code">${x.code||""}</div>
+          </div>
+          <div class="vip-request-actions">
+            <button type="button" class="btn-primary" data-confirm>CONFIRMAR USO</button>
+            <button type="button" class="btn-secondary" data-reject>RECHAZAR</button>
+          </div>
+        </div>`
+      }).join("");
+      box.querySelectorAll(".vip-request").forEach(row=>{
+        const id=row.dataset.id;
+        row.querySelector("[data-confirm]").onclick=()=>processRequest(id,"confirm_vip_benefit");
+        row.querySelector("[data-reject]").onclick=()=>processRequest(id,"reject_vip_benefit");
+      });
+    }catch(e){box.innerHTML='<div style="color:#a31521;font-size:12px">❌ '+e.message+'</div>'}
+  }
+  async function processRequest(id,action){
+    try{
+      const r=await fetch("/api/fidelidad-growth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,id})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||"No se pudo procesar la solicitud");
+      await loadRequests();
+    }catch(e){alert(e.message)}
+  }
   async function cargar(){
     try{
       const r=await fetch(`/api/sendpush?config=niveles_vip&t=${Date.now()}`,{cache:"no-store"});
@@ -221,5 +274,6 @@
     }catch(e){$("vipEstado").textContent="❌ "+e.message}
     finally{btn.disabled=false;btn.textContent="GUARDAR NIVELES Y BENEFICIOS"}
   };
-  cargar();
+  $("vipRefreshRequests").onclick=loadRequests;
+  cargar();loadRequests();setInterval(loadRequests,30000);
 })();
