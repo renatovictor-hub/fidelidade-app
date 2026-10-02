@@ -31,9 +31,9 @@ form.addEventListener('submit',async e=>{
   e.preventDefault();msg.textContent='';const digits=phone.value.replace(/\D/g,'');if(digits.length!==10){msg.textContent='Digite os 10 dígitos do telefone.';return}
   btn.disabled=true;btn.textContent='BUSCANDO...';
   try{
-    const r=await fetch('/api/verificar-telefone?telefone='+encodeURIComponent(digits)+'&t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
+    const r=await fetch('/api/buscar-telefone?telefone='+encodeURIComponent(digits)+'&t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(d.error||'Não foi possível localizar o cliente.');
-    if(!d.existe||!/^user_\d+$/.test(String(d.uid||'')))throw new Error('Cliente não encontrado.');
+    if(!/^user_\d+$/.test(String(d.uid||'')))throw new Error('Cliente não encontrado.');
     location.href='/app-v11-next.html?uid='+encodeURIComponent(d.uid)+'#home';
   }catch(err){msg.textContent=err.message||'Erro ao abrir o preview.';btn.disabled=false;btn.textContent='ABRIR PREVIEW';}
 });
