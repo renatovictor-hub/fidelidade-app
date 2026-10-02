@@ -547,6 +547,13 @@ export default async function handler(req, res) {
         return handleOrderStatus(req, res);
     }
 
+    if (req.method === "GET" && String(req.query.action || "") === "public_config") {
+        const snap = await admin.database().ref("config/restaurant_contact").once("value");
+        const cfg = snap.val() || {};
+        const whatsapp = String(cfg.whatsapp || "5219986023759").replace(/\D/g,"").slice(0,15);
+        return res.status(200).json({ whatsapp: whatsapp || "5219986023759" });
+    }
+
     if (req.method === "GET" && String(req.query.action || "") === "orders") {
         return handleOrdersGet(req, res);
     }
