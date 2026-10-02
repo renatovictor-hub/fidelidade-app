@@ -64,14 +64,15 @@ frame.addEventListener('load',()=>{
     const quick=d.querySelector('#screen-home .quick');
     if(quick&&quick.children.length===1)quick.style.display='none';
   }
-  if(!d.getElementById('clientFidelityGrowthScript')){const gs=d.createElement('script');gs.id='clientFidelityGrowthScript';gs.src='/client-fidelity-growth.js?v=20261002-benefitreview2';d.body.appendChild(gs)}
+  if(!d.getElementById('clientFidelityGrowthScript')){const gs=d.createElement('script');gs.id='clientFidelityGrowthScript';gs.src='/client-fidelity-growth.js?v=20261002-benefitreview3';d.body.appendChild(gs)}
 
-  let promoCache=[],promosReady=false,clientState=null,lastTab='home',liveRefreshing=false;
+  let promoCache=[],promosReady=false,clientState=null,lastTab='home',liveRefreshing=false,restaurantWhatsApp='5219986023759';
   const badImages=new Set();
   const nativeRenderOfferTab=typeof w.renderOfferTab==='function'?w.renderOfferTab.bind(w):null;
   const nativeLoadRewards=typeof w.loadRewards==='function'?w.loadRewards.bind(w):null;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  async function getPublicConfig(){try{const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});const d=await r.json();if(r.ok&&d.whatsapp)restaurantWhatsApp=String(d.whatsapp).replace(/\D/g,'')}catch(_){}}
   async function getPromos(){try{const r=await fetch('https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Promotions unavailable');const raw=await r.json()||{};promoCache=Object.entries(raw).map(([id,p])=>({id,...(p||{})}));promosReady=true;return true}catch(_){return false}}
   async function getClient(){try{const uid=new URLSearchParams(location.search).get('uid')||'';if(!uid)return;const r=await fetch('/api/cliente?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});if(r.ok)clientState=await r.json()}catch(_){}}
 
@@ -115,7 +116,7 @@ frame.addEventListener('load',()=>{
   function formatLeft(p){const ts=endTs(p);if(!Number.isFinite(ts)||ts<=Date.now())return'';const diff=ts-Date.now(),h=Math.floor(diff/36e5),m=Math.floor(diff%36e5/6e4);return h>=24?`⏳ Termina en ${Math.floor(h/24)}d ${h%24}h`:`⏳ Termina en ${h}h ${m}min`}
   function promoHtml(p,expired=false){const img=imageOf(p),id=esc(p?.id||''),ts=endTs(p);const imgHtml=img&&!badImages.has(img)?`<img class="v11-promo-img" data-v11-img="1" src="${esc(img)}" alt="">`:'';return `<article class="offer ${expired?'expired':''}" data-promo-id="${id}">${imgHtml}<div class="body"><h3>${esc(titleOf(p)||'Promoción especial')}</h3><p>${esc(descOf(p))}</p><span class="tag">${expired?'FINALIZADA':'ACTIVA'}</span>${!expired&&Number.isFinite(ts)?`<div class="offer-countdown" data-exp="${ts}">${esc(formatLeft(p))}</div>`:''}${!expired?`<button class="offer-wa" type="button" data-promo-id="${id}">💬 PEDIR POR WHATSAPP</button>`:''}</div></article>`}
   function matchPromo(card){const id=card?.dataset?.promoId||'';if(id){const p=promoCache.find(x=>String(x.id)===String(id));if(p)return p}const t=card?.querySelector('h3')?.textContent.trim()||'';return promoCache.find(p=>titleOf(p)===t)||null}
-  function openWhatsApp(p,card){const title=titleOf(p)||card?.querySelector('h3')?.textContent.trim()||'Promoción Uai Sô';w.open('https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(`Hola! Quiero la promo: ${title}`),'_blank','noopener')}
+  function openWhatsApp(p,card){const title=titleOf(p)||card?.querySelector('h3')?.textContent.trim()||'Promoción Uai Sô';w.open('https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(`Hola! Quiero la promo: ${title}`),'_blank','noopener')}
   function hydratePromos(scope){if(!scope)return;scope.querySelectorAll('img[data-v11-img]').forEach(img=>{const ok=()=>{if(img.isConnected&&img.naturalWidth>0)img.classList.add('is-loaded')};const fail=()=>{badImages.add(img.getAttribute('src')||'');img.remove()};if(img.complete){img.naturalWidth>0?ok():fail()}else{img.addEventListener('load',ok,{once:true});img.addEventListener('error',fail,{once:true})}});scope.querySelectorAll('.offer-wa').forEach(btn=>{btn.onclick=()=>{const card=btn.closest('.offer');openWhatsApp(matchPromo(card),card)}})}
   function renderStable(el,html,key){if(!el)return false;if(el.dataset.v11RenderKey===key)return false;el.innerHTML=html;el.dataset.v11RenderKey=key;hydratePromos(el);return true}
   function renderOffersTab(active,expired){const el=d.getElementById('offersList');if(!el)return;const activeTab=d.querySelector('[data-offer-tab="active"]')?.classList.contains('active');const previousTab=d.querySelector('[data-offer-tab="previous"]')?.classList.contains('active');const benefitsTab=d.querySelector('[data-offer-tab="benefits"]')?.classList.contains('active');if(activeTab){const html=active.length?active.map(x=>promoHtml(x)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';renderStable(el,html,listKey('active',active));return}if(previousTab){const list=expired.slice(0,3);const html=list.length?list.map(x=>promoHtml(x,true)).join(''):'<div class="empty">Todavía no hay promociones anteriores.</div>';renderStable(el,html,listKey('previous',list));return}if(benefitsTab&&nativeRenderOfferTab){el.dataset.v11RenderKey='';nativeRenderOfferTab()}}
@@ -133,7 +134,7 @@ frame.addEventListener('load',()=>{
   d.querySelector('[data-tab="profile"]')?.addEventListener('click',async()=>{lastTab='profile';await refreshLive();setTimeout(enhanceProfile,50)});
   d.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.tab&&btn.dataset.tab!=='qr')lastTab=btn.dataset.tab}));
   w.addEventListener('focus',refreshLive);w.addEventListener('pageshow',refreshLive);d.addEventListener('visibilitychange',()=>{if(d.visibilityState==='visible')refreshLive()});
-  Promise.all([getPromos(),getClient(),loadClientBanners()]).then(()=>{fixMovementRenderer();if(promosReady)renderPromoAreas(true);enhanceRewards();addQrClose();enhanceProfile();showGoogleStatus();updateCountdowns();setTimeout(()=>{if(promosReady)renderPromoAreas(false)},700);setInterval(refreshLive,15000);setInterval(updateCountdowns,30000)});
+  Promise.all([getPublicConfig(),getPromos(),getClient(),loadClientBanners()]).then(()=>{fixMovementRenderer();if(promosReady)renderPromoAreas(true);enhanceRewards();addQrClose();enhanceProfile();showGoogleStatus();updateCountdowns();setTimeout(()=>{if(promosReady)renderPromoAreas(false)},700);setInterval(refreshLive,15000);setInterval(updateCountdowns,30000)});
 });
 </script>
 <script>
