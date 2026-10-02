@@ -237,6 +237,6 @@ document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if($(
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return document.querySelectorAll('video').forEach(v=>v.pause());if(videoProductId)$('popupVideo').play().catch(()=>{});else if(menuView==='explore')document.querySelector(`.dish[data-index="${activeIndex}"] video`)?.play().catch(()=>{})});
 renderFeed();renderCartBadge();setView(menuView);hydrateCheckoutProfile(false);
 </script>
-<script src="/menu-order-tracker.js?v=20261002-consolidation1"></script>
+<script src="/menu-order-tracker.js?v=20261002-consolidation2"></script>
 </body>
 </html>
