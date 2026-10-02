@@ -26,6 +26,54 @@ OneSignalDeferred.push(async function(OS) {
         appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
         notifyButton: { enable: false }
     });
+
+    async function syncPush(reason) {
+        const currentUid = String(localStorage.getItem("uid") || "").trim();
+        if (!/^user_\d+$/.test(currentUid)) return;
+
+        try {
+            await OS.login(currentUid);
+
+            const telefone = String(localStorage.getItem("telefone") || "").replace(/\D/g, "");
+            const nome = String(localStorage.getItem("nome") || "").trim();
+            if (telefone.length === 10) await OS.User.addTag("telefone", telefone);
+            if (nome) await OS.User.addTag("user_name", nome.slice(0, 80));
+
+            const sub = OS.User?.PushSubscription;
+            if (
+                Notification.permission === "granted" &&
+                localStorage.getItem("push") === "true" &&
+                sub?.optedIn === false &&
+                typeof sub.optIn === "function"
+            ) {
+                try { await sub.optIn(); } catch (_) {}
+            }
+
+            await fetch("/api/cliente", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "push_sync",
+                    uid: currentUid,
+                    permission: Notification.permission,
+                    opted_in: sub?.optedIn === true,
+                    subscription_id: String(sub?.id || ""),
+                    token_present: !!sub?.token,
+                    reason
+                })
+            });
+        } catch (e) {
+            console.warn("OneSignal sync:", e);
+        }
+    }
+
+    await syncPush("app_open");
+    try { OS.User.PushSubscription.addEventListener("change", () => syncPush("subscription_change")); } catch (_) {}
+    try { OS.Notifications.addEventListener("permissionChange", () => syncPush("permission_change")); } catch (_) {}
+    window.addEventListener("focus", () => syncPush("focus"));
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") syncPush("visible");
+    });
 });
 </script>
 
