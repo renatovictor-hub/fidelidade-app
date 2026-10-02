@@ -5,13 +5,27 @@
 <title>Uai Sô Fidelidad</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/api/manifest">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <!-- QR CODE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- ONESIGNAL -->
+<script>
+window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'})
+  .then(r=>r.ok?r.json():null).catch(()=>null).then(cfg=>{
+    if(cfg){
+      window.__restaurantConfig=cfg;
+      document.title=(cfg.short_name||cfg.name||'Fidelidad')+' Fidelidad';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content',cfg.primary_color||'#6a0dad');
+      document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
+      document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+      const logo=document.querySelector('img.logo');if(logo&&cfg.logo)logo.src=cfg.logo;
+    }
+    return cfg;
+  });
+</script>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 <script>
@@ -22,8 +36,11 @@ window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OS) {
     OneSignalInstance = OS;
 
+    const cfg=await (window.__restaurantConfigPromise||Promise.resolve(window.__restaurantConfig||null));
+    const appId=String(cfg?.onesignal_app_id||"").trim();
+    if(!appId)return;
     await OS.init({
-        appId: "10fd0812-370f-408a-9ea5-cbb349f5d635",
+        appId,
         notifyButton: { enable: false }
     });
 
