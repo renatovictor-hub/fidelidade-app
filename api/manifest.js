@@ -1,4 +1,4 @@
-import { getRestaurantConfig } from "./_restaurant-config.js";
+import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 
 export default function handler(req,res){
   const cfg=getRestaurantConfig();
