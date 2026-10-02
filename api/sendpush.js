@@ -3,7 +3,7 @@ import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
 
 if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert({ projectId: process.env.FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n") }), databaseURL: process.env.FIREBASE_DATABASE_URL });
+  admin.initializeApp({ credential: admin.credential.cert({ projectId: process.env.FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n") }), databaseURL: process.env.FIREBASE_DATABASE_URL || "https://fidelidade-app-9671c-default-rtdb.firebaseio.com" });
 }
 
 function telefoneValido(v) { const t = String(v || "").replace(/\D/g, ""); return t.length === 10 ? t : ""; }
