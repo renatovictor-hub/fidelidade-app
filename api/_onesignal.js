@@ -24,6 +24,7 @@ export async function enviarNotificacao({ uid, telefone, telefones, titulo, mens
         contents: { es: mensagem, pt: mensagem, en: mensagem },
         url,
         priority: 10,
+        ttl: 1209600,
         web_push_topic: topicoUnico(),
         chrome_web_icon: "https://fidelidad-uai-so.vercel.app/logo.png",
         ...(imagem ? { big_picture: imagem, chrome_web_image: imagem, ios_attachments: { promo: imagem } } : {})
