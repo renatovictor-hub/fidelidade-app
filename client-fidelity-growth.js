@@ -56,10 +56,29 @@
     const hasSurprise=d.surprise&&(String(d.surprise.titulo||'').trim()||String(d.surprise.texto||'').trim());
     const surprise=hasSurprise?`<div class="cfg-card cfg-surprise"><h3>🎁 ${d.surprise.titulo||'Beneficio especial'}</h3>${d.surprise.texto?`<p>${d.surprise.texto}</p>`:''}</div>`:'';
     const realBenefits=(d.benefits||[]).filter(b=>String(b?.text||'').trim());
-    const benefits=realBenefits.length?`<div class="cfg-card"><h3>👑 Tus beneficios</h3><div class="cfg-missions">${realBenefits.map(b=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b></div><p>${b.text}</p></div>`).join('')}</div></div>`:'';
+    const benefits=realBenefits.length?`<div class="cfg-card"><h3>👑 Tus beneficios</h3><div class="cfg-missions">${realBenefits.map(b=>`
+      <div class="cfg-mission">
+        <div class="cfg-mission-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span class="${b.available?'':'cfg-complete'}">${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
+        <p>${b.text}</p>
+        <p style="margin-top:5px;font-size:11px;color:#756d79">${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
+        ${b.available?'<button class="btn-primary cfg-vip-redeem" data-benefit="'+b.id+'" style="margin-top:8px;width:100%">USAR BENEFICIO</button>':'<p class="cfg-complete" style="margin-top:7px">✓ Usos agotados</p>'}
+      </div>`).join('')}</div></div>`:'';
     shell.innerHTML=nextHtml+surprise+benefits+missionHtml;
     renderProfileAchievements(d.badges||[]);
     alignHome();
+    shell.querySelectorAll('.cfg-vip-redeem').forEach(btn=>btn.onclick=async()=>{
+      const benefit=realBenefits.find(x=>String(x.id)===String(btn.dataset.benefit));
+      if(!benefit)return;
+      if(!confirm('¿Usar ahora este beneficio?\n\n'+benefit.title+'\n'+benefit.text+'\n\nEste uso quedará registrado.'))return;
+      btn.disabled=true;btn.textContent='REGISTRANDO...';
+      try{
+        const r=await fetch('/api/fidelidad-growth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem_vip_benefit',uid,benefit_id:benefit.id})});
+        const out=await r.json().catch(()=>({}));
+        if(!r.ok)throw new Error(out.error||'No se pudo usar el beneficio');
+        alert('✅ Beneficio registrado\n\n'+out.title+'\nCódigo: '+out.code+'\nUsos restantes: '+out.remaining);
+        await load();
+      }catch(e){alert(e.message)}finally{btn.disabled=false}
+    });
     shell.querySelectorAll('.cfg-claim').forEach(btn=>btn.onclick=async()=>{
       btn.disabled=true;btn.textContent='RECLAMANDO...';
       try{
