@@ -1363,7 +1363,13 @@ window.onload = async () => {
     }
 
     if (nome) {
-        return abrirApp();
+        const ok=await restaurarSessaoCliente();
+        if(ok)return abrirApp();
+        localStorage.removeItem("nome");
+        localStorage.removeItem("uid");
+        uid="user_"+Math.floor(Math.random()*1e9);
+        localStorage.setItem("uid",uid);
+        return show("stepNome");
     }
 
 
@@ -1507,204 +1513,70 @@ async function ativarNotif() {
 ========================== */
 
 async function salvarNome() {
+    const nome=document.getElementById("nomeInput")?.value.trim();
+    const telefone=document.getElementById("telefoneInput")?.value.trim();
+    const nascimento=document.getElementById("nascimentoInput")?.value||"";
+    if(!nome)return alert("Escribe tu nombre");
+    if(!telefone)return alert("Escribe tu teléfono");
+    const telefoneLimpo=telefone.replace(/\D/g,"");
+    if(telefoneLimpo.length!==10)return alert("Ingresa un teléfono válido de 10 dígitos.");
+    if(!nascimento)return alert("Selecciona tu fecha de nacimiento.");
+    const nascimentoData=new Date(nascimento+"T12:00:00");
+    if(Number.isNaN(nascimentoData.getTime())||nascimentoData>new Date())return alert("Ingresa una fecha de nacimiento válida.");
 
-    const nome =
-        document.getElementById("nomeInput")?.value.trim();
-
-    const telefone =
-        document.getElementById("telefoneInput")?.value.trim();
-
-    const nascimento =
-        document.getElementById("nascimentoInput")?.value || "";
-
-    if (!nome) {
-        return alert("Escribe tu nombre");
-    }
-
-    if (!telefone) {
-        return alert("Escribe tu teléfono");
-    }
-
-    const telefoneLimpo =
-        telefone.replace(/\D/g, "");
-
-    if (telefoneLimpo.length !== 10) {
-        return alert(
-            "Ingresa un teléfono válido de 10 dígitos."
-        );
-    }
-
-    if (!nascimento) {
-        return alert("Selecciona tu fecha de nacimiento.");
-    }
-
-    const nascimentoData = new Date(nascimento + "T12:00:00");
-    if (Number.isNaN(nascimentoData.getTime()) || nascimentoData > new Date()) {
-        return alert("Ingresa una fecha de nacimiento válida.");
-    }
-
-    try {
-
-        // 1. Verifica se o telefone já existe
-        const verificarRes = await fetch(
-            `/api/verificar-telefone?telefone=${encodeURIComponent(telefoneLimpo)}&t=${Date.now()}`,
-            {
-                cache: "no-store"
-            }
-        );
-
-        const verificarData =
-            await verificarRes.json();
-
-        if (!verificarRes.ok) {
-            throw new Error(
-                verificarData.error ||
-                verificarData.details ||
-                "Error al verificar teléfono"
-            );
-        }
-
-
-        // 2. TELEFONE JÁ EXISTE
-        if (verificarData.existe) {
-
-            uid = verificarData.uid;
-
-            localStorage.setItem(
-                "uid",
-                uid
-            );
-
-            localStorage.setItem(
-                "nome",
-                verificarData.nome || nome
-            );
-
-            localStorage.setItem(
-                "telefone",
-                telefoneLimpo
-            );
-
-            localStorage.setItem("nascimento", nascimento);
-
-            await fetch(
-                `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
-                {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        nascimento: nascimento,
-                        updated_at: new Date().toISOString()
-                    })
-                }
-            );
-
-
-            if (OneSignalInstance) {
-
-                await OneSignalInstance.login(uid);
-
-                await OneSignalInstance.User.addTag(
-                    "user_name",
-                    verificarData.nome || nome
-                );
-
-                await OneSignalInstance.User.addTag(
-                    "telefone",
-                    telefoneLimpo
-                );
-            }
-
-
-            alert(
-                "✅ Encontramos tu cuenta existente.\n\n" +
-                "Tus puntos y datos fueron recuperados."
-            );
-
-            localStorage.removeItem("referral_uid");
-            abrirApp();
-
-            return;
-        }
-
-
-        // 3. TELEFONE NOVO
-        localStorage.setItem(
-            "nome",
-            nome
-        );
-
-        localStorage.setItem(
-            "telefone",
-            telefoneLimpo
-        );
-
-        localStorage.setItem("nascimento", nascimento);
-
-
-        if (OneSignalInstance) {
-
-            await OneSignalInstance.login(uid);
-
-            await OneSignalInstance.User.addTag(
-                "user_name",
-                nome
-            );
-
-            await OneSignalInstance.User.addTag(
-                "telefone",
-                telefoneLimpo
-            );
-        }
-
-
-        // 4. Cria usuário novo
-        await fetch(
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/users/${uid}.json`,
-            {
-                method: "PATCH",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    nome: nome,
-                    telefone: telefoneLimpo,
-                    nascimento: nascimento,
-                    user_id: uid,
-                    pontos: 0,
-                    referido_por: (() => {
-                        const ref = String(localStorage.getItem("referral_uid") || "").trim();
-                        return /^user_\d+$/.test(ref) && ref !== uid ? ref : null;
-                    })(),
-                    referido_recompensado: false,
-                    created_at:
-                        new Date().toISOString(),
-                    updated_at:
-                        new Date().toISOString()
-                })
-            }
-        );
-
-
+    try{
+        const ref=String(localStorage.getItem("referral_uid")||"").trim();
+        const r=await fetch("/api/cliente",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                action:"auth_register",
+                nome,
+                telefone:telefoneLimpo,
+                nascimento,
+                referido_por:/^user_\d+$/.test(ref)?ref:""
+            })
+        });
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||d.details||"No se pudo completar el registro");
+        uid=d.uid;
+        localStorage.setItem("uid",uid);
+        localStorage.setItem("nome",d.nome||nome);
+        localStorage.setItem("telefone",telefoneLimpo);
+        localStorage.setItem("nascimento",nascimento);
         localStorage.removeItem("referral_uid");
+
+        if(OneSignalInstance){
+            await OneSignalInstance.login(uid);
+            await OneSignalInstance.User.addTag("user_name",d.nome||nome);
+            await OneSignalInstance.User.addTag("telefone",telefoneLimpo);
+        }
+        if(d.recovered)alert("✅ Encontramos tu cuenta existente. Tus puntos y datos fueron recuperados.");
         abrirApp();
-
-
-    } catch (e) {
-
-        console.error(
-            "Erro ao salvar usuário:",
-            e
-        );
-
-        alert(
-            "No se pudo completar el registro.\n\n" +
-            e.message
-        );
+    }catch(e){
+        console.error("Erro ao salvar usuário:",e);
+        alert("No se pudo completar el registro.\n\n"+e.message);
     }
+}
+
+async function restaurarSessaoCliente(){
+    const savedUid=String(localStorage.getItem("uid")||"").trim();
+    const telefone=String(localStorage.getItem("telefone")||"").replace(/\D/g,"");
+    const nascimento=String(localStorage.getItem("nascimento")||"").trim();
+    if(!/^user_\d+$/.test(savedUid)||telefone.length!==10)return false;
+    try{
+        const r=await fetch("/api/cliente",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({action:"session_restore",uid:savedUid,telefone,nascimento})
+        });
+        const d=await r.json();
+        if(!r.ok)return false;
+        uid=d.uid;
+        if(d.nome)localStorage.setItem("nome",d.nome);
+        if(d.nascimento)localStorage.setItem("nascimento",d.nascimento);
+        return true;
+    }catch{return false}
 }
 
 /* ==========================
