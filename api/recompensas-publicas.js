@@ -1,4 +1,4 @@
-import { getFirebaseAdmin } from "./_firebase.js";
+import { getFirebaseAdmin } from "../lib/server/firebase.js";
 
 const admin=getFirebaseAdmin();
 
