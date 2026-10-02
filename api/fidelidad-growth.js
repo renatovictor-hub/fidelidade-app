@@ -143,7 +143,7 @@ export default async function handler(req,res){
 
     if(req.method==="POST"&&["request_vip_benefit","redeem_vip_benefit"].includes(String(req.body?.action||""))){
       const uid=String(req.body?.uid||"").trim(),benefitId=String(req.body?.benefit_id||"").trim();
-      const channel=["whatsapp","qr","delivery"].includes(String(req.body?.channel||""))?String(req.body.channel):"qr";
+      const channel=["remote","counter","delivery"].includes(String(req.body?.channel||""))?String(req.body.channel):"remote";
       if(!validUid(uid)||!benefitId)return res.status(400).json({error:"Datos inválidos"});
       const all=await loadAll(),user=all.users[uid];
       if(!user)return res.status(404).json({error:"Cliente no encontrado"});
@@ -161,7 +161,8 @@ export default async function handler(req,res){
       const existing=Object.entries(existingSnap.val()||{}).find(([id,x])=>String(x?.benefit_id)===benefitId&&x?.status==="pending"&&Date.parse(String(x?.expires_at||""))>nowMs);
       if(existing){
         const [id,x]=existing;
-        return res.status(200).json({success:true,request_id:id,code:x.code,status:"pending",expires_at:x.expires_at,title:x.benefit_title,text:x.benefit_text,channel:x.channel,reused:true});
+        if(x.channel!==channel)await db.ref("vip_benefit_requests/"+id).update({channel});
+        return res.status(200).json({success:true,request_id:id,code:x.code,status:"pending",expires_at:x.expires_at,title:x.benefit_title,text:x.benefit_text,channel,reused:true});
       }
 
       const reqRef=db.ref("vip_benefit_requests").push();
