@@ -6,9 +6,6 @@ const SESSION_SECONDS=60*60*24*180;
 function secret(){
   return String(process.env.CLIENT_SESSION_SECRET||process.env.DASHBOARD_PASSWORD||"").trim();
 }
-function previewBypass(){
-  return process.env.VERCEL_ENV==="preview"&&process.env.VERCEL_GIT_COMMIT_REF==="feat/v1.1-ux-profile";
-}
 function cookies(req){
   const raw=String(req.headers?.cookie||"");
   return Object.fromEntries(raw.split(";").map(x=>x.trim()).filter(Boolean).map(x=>{
@@ -25,10 +22,6 @@ export function createClientSession(uid){
   return payload+"."+sign(payload);
 }
 export function readClientSession(req){
-  if(previewBypass()){
-    const uid=String(req.query?.uid||req.body?.uid||"").trim();
-    return uid?{uid,preview:true}:null;
-  }
   if(!secret())return null;
   const token=cookies(req)[COOKIE_NAME];
   if(!token)return null;
