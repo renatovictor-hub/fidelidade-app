@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#6a0dad">
 <title>Uai Sô Fidelidad 1.1</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/api/manifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
@@ -150,8 +150,22 @@ const qs=new URLSearchParams(location.search);
 let uid=String(qs.get('uid')||localStorage.getItem('uid')||'').trim();
 let client=null,movements=[],rewards=[],promos=[],vipCfg={},offerTab='active',feedbackStars=0;
 let activePromos=[],expiredPromos=[],birthdayBenefit=null,bonusBenefit=null,appDataCache=null;
+let restaurantCfg={name:'Uai Sô Brazilian Food',short_name:'Uai Sô',logo:'/logo.png',primary_color:'#6a0dad',accent_color:'#ffcc00',modules:{loyalty:true,delivery:false}};
 async function loadAppData(force=false){if(appDataCache&&!force)return appDataCache;const r=await fetch('/api/cliente?action=app_data&uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar la configuración');appDataCache=d;return d}
 
+function applyRestaurantBrand(cfg){
+  restaurantCfg={...restaurantCfg,...(cfg||{})};
+  const shortName=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad';
+  document.title=shortName+' Fidelidad';
+  document.documentElement.style.setProperty('--p',restaurantCfg.primary_color||'#6a0dad');
+  document.documentElement.style.setProperty('--p2',restaurantCfg.primary_color||'#6a0dad');
+  document.querySelectorAll('img[src="/logo.png"],img.logo').forEach(img=>{if(restaurantCfg.logo)img.src=restaurantCfg.logo;img.alt=shortName});
+  const top=document.querySelector('.top img');if(top&&restaurantCfg.logo)top.src=restaurantCfg.logo;
+  const googleTitle=document.querySelector('#googleCard .system-title');if(googleTitle)googleTitle.textContent='¿Te gusta '+shortName+'?';
+  const banner=document.querySelector('#screen-home img.banner');if(banner)banner.alt=restaurantCfg.name||shortName;
+  const feedbackCopy=document.querySelector('#feedbackModal .modal-copy');if(feedbackCopy)feedbackCopy.textContent='Califica tu experiencia. El comentario es opcional y queda como opinión privada para '+shortName+'.';
+  const googleCopy=document.querySelector('#googleModal .modal-copy');if(googleCopy)googleCopy.textContent='Tu reseña pública ayuda a otras personas a descubrir '+shortName+'. Este acceso se mostrará una sola vez en el app.';
+}
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmtDate(v,withTime=false){if(!v)return'—';const d=new Date(v);if(Number.isNaN(d.getTime()))return'—';return new Intl.DateTimeFormat('es-MX',withTime?{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'}).format(d)}
 function fmtBirthday(v){if(!v)return'No registrado';const d=new Date(v+'T12:00:00');if(Number.isNaN(d.getTime()))return'No registrado';return new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long'}).format(d)}
@@ -254,18 +268,18 @@ function buildQr(){
   }
 }
 async function shareQr(){
-  const text=`Mi tarjeta Uai Sô Fidelidad: ${uid}`;
+  const brand=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad',text=`Mi tarjeta ${brand} Fidelidad: ${uid}`;
   if(navigator.share){
-    try{await navigator.share({title:'Uai Sô Fidelidad',text});return}
+    try{await navigator.share({title:brand+' Fidelidad',text});return}
     catch(e){if(e?.name==='AbortError')return}
   }
   try{await navigator.clipboard.writeText(text);alert('ID copiado.')}
   catch{alert(text)}
 }
-async function shareInvite(){const url=`${location.origin}/?ref=${encodeURIComponent(uid)}`,text='Te invito a Uai Sô Fidelidad. Regístrate con mi enlace y disfruta los beneficios.';if(navigator.share){try{return await navigator.share({title:'Uai Sô Fidelidad',text,url})}catch{}}try{await navigator.clipboard.writeText(url);alert('Enlace de invitación copiado.')}catch{alert(url)}}
+async function shareInvite(){const brand=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad',url=`${location.origin}/?ref=${encodeURIComponent(uid)}`,text='Te invito a '+brand+' Fidelidad. Regístrate con mi enlace y disfruta los beneficios.';if(navigator.share){try{return await navigator.share({title:brand+' Fidelidad',text,url})}catch{}}try{await navigator.clipboard.writeText(url);alert('Enlace de invitación copiado.')}catch{alert(url)}}
 function openVideoMenu(event){event?.preventDefault();const url=`/menu-videos.html?uid=${encodeURIComponent(uid)}`;if(window.top!==window.self)window.top.location.href=url;else location.href=url}
 
-async function init(){try{await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
+async function init(){try{const appData=await loadAppData();applyRestaurantBrand(appData.restaurant||{});await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
 init();
 </script>
 </body>
