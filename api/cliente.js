@@ -91,11 +91,11 @@ function normalizeOrderName(value){
 }
 const ORDER_CATALOG_BY_NAME = Object.fromEntries(Object.entries(ORDER_CATALOG).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
 
-function normalizedCatalog(raw){
+function normalizedCatalog(raw,includeInactive=false){
     const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:ORDER_CATALOG;
     const out={};
     for(const [id,p] of Object.entries(source)){
-        if(!p||p.active===false)continue;
+        if(!p||(!includeInactive&&p.active===false))continue;
         const price=Math.max(0,Number(p.price||0));
         if(!id||!String(p.name||"").trim()||!Number.isFinite(price))continue;
         out[id]={name:String(p.name).trim().slice(0,120),category:String(p.category||"OTROS").trim().slice(0,80),price,active:p.active!==false,image:String(p.image||"").trim().slice(0,800),description:String(p.description||"").trim().slice(0,240),modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]};
@@ -834,13 +834,13 @@ export default async function handler(req, res) {
 
     if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
         const snap=await admin.database().ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG)});
+        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG,false)});
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
         if(!requireAdmin(req,res))return;
         const snap=await admin.database().ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG)});
+        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG,true)});
     }
 
     if (req.method === "POST" && req.body?.action === "catalog_save") {
