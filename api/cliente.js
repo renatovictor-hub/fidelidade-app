@@ -1,20 +1,11 @@
-import admin from "firebase-admin";
+import { getFirebaseAdmin } from "./_firebase.js";
 import crypto from "crypto";
 import { requireAdmin, isValidSession as isAdminSession } from "./_admin-auth.js";
 import { requireClient, setClientSession } from "./_client-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
 import { getRestaurantConfig } from "./_restaurant-config.js";
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-        }),
-        databaseURL: process.env.FIREBASE_DATABASE_URL || "https://fidelidade-app-9671c-default-rtdb.firebaseio.com"
-    });
-}
+const admin=getFirebaseAdmin();
 
 const RESTAURANT_CONFIG=getRestaurantConfig();
 const RESTAURANT = RESTAURANT_CONFIG.location;
