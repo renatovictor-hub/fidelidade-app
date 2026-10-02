@@ -125,13 +125,13 @@
     <div class="ux-section-grid">
       <div class="ux-panel ux-span-12"><h2>Visión del negocio</h2><p>Resumen con datos que ya existen en el sistema. Las métricas financieras avanzadas se activarán cuando haya historial consolidado suficiente.</p><div class="ux-mini-kpis"><div class="ux-mini-kpi"><small>Clientes</small><b id="uxRepClients">—</b></div><div class="ux-mini-kpi"><small>Pedidos activos</small><b id="uxRepActive">—</b></div><div class="ux-mini-kpi"><small>Recompensas</small><b id="uxRepRewards">—</b></div><div class="ux-mini-kpi"><small>Ofertas activas</small><b id="uxRepOffers">—</b></div></div></div>
       <div class="ux-panel ux-span-8"><h2>Actividad semanal</h2><p>Estructura visual preparada para ventas, pedidos y canjes.</p><div class="ux-report-bars"><i style="height:34%"></i><i style="height:48%"></i><i style="height:42%"></i><i style="height:61%"></i><i style="height:54%"></i><i style="height:78%"></i><i style="height:67%"></i></div><div class="ux-report-days"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div></div>
-      <div class="ux-panel ux-span-4"><h2>Módulos</h2><p>Indicadores separados según los módulos contratados por cada empresa.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Fidelidad</b><small>Clientes, pontos, recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Pedidos, rotas e entrega</small></div><span class="ux-toggle">Activo</span></div></div></div>
+      <div class="ux-panel ux-span-4"><h2>Módulos</h2><p>Indicadores separados según los módulos contratados por cada empresa.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Fidelidad</b><small>Clientes, puntos, recompensas</small></div><span class="ux-toggle" id="uxModuleLoyalty">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Pedidos, rutas y entrega</small></div><span class="ux-toggle" id="uxModuleDelivery">Activo</span></div></div></div>
     </div>`;
   anchor.parentNode.insertBefore(reports,anchor);
 
   const settings=document.createElement('section');settings.id='uxSettingsView';settings.className='ux-virtual-view';settings.innerHTML=`
     <div class="ux-section-grid">
-      <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Uai Sô · Cancún</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle">Activo</span></div></div></div>
+      <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b id="uxRestaurantIdentity">Restaurante</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle" id="uxSettingsModuleDelivery">Activo</span></div></div></div>
       <div class="ux-panel ux-span-5"><h2>Contacto del restaurante</h2><p>Número utilizado por promociones, pedidos y beneficios VIP por WhatsApp.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;align-items:end"><div><label style="display:block;font-size:12px;font-weight:800;margin-bottom:5px">WhatsApp con código de país</label><input id="uxRestaurantWhatsApp" inputmode="tel" placeholder="Ej. 5219986023759"></div><button class="btn-primary" id="uxSaveRestaurantWhatsApp" style="width:auto!important">GUARDAR</button></div><div id="uxRestaurantWhatsAppState" style="font-size:11px;color:#6b6170;margin-top:7px"></div></div>
       <div class="ux-panel ux-span-12"><h2>Menú / Productos</h2><p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p><div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin-bottom:10px">Cargando catálogo…</div><div id="uxCatalogEditor"></div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn-secondary" id="uxCatalogAdd" style="width:auto!important">+ PRODUCTO</button><div style="display:flex;gap:8px"><button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button><button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Desactivada solo en Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
@@ -200,6 +200,28 @@
     const host=document.getElementById('uxSettingsReviewsHost');
     const reviews=document.getElementById('reviewsConfigAdminCard');
     if(host&&reviews&&reviews.parentElement!==host)host.appendChild(reviews);
+  }
+
+  let deploymentConfig=null;
+  async function loadDeploymentConfig(){
+    if(deploymentConfig)return deploymentConfig;
+    try{
+      const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json();if(!r.ok)throw new Error(d.error||'Error');
+      deploymentConfig=d;
+      const name=d.name||d.short_name||'Restaurante';
+      const identity=document.getElementById('uxRestaurantIdentity');if(identity)identity.textContent=name;
+      const loyalty=d.modules?.loyalty!==false,delivery=d.modules?.delivery===true;
+      [['uxModuleLoyalty',loyalty],['uxModuleDelivery',delivery],['uxSettingsModuleDelivery',delivery]].forEach(([id,on])=>{
+        const el=document.getElementById(id);if(!el)return;el.textContent=on?'Activo':'No contratado';el.classList.toggle('off',!on);
+      });
+      document.querySelectorAll('#uxSidebar .ux-nav button').forEach(btn=>{
+        const t=norm(btn.textContent);
+        if(!delivery&&(t.includes('pedido')||t.includes('entrega')||t.includes('envio')))btn.style.display='none';
+      });
+      if(!delivery&&['pedidos','entregas','envio'].includes(document.body.dataset.uxView||''))showVirtual('fidelidad');
+      return d;
+    }catch(_){return null}
   }
 
   let restaurantContactLoaded=false;
@@ -283,7 +305,7 @@
   }
 
   function syncAll(){
-    moveSettingsCards();
+    moveSettingsCards();loadDeploymentConfig();
     if(document.body.dataset.uxView==='ajustes'){
       loadRestaurantContact();loadCatalog();
       const btn=document.getElementById('uxSaveRestaurantWhatsApp');
