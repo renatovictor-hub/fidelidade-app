@@ -42,6 +42,13 @@
     .vip-request-code{font-weight:900;color:#6a0dad;background:#f4eaff;border-radius:8px;padding:5px 7px;font-size:11px}
     .vip-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
     .vip-request-actions button{min-height:38px!important}
+    .vip-request-lookup{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin-bottom:10px}
+    .vip-request-lookup input{min-height:42px}
+    .vip-scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+    .vip-scan-box{width:min(100%,420px);background:#fff;border-radius:16px;padding:12px}
+    .vip-scan-box video{width:100%;border-radius:12px;background:#111;max-height:60vh}
+    .vip-scan-box button{width:100%!important;margin-top:9px}
+    @media(max-width:700px){.vip-request-lookup{grid-template-columns:1fr 1fr}.vip-request-lookup input{grid-column:1/-1}}
     @media(max-width:980px){.vip-levels-layout{grid-template-columns:1fr}.vip-thresholds{grid-template-columns:1fr 1fr 1fr}}
     @media(max-width:700px){.vip-thresholds,.vip-field-grid,.vip-benefit-row{grid-template-columns:1fr}.vip-benefit-summary{max-width:50%}.vip-footer{align-items:stretch;flex-direction:column}.vip-footer button{width:100%!important}}
   `;
@@ -130,6 +137,11 @@
         <div><h3 style="margin:0">Solicitudes de beneficios</h3><small style="color:#746979">WhatsApp y uso presencial. Solo al confirmar se descuenta el beneficio.</small></div>
         <button type="button" class="btn-secondary" id="vipRefreshRequests" style="width:auto!important">ACTUALIZAR</button>
       </div>
+      <div class="vip-request-lookup">
+        <input id="vipRequestCode" placeholder="Código VIP-XXXXXX o contenido del QR">
+        <button type="button" class="btn-primary" id="vipValidateCode">VALIDAR</button>
+        <button type="button" class="btn-secondary" id="vipScanQr">📷 QR</button>
+      </div>
       <div id="vipRequestsList" class="vip-requests-list"><div style="color:#777;font-size:12px">Cargando solicitudes…</div></div>
     </section>
   `;
@@ -194,6 +206,53 @@
     });
   }
   card.querySelectorAll('.vip-benefit-editor').forEach(bindEditor);
+  let currentRequests=[];
+  function requestFromCode(raw){
+    const text=String(raw||"").trim();
+    const parts=text.match(/^UAI_VIP:([^:]+):(VIP-[A-Z0-9]+)$/i);
+    const id=parts?.[1]||"";
+    const code=(parts?.[2]||text).toUpperCase();
+    return currentRequests.find(x=>(id&&x.id===id)||String(x.code||"").toUpperCase()===code)||null;
+  }
+  async function validateTypedCode(raw){
+    const req=requestFromCode(raw);
+    if(!req)return alert("No encontramos una solicitud pendiente con ese código. Puede haber expirado.");
+    if(!confirm("Confirmar uso de "+(req.benefit_title||"beneficio")+" para "+(req.nome||req.uid||"cliente")+"?"))return;
+    await processRequest(req.id,"confirm_vip_benefit");
+    if($("vipRequestCode"))$("vipRequestCode").value="";
+  }
+  async function scanVipQr(){
+    if(!("BarcodeDetector" in window)||!navigator.mediaDevices?.getUserMedia){
+      alert("Este navegador no permite escanear QR directamente. Ingresa el código VIP manualmente.");
+      return;
+    }
+    let stream=null,raf=0;
+    const overlay=document.createElement("div");overlay.className="vip-scan-overlay";
+    overlay.innerHTML='<div class="vip-scan-box"><video playsinline autoplay></video><button type="button" class="btn-secondary">CERRAR</button></div>';
+    document.body.appendChild(overlay);
+    const video=overlay.querySelector("video");
+    const close=()=>{cancelAnimationFrame(raf);stream?.getTracks?.().forEach(t=>t.stop());overlay.remove()};
+    overlay.querySelector("button").onclick=close;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+      video.srcObject=stream;await video.play();
+      const detector=new BarcodeDetector({formats:["qr_code"]});
+      const loop=async()=>{
+        try{
+          const codes=await detector.detect(video);
+          if(codes?.[0]?.rawValue){
+            const value=codes[0].rawValue;close();
+            $("vipRequestCode").value=value;
+            await validateTypedCode(value);
+            return;
+          }
+        }catch(_){}
+        raf=requestAnimationFrame(loop);
+      };
+      loop();
+    }catch(e){close();alert("No pudimos abrir la cámara. Ingresa el código VIP manualmente.")}
+  }
+
   async function loadRequests(){
     const box=$("vipRequestsList"); if(!box)return;
     try{
@@ -201,6 +260,7 @@
       const d=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(d.error||"No se pudieron cargar las solicitudes");
       const rows=Array.isArray(d.benefit_requests)?d.benefit_requests:[];
+      currentRequests=rows;
       if(!rows.length){box.innerHTML='<div style="padding:12px;border:1px dashed #ddd;border-radius:10px;color:#777;font-size:12px">No hay solicitudes pendientes.</div>';return}
       box.innerHTML=rows.map(x=>{
         const left=Math.max(0,Math.ceil((Date.parse(x.expires_at)-Date.now())/60000));
@@ -275,5 +335,8 @@
     finally{btn.disabled=false;btn.textContent="GUARDAR NIVELES Y BENEFICIOS"}
   };
   $("vipRefreshRequests").onclick=loadRequests;
+  $("vipValidateCode").onclick=()=>validateTypedCode($("vipRequestCode").value);
+  $("vipRequestCode").addEventListener("keydown",e=>{if(e.key==="Enter")validateTypedCode(e.currentTarget.value)});
+  $("vipScanQr").onclick=scanVipQr;
   cargar();loadRequests();setInterval(loadRequests,30000);
 })();
