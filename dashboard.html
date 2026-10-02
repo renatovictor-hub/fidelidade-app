@@ -908,7 +908,7 @@ async function carregarClientes() {
 
         const res =
             await fetch(
-                `/api/stats?t=${Date.now()}`,
+                `/api/cliente?action=customers&t=${Date.now()}`,
                 {
                     cache: "no-store"
                 }
@@ -931,7 +931,7 @@ async function carregarClientes() {
         document
             .getElementById("totalClientes")
             .innerText =
-            `${Number(data.total || 0)} clientes`;
+            `${Number(data.summary?.total || 0)} clientes`;
 
     }
 
