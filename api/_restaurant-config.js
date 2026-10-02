@@ -14,6 +14,8 @@ export function getRestaurantConfig(){
     whatsapp:String(process.env.RESTAURANT_WHATSAPP||"5219986023759").replace(/\D/g,"").slice(0,15),
     domain,
     logo:String(process.env.RESTAURANT_LOGO_URL||domain+"/logo.png").trim(),
+    icon192:String(process.env.RESTAURANT_ICON_192_URL||domain+"/icon-192.png").trim(),
+    icon512:String(process.env.RESTAURANT_ICON_512_URL||domain+"/icon-512.png").trim(),
     primaryColor:String(process.env.RESTAURANT_PRIMARY_COLOR||"#6a0dad").trim(),
     accentColor:String(process.env.RESTAURANT_ACCENT_COLOR||"#ffcc00").trim(),
     modules:{
