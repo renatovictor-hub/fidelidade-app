@@ -232,6 +232,11 @@
     if(tab==='automations'&&typeof window.loadFidAutomations==='function')window.loadFidAutomations();
     if(tab==='results'&&typeof window.loadFidResults==='function')window.loadFidResults();
     if(tab==='vip')mountFidelityVip();
+    else{
+      const vipCard=document.getElementById('nivelesVipAdminCard');
+      const staging=document.getElementById('vipHiddenStaging');
+      if(vipCard&&staging&&vipCard.parentNode!==staging)staging.appendChild(vipCard);
+    }
     if(tab==='config'){mountFidelityConfig();loadFidelityBaseRule();}
     if(tab==='register')loadFidelityBaseRule();
   }
