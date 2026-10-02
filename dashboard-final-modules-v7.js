@@ -56,11 +56,13 @@
     .ux-caja-purchase{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end;margin-top:14px}.ux-caja-purchase label{display:block;font-weight:800;font-size:13px;margin-bottom:5px}.ux-caja-purchase input{min-height:44px}.ux-caja-preview{margin-top:8px;padding:10px 12px;background:#fff7d6;border-radius:10px;color:#6b5700;font-weight:800;font-size:13px}
     .ux-caja-rewards{margin-top:12px}.ux-caja-reward{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee7f1}.ux-caja-reward:last-child{border-bottom:0}.ux-caja-reward button{width:auto!important;min-width:100px!important}
 
-    .ux-fid-tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:12px;background:#fff;border:1px solid #ebe4ee;border-radius:16px;padding:9px}
+    .ux-fid-tabs{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:12px;background:#fff;border:1px solid #ebe4ee;border-radius:16px;padding:9px}
     .ux-fid-tabs button{min-height:44px!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#5c4d62!important;font-size:13px!important;font-weight:850!important}
     .ux-fid-tabs button.active{background:linear-gradient(135deg,#8c2bd2,#6a0dad)!important;color:#fff!important;border-color:transparent!important}
     .ux-fid-pane{display:none}.ux-fid-pane.active{display:block}
     .ux-fid-config-host{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    #uxFidelityVipHost{display:block!important;margin-top:12px}
+    #uxFidelityVipHost>#nivelesVipAdminCard{display:block!important;width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box!important;min-height:0!important;box-shadow:none!important}
     .ux-fid-config-host>.card{display:block!important;max-width:none!important;margin:0!important;min-height:100%;box-shadow:none!important}
     .ux-fid-rule{padding:12px;border:1px solid #eee7f1;border-radius:12px;background:#faf8fb;margin-top:12px}
     .ux-fid-rule b{display:block;font-size:14px}.ux-fid-rule small{display:block;font-size:12px;color:#665b6b;margin-top:4px}
@@ -238,7 +240,9 @@
     const host=document.getElementById('uxFidelityVipHost');
     if(!host)return;
     const card=document.getElementById('nivelesVipAdminCard');
-    if(card&&card.parentNode!==host)host.appendChild(card);
+    if(!card)return;
+    if(card.parentNode!==host)host.appendChild(card);
+    card.style.display='block';
   }
 
   function mountFidelityConfig(){
