@@ -1,7 +1,7 @@
-import { getFirebaseAdmin } from "./_firebase.js";
-import { requireAdmin } from "./_admin-auth.js";
-import { enviarNotificacao } from "./_onesignal.js";
-import { getRestaurantConfig } from "./_restaurant-config.js";
+import { getFirebaseAdmin } from "../lib/server/firebase.js";
+import { requireAdmin } from "../lib/server/admin-auth.js";
+import { enviarNotificacao } from "../lib/server/onesignal.js";
+import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
