@@ -101,7 +101,8 @@
       lista.innerHTML = itens.map(item => {
         const dataFmt = item.data ? new Date(item.data).toLocaleString("es-MX") : "";
         const destino = item.destinatarios_estimados == null ? item.publico : `${item.publico} · ${item.destinatarios_estimados} cliente(s)`;
-        return `<div style="border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:9px;background:#fafafa;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:#6a0dad;">${escapeHtml(item.titulo || "")}</strong><small style="color:#999;white-space:nowrap;">${escapeHtml(dataFmt)}</small></div><div style="font-size:13px;color:#666;margin-top:5px;">${escapeHtml(item.mensagem || "")}</div><div style="font-size:12px;color:#856404;background:#fff9e6;padding:6px 8px;border-radius:7px;margin-top:8px;">🎯 ${escapeHtml(destino || "")}</div></div>`;
+        const pushState=item.delivery_status==="accepted_by_provider"?"✅ Aceptado por OneSignal":"Envío registrado";
+        return `<div style="border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:9px;background:#fafafa;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:#6a0dad;">${escapeHtml(item.titulo || "")}</strong><small style="color:#999;white-space:nowrap;">${escapeHtml(dataFmt)}</small></div><div style="font-size:13px;color:#666;margin-top:5px;">${escapeHtml(item.mensagem || "")}</div><div style="font-size:12px;color:#856404;background:#fff9e6;padding:6px 8px;border-radius:7px;margin-top:8px;">🎯 ${escapeHtml(destino || "")}</div><div style="font-size:11px;color:#666;margin-top:6px;">${escapeHtml(pushState)} · La entrega al dispositivo no se marca como confirmada sin recibo del proveedor.</div></div>`;
       }).join("");
     } catch (e) { lista.innerHTML = `<span style="color:#c0392b;">No se pudo cargar el historial: ${escapeHtml(e.message)}</span>`; }
   }
@@ -135,4 +136,32 @@
     finally { btn.disabled = false; btn.textContent = "ENVIAR PUSH AHORA"; }
   };
   carregarHistoricoPush();
+})();
+
+(() => {
+  const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  window.salvarPromoNoFirebase=async()=>true;
+  window.carregarPromos=async function(){
+    const active=document.getElementById('listaPromos'),expired=document.getElementById('listaExpiradas');
+    if(!active||!expired)return;
+    try{
+      const r=await fetch('/api/sendpush?promos=1&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json();if(!r.ok)throw new Error(d.error||'Error');
+      const now=Date.now(),items=Array.isArray(d.promos)?d.promos:[];
+      const render=(p,isExpired)=>'<div class="promo-item '+(isExpired?'expired-dashboard':'')+'"><strong>'+esc(p.titulo||'')+'</strong><br><small>'+esc(p.desc||'')+'</small><br><small style="color:#765b7c">🎯 '+esc(p.publico||'Todos los clientes')+'</small><div style="display:flex;gap:8px;margin-top:9px">'+(isExpired?'<button class="btn-success" data-reactivate="'+esc(p.id)+'">REACTIVAR</button>':'')+'<button class="btn-danger" data-delete="'+esc(p.id)+'">ELIMINAR</button></div></div>';
+      const a=items.filter(p=>Number(p.exp||0)>now&&p.ativa!==false),e=items.filter(p=>Number(p.exp||0)<=now||p.ativa===false);
+      active.innerHTML=a.length?a.map(p=>render(p,false)).join(''):'<i>No hay promociones activas.</i>';
+      expired.innerHTML=e.length?e.map(p=>render(p,true)).join(''):'<i>No hay promociones expiradas.</i>';
+      document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar esta promoción?'))return;await promoAction('delete_promo',b.dataset.delete);});
+      document.querySelectorAll('[data-reactivate]').forEach(b=>b.onclick=async()=>{await promoAction('reactivate_promo',b.dataset.reactivate);});
+    }catch(err){active.innerHTML='<i>No se pudieron cargar las promociones.</i>';expired.innerHTML='';}
+  };
+  async function promoAction(action,id){
+    const r=await fetch('/api/sendpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,id,seconds:86400})});
+    const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Error');
+    await window.carregarPromos();
+  }
+  window.eliminarPromo=id=>promoAction('delete_promo',id);
+  window.reativarPromo=id=>promoAction('reactivate_promo',id);
+  setTimeout(()=>window.carregarPromos?.(),500);
 })();
