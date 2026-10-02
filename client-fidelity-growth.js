@@ -50,6 +50,29 @@
   }
   const uid=new URLSearchParams(location.search).get('uid')||'';
   if(!/^user_\d+$/.test(uid))return;
+  const currentPlan=String(new URLSearchParams(location.search).get('plan')||'fidelity_delivery').toLowerCase();
+  const hasIntegratedDelivery=currentPlan!=='fidelity';
+  if(!window.__uaiVipFetchPatched){
+    window.__uaiVipFetchPatched=true;
+    const nativeFetch=window.fetch.bind(window);
+    window.fetch=async function(input,init){
+      try{
+        const url=typeof input==='string'?input:String(input?.url||'');
+        if(url.includes('/api/cliente')&&String(init?.method||'GET').toUpperCase()==='POST'&&init?.body){
+          const body=JSON.parse(String(init.body));
+          const pending=localStorage.getItem('vip_benefit_request_id')||'';
+          if(body?.action==='order_create'&&pending&&!body.benefit_request_id){
+            body.benefit_request_id=pending;
+            init={...init,body:JSON.stringify(body)};
+            const response=await nativeFetch(input,init);
+            if(response.ok)localStorage.removeItem('vip_benefit_request_id');
+            return response;
+          }
+        }
+      }catch(_){}
+      return nativeFetch(input,init);
+    };
+  }
   async function load(){
     try{
       const r=await fetch('/api/fidelidad-growth?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});
@@ -129,12 +152,15 @@
   }
   function openBenefitUsage(benefit){
     const modal=ensureBenefitModal(),body=modal.querySelector('#vipUseBody');
-    body.innerHTML='<h3>'+(benefit.icon||'🎁')+' '+(benefit.title||'Beneficio VIP')+'</h3><p>'+(benefit.text||'')+'</p><p>El beneficio solo se descuenta cuando el restaurante confirma el uso.</p><div class="vip-use-options"><button type="button" data-channel="whatsapp">💬 <b>Pedir por WhatsApp</b><br><small>Genera una solicitud de 30 minutos para que el restaurante la confirme a distancia.</small></button><button type="button" data-channel="qr">▦ <b>Usar en el restaurante</b><br><small>Genera un QR temporal para validar en caja.</small></button></div>';
+    body.innerHTML='<h3>'+(benefit.icon||'🎁')+' '+(benefit.title||'Beneficio VIP')+'</h3><p>'+(benefit.text||'')+'</p><p>El beneficio solo se descuenta cuando el restaurante confirma el uso.</p><div class="vip-use-options">'+(hasIntegratedDelivery?'<button type="button" data-channel="delivery">🛒 <b>Aplicar al próximo pedido</b><br><small>Se vincula automáticamente al próximo pedido hecho dentro del app.</small></button>':'')+'<button type="button" data-channel="whatsapp">💬 <b>Pedir por WhatsApp</b><br><small>Genera una solicitud de 30 minutos para que el restaurante la confirme a distancia.</small></button><button type="button" data-channel="qr">▦ <b>Usar en el restaurante</b><br><small>Genera un QR temporal para validar en caja.</small></button></div>';
     body.querySelectorAll('[data-channel]').forEach(btn=>btn.onclick=async()=>{
       const channel=btn.dataset.channel;btn.disabled=true;
       try{
         const out=await createBenefitRequest(benefit,channel);
-        if(channel==='whatsapp'){
+        if(channel==='delivery'){
+          localStorage.setItem('vip_benefit_request_id',out.request_id);
+          body.innerHTML='<h3>Beneficio listo para tu pedido</h3><p>Se aplicará automáticamente al próximo pedido realizado dentro del app durante los próximos 30 minutos.</p><div class="vip-use-code">'+out.code+'</div><p>El beneficio solo se descontará cuando el restaurante acepte el pedido.</p>';
+        }else if(channel==='whatsapp'){
           const msg='Hola, quiero usar mi beneficio VIP: '+(out.title||benefit.title)+'. Código: '+out.code+'. La solicitud vence en 30 minutos.';
           window.open('https://api.whatsapp.com/send?phone=5219986023759&text='+encodeURIComponent(msg),'_blank','noopener');
           body.innerHTML='<h3>Solicitud enviada</h3><p>Envía el mensaje por WhatsApp y espera que el restaurante confirme el beneficio.</p><div class="vip-use-code">'+out.code+'</div><p>Tu beneficio todavía no fue descontado.</p>';
