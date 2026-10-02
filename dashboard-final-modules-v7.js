@@ -60,6 +60,9 @@
     .ux-caja-vip-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid #eee7f1;border-radius:10px;background:#faf8fb}
     .ux-caja-vip-item b{display:block;font-size:13px}.ux-caja-vip-item small{display:block;color:#706574;margin-top:3px}.ux-caja-vip-item button{width:auto!important;min-width:126px!important}
     .ux-caja-vip-pending{border-color:#d7b8ef;background:#fbf6ff}
+    .ux-catalog-grid{display:grid;gap:9px}.ux-catalog-row{display:grid;grid-template-columns:minmax(160px,1.4fr) 120px 110px minmax(220px,1.5fr);gap:8px;align-items:center;padding:10px;border:1px solid #eee5f1;border-radius:12px;background:#fbf9fc}
+    .ux-catalog-row input[type="text"],.ux-catalog-row input[type="number"]{min-height:40px}.ux-catalog-mods{font-size:11px}.ux-catalog-head{font-size:11px;font-weight:900;color:#6b5d71;text-transform:uppercase;padding:0 10px}
+    @media(max-width:780px){.ux-catalog-row{grid-template-columns:1fr 100px}.ux-catalog-row .ux-catalog-mods{grid-column:1/-1}.ux-catalog-head{display:none}}
 
     .ux-fid-tabs{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:12px;background:#fff;border:1px solid #ebe4ee;border-radius:16px;padding:9px}
     .ux-fid-tabs button{min-height:44px!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#5c4d62!important;font-size:13px!important;font-weight:850!important}
@@ -129,6 +132,7 @@
     <div class="ux-section-grid">
       <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Uai Sô · Cancún</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle">Activo</span></div></div></div>
       <div class="ux-panel ux-span-5"><h2>Contacto del restaurante</h2><p>Número utilizado por promociones, pedidos y beneficios VIP por WhatsApp.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;align-items:end"><div><label style="display:block;font-size:12px;font-weight:800;margin-bottom:5px">WhatsApp con código de país</label><input id="uxRestaurantWhatsApp" inputmode="tel" placeholder="Ej. 5219986023759"></div><button class="btn-primary" id="uxSaveRestaurantWhatsApp" style="width:auto!important">GUARDAR</button></div><div id="uxRestaurantWhatsAppState" style="font-size:11px;color:#6b6170;margin-top:7px"></div></div>
+      <div class="ux-panel ux-span-12"><h2>Menú / Productos</h2><p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p><div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin-bottom:10px">Cargando catálogo…</div><div id="uxCatalogEditor"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button><button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button></div></div>
       <div class="ux-panel ux-span-12"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Desactivada solo en Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Opiniones y Google Reviews</h2><p>Configuración de solicitudes de reseña.</p><div id="uxSettingsReviewsHost"></div></div>
     </div>`;
@@ -224,12 +228,58 @@
     finally{if(btn){btn.disabled=false;btn.textContent='GUARDAR'}}
   }
 
+  let catalogLoaded=false,catalogData={};
+  function catalogModsText(mods){
+    return (Array.isArray(mods)?mods:[]).map(m=>String(m.name||m.id||'').trim()+'='+Number(m.price||0)).filter(Boolean).join('; ');
+  }
+  function parseCatalogMods(text){
+    return String(text||'').split(';').map(x=>x.trim()).filter(Boolean).map((row,index)=>{
+      const parts=row.split('='),name=String(parts[0]||'').trim(),price=Math.max(0,Number(parts[1]||0));
+      return {id:'mod_'+index+'_'+name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,45),name,price,active:true};
+    }).filter(x=>x.name);
+  }
+  function renderCatalogEditor(){
+    const host=document.getElementById('uxCatalogEditor');if(!host)return;
+    const entries=Object.entries(catalogData||{});
+    host.innerHTML='<div class="ux-catalog-grid"><div class="ux-catalog-row ux-catalog-head"><span>Producto</span><span>Precio</span><span>Activo</span><span>Adicionales · Nombre=Precio; …</span></div>'+
+      entries.map(([id,p])=>'<div class="ux-catalog-row" data-product="'+String(id).replace(/"/g,'&quot;')+'"><input type="text" data-field="name" value="'+String(p.name||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"><input type="number" min="0" step="0.01" data-field="price" value="'+Number(p.price||0)+'"><label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800"><input type="checkbox" data-field="active" '+(p.active!==false?'checked':'')+'> Activo</label><input class="ux-catalog-mods" type="text" data-field="mods" value="'+catalogModsText(p.modifiers).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="Queso extra=15; Catupiry=20"></div>').join('')+
+      '</div>';
+  }
+  async function loadCatalog(force=false){
+    if(catalogLoaded&&!force)return;
+    const state=document.getElementById('uxCatalogState');if(!state)return;
+    state.textContent='Cargando catálogo…';
+    try{
+      const r=await fetch('/api/cliente?action=admin_catalog&t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'No se pudo cargar el catálogo');
+      catalogData=d.catalog||{};catalogLoaded=true;renderCatalogEditor();
+      state.textContent=Object.keys(catalogData).length+' producto(s) · los precios guardados aquí son los que valida el servidor.';
+    }catch(e){state.textContent='❌ '+e.message}
+  }
+  async function saveCatalog(){
+    const state=document.getElementById('uxCatalogState'),btn=document.getElementById('uxCatalogSave'),rows=[...document.querySelectorAll('#uxCatalogEditor [data-product]')],catalog={};
+    rows.forEach(row=>{
+      const id=row.dataset.product,name=row.querySelector('[data-field="name"]')?.value.trim()||'',price=Number(row.querySelector('[data-field="price"]')?.value||0),active=!!row.querySelector('[data-field="active"]')?.checked,mods=row.querySelector('[data-field="mods"]')?.value||'';
+      if(id&&name)catalog[id]={name,price,active,modifiers:parseCatalogMods(mods)};
+    });
+    if(btn){btn.disabled=true;btn.textContent='GUARDANDO...'};if(state)state.textContent='Guardando catálogo…';
+    try{
+      const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'catalog_save',catalog})}),d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'No se pudo guardar');
+      catalogData=d.catalog||catalog;catalogLoaded=true;renderCatalogEditor();if(state)state.textContent='✅ Catálogo guardado. El checkout ya usa estos precios.';
+    }catch(e){if(state)state.textContent='❌ '+e.message}
+    finally{if(btn){btn.disabled=false;btn.textContent='GUARDAR CATÁLOGO'}}
+  }
+
   function syncAll(){
     moveSettingsCards();
     if(document.body.dataset.uxView==='ajustes'){
-      loadRestaurantContact();
+      loadRestaurantContact();loadCatalog();
       const btn=document.getElementById('uxSaveRestaurantWhatsApp');
       if(btn&&!btn.dataset.bound){btn.dataset.bound='1';btn.onclick=saveRestaurantContact}
+      const save=document.getElementById('uxCatalogSave'),reload=document.getElementById('uxCatalogReload');
+      if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=saveCatalog}
+      if(reload&&!reload.dataset.bound){reload.dataset.bound='1';reload.onclick=()=>{catalogLoaded=false;loadCatalog(true)}}
     }
     const clients=numText('totalClientes');
     const rewards=document.querySelectorAll('#listaRecompensas .reward-item').length;
