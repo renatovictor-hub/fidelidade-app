@@ -19,6 +19,15 @@
   .cfg-collapsible.is-open .cfg-collapsible-toggle{transform:rotate(180deg)}
   .cfg-collapsible-body{display:none;margin-top:12px}
   .cfg-collapsible.is-open .cfg-collapsible-body{display:block}
+  .vip-benefits-inline{margin-top:12px;padding-top:10px;border-top:1px solid #eee7f4}
+  .vip-benefits-inline-title{font-size:11px;font-weight:900;color:#5e4c70;margin-bottom:7px}
+  .vip-benefit-inline{padding:9px;border:1px solid #eee7f1;border-radius:11px;background:#faf8fb;margin-top:7px}
+  .vip-benefit-inline-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .vip-benefit-inline-head b{font-size:11px;color:#3f3345}
+  .vip-benefit-inline-head span{font-size:10px;color:#6f6278;text-align:right}
+  .vip-benefit-inline p{font-size:10px!important;margin:4px 0 0!important;color:#756d79!important}
+  .vip-benefit-inline button{width:100%;margin-top:7px;border:0;border-radius:9px;background:#6a0dad;color:#fff;padding:8px;font-size:10px;font-weight:900}
+  .vip-benefit-inline .used{color:#20844e;font-weight:800;margin-top:6px;font-size:10px}
   @media(max-width:370px){.cfg-badges{grid-template-columns:1fr 1fr}.cfg-badge{padding:10px 6px}}
   `;document.head.appendChild(style);
 
@@ -55,6 +64,47 @@
     card.innerHTML=`<h3>🏅 Mis logros</h3><p style="margin:0;color:#6d6471;font-size:12px;line-height:1.45">Marcos de tu historia con el programa. No son puntos ni beneficios adicionales.</p>${list.length?`<div class="cfg-badges">${list.map(b=>`<div class="cfg-badge" title="${String(b.text||'')}"><span>${b.icon||'🏅'}</span><b>${b.name||'Logro'}</b></div>`).join('')}</div>`:'<div class="empty" style="padding:14px 4px">Todavía no tienes logros desbloqueados.</div>'}`;
   }
 
+  function renderVipBenefits(items){
+    const vipCard=document.getElementById('vipCard');
+    const details=vipCard?.querySelector('.mini-details');
+    const row=document.getElementById('miniToolsRow');
+    if(!vipCard||!details)return;
+    let box=document.getElementById('vipBenefitsInline');
+    if(!box){
+      box=document.createElement('div');
+      box.id='vipBenefitsInline';
+      box.className='vip-benefits-inline';
+      details.appendChild(box);
+    }
+    const list=Array.isArray(items)?items:[];
+    const available=list.filter(b=>b.available).length;
+    const kicker=vipCard.querySelector('.mini-kicker');
+    if(kicker)kicker.textContent='TU NIVEL VIP';
+    let summary=document.getElementById('vipBenefitSummary');
+    if(!summary){
+      summary=document.createElement('div');
+      summary.id='vipBenefitSummary';
+      summary.style.cssText='font-size:10px;color:#7b6b86;margin-top:2px';
+      vipCard.querySelector('.mini-main')?.appendChild(summary);
+    }
+    summary.textContent=list.length?(available+' beneficio'+(available===1?'':'s')+' disponible'+(available===1?'':'s')):'Sin beneficios activos';
+    box.innerHTML=list.length?`<div class="vip-benefits-inline-title">Beneficios de tu nivel</div>${list.map(b=>`
+      <div class="vip-benefit-inline">
+        <div class="vip-benefit-inline-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span>${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
+        <p>${b.text}</p>
+        <p>${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
+        ${b.available?'<button type="button" class="cfg-vip-redeem" data-benefit="'+b.id+'">USAR BENEFICIO</button>':'<div class="used">✓ Usos agotados</div>'}
+      </div>`).join('')}`:'<div class="vip-benefits-inline-title">Beneficios de tu nivel</div><p style="font-size:10px;color:#756d79;margin:0">Este nivel no tiene beneficios activos.</p>';
+    if(!vipCard.dataset.growthHeightBound){
+      vipCard.dataset.growthHeightBound='1';
+      vipCard.addEventListener('click',()=>setTimeout(()=>{
+        if(!row)return;
+        row.style.minHeight=vipCard.classList.contains('expanded')?(vipCard.scrollHeight+'px'):'';
+      },0));
+    }
+    if(vipCard.classList.contains('expanded')&&row)row.style.minHeight=vipCard.scrollHeight+'px';
+  }
+
   function render(d){
     const home=document.getElementById('screen-home');if(!home)return;
     let shell=document.getElementById('clientFidGrowth');
@@ -70,20 +120,8 @@
       <div class="cfg-collapsible-body"><div class="cfg-missions">${missionList.map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}${m.progress?.completed?'<button class="btn-primary cfg-claim" data-mission="'+m.id+'" style="margin-top:8px;width:100%">RECLAMAR PREMIO</button>':''}</div>`).join('')}</div></div>
     </div>`: '';
     const realBenefits=(d.benefits||[]).filter(b=>String(b?.text||'').trim());
-    const benefits=realBenefits.length?`<div class="cfg-card cfg-collapsible" id="cfgBenefitsCard" role="button" tabindex="0" aria-expanded="false">
-      <div class="cfg-collapsible-head">
-        <div class="cfg-collapsible-title"><h3>👑 Tus beneficios</h3><p class="cfg-collapsible-summary">${realBenefits.filter(b=>b.available).length} beneficio${realBenefits.filter(b=>b.available).length===1?'':'s'} disponible${realBenefits.filter(b=>b.available).length===1?'':'s'} · toca para ver</p></div>
-        <span class="cfg-collapsible-toggle">⌄</span>
-      </div>
-      <div class="cfg-collapsible-body"><div class="cfg-missions">${realBenefits.map(b=>`
-        <div class="cfg-mission">
-          <div class="cfg-mission-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span class="${b.available?'':'cfg-complete'}">${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
-          <p>${b.text}</p>
-          <p style="margin-top:5px;font-size:11px;color:#756d79">${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
-          ${b.available?'<button class="btn-primary cfg-vip-redeem" data-benefit="'+b.id+'" style="margin-top:8px;width:100%">USAR BENEFICIO</button>':'<p class="cfg-complete" style="margin-top:7px">✓ Usos agotados</p>'}
-        </div>`).join('')}</div></div>
-    </div>`:'';
-    shell.innerHTML=nextHtml+benefits+missionHtml;
+    shell.innerHTML=nextHtml+missionHtml;
+    renderVipBenefits(realBenefits);
     renderProfileAchievements(d.badges||[]);
     shell.querySelectorAll('.cfg-collapsible').forEach(card=>{
       const toggle=()=>{const open=card.classList.toggle('is-open');card.setAttribute('aria-expanded',open?'true':'false')};
@@ -91,7 +129,7 @@
       card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();toggle()}});
     });
     alignHome();
-    shell.querySelectorAll('.cfg-vip-redeem').forEach(btn=>btn.onclick=async()=>{
+    document.querySelectorAll('.cfg-vip-redeem').forEach(btn=>btn.onclick=async(e)=>{e?.stopPropagation?.();
       const benefit=realBenefits.find(x=>String(x.id)===String(btn.dataset.benefit));
       if(!benefit)return;
       if(!confirm('¿Usar ahora este beneficio?\n\n'+benefit.title+'\n'+benefit.text+'\n\nEste uso quedará registrado.'))return;
