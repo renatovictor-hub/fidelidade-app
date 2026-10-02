@@ -341,7 +341,7 @@
     sending=true;if(btn){btn.disabled=true;btn.textContent='CREANDO PEDIDO...';}
     const waWindow=window.open('about:blank','_blank');
     try{
-      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:1})),details:whatsappDetails(x.line),line:x.line}));
+      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:x.qty})),details:whatsappDetails(x.line),line:x.line}));
       if(upsellCocaQty>0)items.push({productId:'coca-600',name:'Coca-Cola 600 ml',qty:upsellCocaQty,unitPrice:COCA_PRICE,details:'',line:null});
       const address=document.getElementById('deliveryAddress')?.value.trim()||'',baseReferences=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
       const isResidential=!!document.getElementById('residentialDelivery')?.checked,needsQr=isResidential&&!!document.getElementById('residentialQr')?.checked,residentialInstructions=isResidential?(document.getElementById('residentialInstructions')?.value.trim()||''):'';
