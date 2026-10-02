@@ -141,8 +141,9 @@ export default async function handler(req,res){
       });
     }
 
-    if(req.method==="POST"&&String(req.body?.action||"")==="redeem_vip_benefit"){
+    if(req.method==="POST"&&["request_vip_benefit","redeem_vip_benefit"].includes(String(req.body?.action||""))){
       const uid=String(req.body?.uid||"").trim(),benefitId=String(req.body?.benefit_id||"").trim();
+      const channel=["whatsapp","qr","delivery"].includes(String(req.body?.channel||""))?String(req.body.channel):"qr";
       if(!validUid(uid)||!benefitId)return res.status(400).json({error:"Datos inválidos"});
       const all=await loadAll(),user=all.users[uid];
       if(!user)return res.status(404).json({error:"Cliente no encontrado"});
@@ -152,22 +153,29 @@ export default async function handler(req,res){
       const benefit=vipBenefitsFor(all.vip,vip).find(b=>String(b.id)===benefitId&&b.active!==false);
       if(!benefit)return res.status(404).json({error:"Este beneficio no está disponible para tu nivel actual"});
       const periodKey=benefitPeriodKey(benefit,vip),limit=Math.max(1,Math.min(20,Number(benefit.uses||1)));
-      const usageRef=db.ref(`users/${uid}/vip_benefit_usage/${benefitId}/${periodKey}`);
-      const tx=await usageRef.transaction(current=>{
-        const used=Math.max(0,Number(current||0));
-        if(used>=limit)return;
-        return used+1;
-      },undefined,false);
-      if(!tx.committed)return res.status(409).json({error:"Ya utilizaste todos los usos disponibles de este beneficio",remaining:0});
-      const used=Math.max(0,Number(tx.snapshot.val()||0)),remaining=Math.max(0,limit-used),now=new Date().toISOString();
-      const redemptionRef=db.ref("vip_benefit_redemptions").push();
-      const code=("VIP-"+redemptionRef.key.slice(-6)).toUpperCase();
-      await redemptionRef.set({
-        uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",level:vip,benefit_id:benefitId,
-        benefit_title:benefit.title||"",benefit_type:benefit.type||"custom",benefit_value:Number(benefit.value||0),
-        period_key:periodKey,use_number:used,limit,code,status:"redeemed",created_at:now
-      });
-      return res.status(200).json({success:true,code,title:benefit.title||"Beneficio VIP",text:benefitDescription(benefit),used,limit,remaining,period:benefit.period||"monthly"});
+      const used=Math.max(0,Number(user?.vip_benefit_usage?.[benefitId]?.[periodKey]||0));
+      if(used>=limit)return res.status(409).json({error:"Ya utilizaste todos los usos disponibles de este beneficio",remaining:0});
+
+      const existingSnap=await db.ref("vip_benefit_requests").orderByChild("uid").equalTo(uid).once("value");
+      const nowMs=Date.now();
+      const existing=Object.entries(existingSnap.val()||{}).find(([id,x])=>String(x?.benefit_id)===benefitId&&x?.status==="pending"&&Date.parse(String(x?.expires_at||""))>nowMs);
+      if(existing){
+        const [id,x]=existing;
+        return res.status(200).json({success:true,request_id:id,code:x.code,status:"pending",expires_at:x.expires_at,title:x.benefit_title,text:x.benefit_text,channel:x.channel,reused:true});
+      }
+
+      const reqRef=db.ref("vip_benefit_requests").push();
+      const now=new Date(),expires=new Date(now.getTime()+30*60000).toISOString();
+      const code=("VIP-"+reqRef.key.slice(-6)).toUpperCase();
+      const value={
+        uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",level:vip,
+        benefit_id:benefitId,benefit_title:benefit.title||"Beneficio VIP",benefit_text:benefitDescription(benefit),
+        benefit_type:benefit.type||"custom",benefit_value:Number(benefit.value||0),
+        period_key:periodKey,limit,used_at_request:used,channel,code,status:"pending",
+        created_at:now.toISOString(),expires_at:expires
+      };
+      await reqRef.set(value);
+      return res.status(200).json({success:true,request_id:reqRef.key,code,status:"pending",expires_at:expires,title:value.benefit_title,text:value.benefit_text,channel});
     }
 
     if(req.method==="POST"&&String(req.body?.action||"")==="claim_mission"){
@@ -199,14 +207,46 @@ export default async function handler(req,res){
       const revenue=money(stats.reduce((s,x)=>s+x.gasto,0));
       const redeemed=stats.reduce((s,x)=>s+x.canjes,0);
       const automationPreview=all.automations.map(a=>({...a,audiencia:stats.filter(s=>automationMatch(a,s,all.rewards)).length}));
+      const requestSnap=await db.ref("vip_benefit_requests").orderByChild("status").equalTo("pending").once("value");
+      const benefit_requests=Object.entries(requestSnap.val()||{}).map(([id,x])=>({id,...x}))
+        .filter(x=>Date.parse(String(x.expires_at||""))>Date.now())
+        .sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
       return res.status(200).json({
-        success:true,missions:all.missions,automations:automationPreview,
+        success:true,missions:all.missions,automations:automationPreview,benefit_requests,
         segments,roi:{ventas_fidelidad:revenue,clientes_con_compra:stats.filter(x=>x.compras>0).length,compras:stats.reduce((s,x)=>s+x.compras,0),canjes:redeemed,ticket_medio:stats.reduce((s,x)=>s+x.compras,0)?money(revenue/stats.reduce((s,x)=>s+x.compras,0)):0}
       });
     }
 
     if(req.method==="POST"){
       const action=String(req.body?.action||"");
+      if(action==="confirm_vip_benefit"||action==="reject_vip_benefit"){
+        const id=String(req.body?.id||"").trim();
+        if(!id)return res.status(400).json({error:"Solicitud inválida"});
+        const ref=db.ref("vip_benefit_requests/"+id),snap=await ref.once("value");
+        if(!snap.exists())return res.status(404).json({error:"Solicitud no encontrada"});
+        const request=snap.val()||{};
+        if(request.status!=="pending")return res.status(409).json({error:"Esta solicitud ya fue procesada"});
+        if(Date.parse(String(request.expires_at||""))<=Date.now()){
+          await ref.update({status:"expired",processed_at:new Date().toISOString()});
+          return res.status(409).json({error:"La solicitud expiró"});
+        }
+        if(action==="reject_vip_benefit"){
+          await ref.update({status:"rejected",processed_at:new Date().toISOString(),processed_by:"Administrador"});
+          return res.status(200).json({success:true,status:"rejected"});
+        }
+        const usageRef=db.ref(`users/${request.uid}/vip_benefit_usage/${request.benefit_id}/${request.period_key}`);
+        const limit=Math.max(1,Math.min(20,Number(request.limit||1)));
+        const tx=await usageRef.transaction(current=>{
+          const used=Math.max(0,Number(current||0));
+          if(used>=limit)return;
+          return used+1;
+        },undefined,false);
+        if(!tx.committed)return res.status(409).json({error:"El cliente ya agotó este beneficio"});
+        const used=Math.max(0,Number(tx.snapshot.val()||0)),now=new Date().toISOString();
+        await ref.update({status:"confirmed",processed_at:now,processed_by:"Administrador",use_number:used});
+        await db.ref("vip_benefit_redemptions").push().set({...request,request_id:id,status:"redeemed",use_number:used,confirmed_at:now});
+        return res.status(200).json({success:true,status:"confirmed",used,remaining:Math.max(0,limit-used)});
+      }
       if(action==="save_mission"){
         const id=String(req.body?.id||"").trim(),ref=id?db.ref("fidelity_missions/"+id):db.ref("fidelity_missions").push();
         const value={titulo:String(req.body?.titulo||"").trim().slice(0,80),descripcion:String(req.body?.descripcion||"").trim().slice(0,180),tipo:["compras","gasto","puntos"].includes(req.body?.tipo)?req.body.tipo:"compras",meta:Math.max(1,Number(req.body?.meta||1)),dias:Math.max(1,Math.min(365,Number(req.body?.dias||30))),premio_puntos:Math.max(0,Number(req.body?.premio_puntos||0)),premio_texto:String(req.body?.premio_texto||"").trim().slice(0,100),ativa:req.body?.ativa!==false,created_at:new Date().toISOString()};
