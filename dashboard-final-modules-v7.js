@@ -101,7 +101,7 @@
   }
 
   const anchor=document.querySelector('.main-container')||document.body.lastElementChild;
-  const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML="\n<div class=\"ux-fid-tabs\" id=\"uxFidTabs\">\n  <button type=\"button\" data-fid-tab=\"register\" class=\"active\">Registrar compra</button>\n  <button type=\"button\" data-fid-tab=\"redeem\">Canjear recompensa</button>\n  <button type=\"button\" data-fid-tab=\"history\">Movimientos</button>\n  <button type=\"button\" data-fid-tab=\"missions\">Misiones</button>\n  <button type=\"button\" data-fid-tab=\"automations\">Automatizaciones</button>\n  <button type=\"button\" data-fid-tab=\"results\">Resultados</button>\n  <button type=\"button\" data-fid-tab=\"vip\">Niveles VIP</button>\n  <button type=\"button\" data-fid-tab=\"config\">Configuración</button>\n</div>\n<div class=\"ux-fid-pane active\" data-fid-pane=\"register\">\n  <div class=\"ux-section-grid\">\n    <div class=\"ux-panel ux-span-12\">\n      <h2>Registrar compra</h2>\n      <p>Identifica al cliente por teléfono, ID o QR y suma sus puntos.</p>\n      <div class=\"ux-caja-search\">\n        <input id=\"uxCajaLookup\" placeholder=\"Teléfono o ID del cliente\">\n        <button class=\"btn-secondary\" id=\"uxCajaScanner\">📷 QR</button>\n        <button class=\"btn-primary\" id=\"uxCajaBuscar\">BUSCAR</button>\n      </div>\n      <div class=\"ux-caja-client\" id=\"uxCajaClient\">\n        <div class=\"ux-caja-client-head\">\n          <div><h3 id=\"uxCajaName\">Cliente</h3><p id=\"uxCajaMeta\">—</p></div>\n          <div class=\"ux-caja-points\"><span id=\"uxCajaPoints\">0</span> pts</div>\n        </div>\n        <div class=\"ux-caja-purchase\">\n          <div><label>Valor de la compra (MXN)</label><input id=\"uxCajaPurchase\" type=\"number\" min=\"1\" step=\"0.01\" placeholder=\"Ej. 350\"></div>\n          <button class=\"btn-primary\" id=\"uxCajaConfirm\">REGISTRAR COMPRA</button>\n        </div>\n        <div class=\"ux-caja-preview\" id=\"uxCajaPreview\">Ingresa el valor de la compra.</div>\n        <div class=\"ux-fid-rule\"><b>Regla actual</b><small>MX$10 de compra = 1 punto. Los Puntos Bonus pueden multiplicar este valor según la configuración.</small></div>\n        <div class=\"ux-caja-actions\">\n          <button class=\"btn-secondary\" id=\"uxCajaRewards\">🎁 Canjear recompensa</button>\n          <button class=\"btn-secondary\" id=\"uxCajaHistory\">🧾 Ver movimientos</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"redeem\">\n  <div class=\"ux-panel\">\n    <h2>Canjear recompensa</h2>\n    <p id=\"uxRedeemIntro\">Selecciona primero un cliente en Registrar compra.</p>\n    <div class=\"ux-caja-rewards\" id=\"uxCajaRewardsList\"><div class=\"ux-crm-empty\">Selecciona un cliente para ver las recompensas disponibles.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"history\">\n  <div class=\"ux-panel\">\n    <h2>Movimientos</h2>\n    <p id=\"uxFidHistoryIntro\">Consulta compras, puntos acreditados y canjes del cliente seleccionado.</p>\n    <div class=\"ux-actions-row\"><button class=\"btn-secondary\" id=\"uxFidHistoryRefresh\">ACTUALIZAR</button></div>\n    <div class=\"ux-fid-history\" id=\"uxFidHistoryList\"><div class=\"ux-crm-empty\">Selecciona un cliente en Registrar compra.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"missions\"><div id=\"uxFidMissionsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"automations\"><div id=\"uxFidAutomationsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"results\"><div id=\"uxFidResultsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"vip\">\n  <div class=\"ux-panel\">\n    <h2>Niveles VIP</h2>\n    <p>Configura los puntos necesarios para cada nivel y los beneficios que cada cliente puede canjear.</p>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityVipHost\"></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"config\">\n  <div class=\"ux-panel\">\n    <h2>Configuración de fidelidad</h2>\n    <p>Ajustes que no necesitas modificar durante la operación diaria.</p>\n    <div class=\"ux-fid-rule\"><b>Regla base de puntos</b><small>Actualmente: MX$10 = 1 punto. Los multiplicadores de Puntos Bonus se aplican sobre esta base.</small></div>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityConfigHost\"></div>\n  </div>\n</div>";
+  const qr=document.createElement('section');qr.id='uxQrView';qr.className='ux-virtual-view';qr.innerHTML="\n<div class=\"ux-fid-tabs\" id=\"uxFidTabs\">\n  <button type=\"button\" data-fid-tab=\"register\" class=\"active\">Registrar compra</button>\n  <button type=\"button\" data-fid-tab=\"redeem\">Canjear recompensa</button>\n  <button type=\"button\" data-fid-tab=\"history\">Movimientos</button>\n  <button type=\"button\" data-fid-tab=\"missions\">Misiones</button>\n  <button type=\"button\" data-fid-tab=\"automations\">Automatizaciones</button>\n  <button type=\"button\" data-fid-tab=\"results\">Resultados</button>\n  <button type=\"button\" data-fid-tab=\"vip\">Niveles VIP</button>\n  <button type=\"button\" data-fid-tab=\"config\">Configuración</button>\n</div>\n<div class=\"ux-fid-pane active\" data-fid-pane=\"register\">\n  <div class=\"ux-section-grid\">\n    <div class=\"ux-panel ux-span-12\">\n      <h2>Registrar compra</h2>\n      <p>Identifica al cliente por teléfono, ID o QR y suma sus puntos.</p>\n      <div class=\"ux-caja-search\">\n        <input id=\"uxCajaLookup\" placeholder=\"Teléfono o ID del cliente\">\n        <button class=\"btn-secondary\" id=\"uxCajaScanner\">📷 QR</button>\n        <button class=\"btn-primary\" id=\"uxCajaBuscar\">BUSCAR</button>\n      </div>\n      <div class=\"ux-caja-client\" id=\"uxCajaClient\">\n        <div class=\"ux-caja-client-head\">\n          <div><h3 id=\"uxCajaName\">Cliente</h3><p id=\"uxCajaMeta\">—</p></div>\n          <div class=\"ux-caja-points\"><span id=\"uxCajaPoints\">0</span> pts</div>\n        </div>\n        <div class=\"ux-caja-purchase\">\n          <div><label>Valor de la compra (MXN)</label><input id=\"uxCajaPurchase\" type=\"number\" min=\"1\" step=\"0.01\" placeholder=\"Ej. 350\"></div>\n          <button class=\"btn-primary\" id=\"uxCajaConfirm\">REGISTRAR COMPRA</button>\n        </div>\n        <div class=\"ux-caja-preview\" id=\"uxCajaPreview\">Ingresa el valor de la compra.</div>\n        <div class=\"ux-fid-rule\"><b>Regla actual</b><small>MX$10 de compra = 1 punto. Los Puntos Bonus pueden multiplicar este valor según la configuración.</small></div>\n        <div class=\"ux-caja-actions\">\n          <button class=\"btn-secondary\" id=\"uxCajaRewards\">🎁 Canjear recompensa</button>\n          <button class=\"btn-secondary\" id=\"uxCajaHistory\">🧾 Ver movimientos</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"redeem\">\n  <div class=\"ux-panel\">\n    <h2>Canjear recompensa</h2>\n    <p id=\"uxRedeemIntro\">Selecciona primero un cliente en Registrar compra.</p>\n    <div class=\"ux-caja-rewards\" id=\"uxCajaRewardsList\"><div class=\"ux-crm-empty\">Selecciona un cliente para ver las recompensas disponibles.</div></div>\n    <div id=\"uxVipRequestsHost\" style=\"margin-top:14px\"></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"history\">\n  <div class=\"ux-panel\">\n    <h2>Movimientos</h2>\n    <p id=\"uxFidHistoryIntro\">Consulta compras, puntos acreditados y canjes del cliente seleccionado.</p>\n    <div class=\"ux-actions-row\"><button class=\"btn-secondary\" id=\"uxFidHistoryRefresh\">ACTUALIZAR</button></div>\n    <div class=\"ux-fid-history\" id=\"uxFidHistoryList\"><div class=\"ux-crm-empty\">Selecciona un cliente en Registrar compra.</div></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"missions\"><div id=\"uxFidMissionsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"automations\"><div id=\"uxFidAutomationsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"results\"><div id=\"uxFidResultsHost\"></div></div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"vip\">\n  <div class=\"ux-panel\">\n    <h2>Niveles VIP</h2>\n    <p>Configura los puntos necesarios para cada nivel y los beneficios que cada cliente puede canjear.</p>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityVipHost\"></div>\n  </div>\n</div>\n<div class=\"ux-fid-pane\" data-fid-pane=\"config\">\n  <div class=\"ux-panel\">\n    <h2>Configuración de fidelidad</h2>\n    <p>Ajustes que no necesitas modificar durante la operación diaria.</p>\n    <div class=\"ux-fid-rule\"><b>Regla base de puntos</b><small>Actualmente: MX$10 = 1 punto. Los multiplicadores de Puntos Bonus se aplican sobre esta base.</small></div>\n    <div class=\"ux-fid-config-host\" id=\"uxFidelityConfigHost\"></div>\n  </div>\n</div>";
   anchor.parentNode.insertBefore(qr,anchor);
 
   const envio=document.createElement('section');envio.id='uxDeliverySettingsView';envio.className='ux-virtual-view';envio.innerHTML=`
@@ -123,6 +123,7 @@
   const settings=document.createElement('section');settings.id='uxSettingsView';settings.className='ux-virtual-view';settings.innerHTML=`
     <div class="ux-section-grid">
       <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Uai Sô · Cancún</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle">Activo</span></div></div></div>
+      <div class="ux-panel ux-span-5"><h2>Contacto del restaurante</h2><p>Número utilizado por promociones, pedidos y beneficios VIP por WhatsApp.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;align-items:end"><div><label style="display:block;font-size:12px;font-weight:800;margin-bottom:5px">WhatsApp con código de país</label><input id="uxRestaurantWhatsApp" inputmode="tel" placeholder="Ej. 5219986023759"></div><button class="btn-primary" id="uxSaveRestaurantWhatsApp" style="width:auto!important">GUARDAR</button></div><div id="uxRestaurantWhatsAppState" style="font-size:11px;color:#6b6170;margin-top:7px"></div></div>
       <div class="ux-panel ux-span-5"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Desactivada solo en Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Opiniones y Google Reviews</h2><p>Configuración de solicitudes de reseña.</p><div id="uxSettingsReviewsHost"></div></div>
     </div>`;
@@ -191,8 +192,40 @@
     if(host&&reviews&&reviews.parentElement!==host)host.appendChild(reviews);
   }
 
+  let restaurantContactLoaded=false;
+  async function loadRestaurantContact(){
+    if(restaurantContactLoaded)return;
+    const input=document.getElementById('uxRestaurantWhatsApp'),state=document.getElementById('uxRestaurantWhatsAppState');
+    if(!input)return;
+    try{
+      const r=await fetch('/api/sendpush?config=restaurant_contact&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json(); if(!r.ok)throw new Error(d.error||'Error');
+      input.value=String(d.config?.whatsapp||'5219986023759');
+      if(state)state.textContent='Este número se usa en todo el flujo de WhatsApp.';
+      restaurantContactLoaded=true;
+    }catch(e){if(state)state.textContent='No se pudo cargar el WhatsApp.'}
+  }
+  async function saveRestaurantContact(){
+    const input=document.getElementById('uxRestaurantWhatsApp'),state=document.getElementById('uxRestaurantWhatsAppState'),btn=document.getElementById('uxSaveRestaurantWhatsApp');
+    const whatsapp=String(input?.value||'').replace(/\D/g,'');
+    if(whatsapp.length<10)return alert('Ingresa un número de WhatsApp válido con código de país.');
+    if(btn){btn.disabled=true;btn.textContent='GUARDANDO...'}
+    try{
+      const r=await fetch('/api/sendpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_config',config:'restaurant_contact',value:{whatsapp}})});
+      const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Error');
+      if(input)input.value=d.config?.whatsapp||whatsapp;
+      if(state)state.textContent='✅ WhatsApp guardado y activo en cliente, pedidos y beneficios.';
+    }catch(e){if(state)state.textContent='❌ '+e.message}
+    finally{if(btn){btn.disabled=false;btn.textContent='GUARDAR'}}
+  }
+
   function syncAll(){
     moveSettingsCards();
+    if(document.body.dataset.uxView==='ajustes'){
+      loadRestaurantContact();
+      const btn=document.getElementById('uxSaveRestaurantWhatsApp');
+      if(btn&&!btn.dataset.bound){btn.dataset.bound='1';btn.onclick=saveRestaurantContact}
+    }
     const clients=numText('totalClientes');
     const rewards=document.querySelectorAll('#listaRecompensas .reward-item').length;
     const offers=document.querySelectorAll('#listaPromos .promo-item').length;
@@ -226,7 +259,7 @@
     document.querySelectorAll('#uxFidTabs [data-fid-tab]').forEach(b=>b.classList.toggle('active',b.dataset.fidTab===tab));
     document.querySelectorAll('#uxQrView [data-fid-pane]').forEach(p=>p.classList.toggle('active',p.dataset.fidPane===tab));
     try{sessionStorage.setItem('uai_fidelity_tab',tab)}catch(_){}
-    if(tab==='redeem')cajaLoadRewards();
+    if(tab==='redeem'){cajaLoadRewards();mountFidelityBenefitRequests();}
     if(tab==='history')loadFidelityHistory();
     if(tab==='missions'&&typeof window.loadFidMissions==='function')window.loadFidMissions();
     if(tab==='automations'&&typeof window.loadFidAutomations==='function')window.loadFidAutomations();
@@ -239,6 +272,13 @@
     }
     if(tab==='config'){mountFidelityConfig();loadFidelityBaseRule();}
     if(tab==='register')loadFidelityBaseRule();
+  }
+
+  function mountFidelityBenefitRequests(){
+    const host=document.getElementById('uxVipRequestsHost');
+    const card=document.getElementById('vipBenefitRequestsCard');
+    if(host&&card&&card.parentNode!==host)host.appendChild(card);
+    if(card)card.style.display='block';
   }
 
   function mountFidelityVip(){
