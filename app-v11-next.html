@@ -44,7 +44,14 @@ frame.addEventListener('load',()=>{
   .nav[data-tab="qr"] .nav-badge-v11{display:none}.nav-badge-v11.hidden{display:none}
   html[data-plan="fidelity"] [data-delivery-only],html[data-plan="fidelity"] #v11ActiveOrder,html[data-plan="fidelity"] #v11OrderHistory{display:none!important}
   html[data-plan="fidelity"] .quick{grid-template-columns:1fr!important}
-  html[data-plan="fidelity"] .quick a[href="/menu-videos.html"]{display:none!important}`;
+  html[data-plan="fidelity"] .quick a[href="/menu-videos.html"]{display:none!important}
+  .client-banner-carousel{position:relative;width:100%;overflow:hidden;border-radius:18px;box-shadow:var(--shadow);margin:0 0 18px;background:#eee}
+  .client-banner-track{display:flex;width:100%;transition:transform .55s ease}
+  .client-banner-slide{min-width:100%;width:100%;flex:0 0 100%}
+  .client-banner-slide img{display:block;width:100%;aspect-ratio:16/5;object-fit:cover}
+  .client-banner-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:5px;pointer-events:none}
+  .client-banner-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .client-banner-dot.active{background:#fff;transform:scale(1.25)}`;
   d.head.appendChild(style);
   const menuLink=d.querySelector('.quick a[href="/menu-videos.html"]');
   if(menuLink)menuLink.setAttribute('data-delivery-only','1');
@@ -62,6 +69,30 @@ frame.addEventListener('load',()=>{
 
   async function getPromos(){try{const r=await fetch('https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Promotions unavailable');const raw=await r.json()||{};promoCache=Object.entries(raw).map(([id,p])=>({id,...(p||{})}));promosReady=true;return true}catch(_){return false}}
   async function getClient(){try{const uid=new URLSearchParams(location.search).get('uid')||'';if(!uid)return;const r=await fetch('/api/cliente?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});if(r.ok)clientState=await r.json()}catch(_){}}
+
+  let bannerTimer=null,bannerIndex=0;
+  async function loadClientBanners(){
+    const fallback=d.querySelector('#screen-home img.banner');
+    if(!fallback)return;
+    try{
+      const r=await fetch('/api/client-banners?t='+Date.now(),{cache:'no-store'});
+      const cfg=await r.json();
+      const items=cfg?.enabled!==false&&Array.isArray(cfg?.items)?cfg.items:[];
+      if(!items.length)return;
+      let car=d.getElementById('clientBannerCarousel');
+      if(!car){
+        car=d.createElement('div');car.id='clientBannerCarousel';car.className='client-banner-carousel';
+        fallback.insertAdjacentElement('beforebegin',car);fallback.remove();
+      }
+      car.innerHTML='<div class="client-banner-track">'+items.map(x=>'<div class="client-banner-slide"><img src="'+esc(x.image)+'" alt="'+esc(x.alt||'Banner')+'"></div>').join('')+'</div>'+(items.length>1?'<div class="client-banner-dots">'+items.map((_,i)=>'<span class="client-banner-dot '+(i===0?'active':'')+'"></span>').join('')+'</div>':'');
+      bannerIndex=0;
+      const track=car.querySelector('.client-banner-track'),dots=[...car.querySelectorAll('.client-banner-dot')];
+      const show=i=>{bannerIndex=(i+items.length)%items.length;track.style.transform='translateX(-'+(bannerIndex*100)+'%)';dots.forEach((x,j)=>x.classList.toggle('active',j===bannerIndex))};
+      clearInterval(bannerTimer);
+      if(items.length>1)bannerTimer=setInterval(()=>show(bannerIndex+1),Math.max(3000,Math.min(15000,Number(cfg.interval_ms||5000))));
+    }catch(e){console.warn('Client banners:',e)}
+  }
+
   function setNavBadge(tab,count){const nav=d.querySelector(`.nav[data-tab="${tab}"]`);if(!nav)return;let b=nav.querySelector('.nav-badge-v11');if(!b){b=d.createElement('span');b.className='nav-badge-v11';nav.appendChild(b)}const n=Math.max(0,Number(count)||0);b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',n===0)}
   function titleOf(p){return String(p?.titulo||p?.title||p?.nome||'').trim()}
   function descOf(p){return String(p?.desc||p?.texto||p?.descricao||p?.descripcion||p?.mensagem||'').trim()}
@@ -93,7 +124,7 @@ frame.addEventListener('load',()=>{
   d.querySelector('[data-tab="profile"]')?.addEventListener('click',async()=>{lastTab='profile';await refreshLive();setTimeout(enhanceProfile,50)});
   d.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.tab&&btn.dataset.tab!=='qr')lastTab=btn.dataset.tab}));
   w.addEventListener('focus',refreshLive);w.addEventListener('pageshow',refreshLive);d.addEventListener('visibilitychange',()=>{if(d.visibilityState==='visible')refreshLive()});
-  Promise.all([getPromos(),getClient()]).then(()=>{fixMovementRenderer();if(promosReady)renderPromoAreas(true);enhanceRewards();addQrClose();enhanceProfile();showGoogleStatus();updateCountdowns();setTimeout(()=>{if(promosReady)renderPromoAreas(false)},700);setInterval(refreshLive,15000);setInterval(updateCountdowns,30000)});
+  Promise.all([getPromos(),getClient(),loadClientBanners()]).then(()=>{fixMovementRenderer();if(promosReady)renderPromoAreas(true);enhanceRewards();addQrClose();enhanceProfile();showGoogleStatus();updateCountdowns();setTimeout(()=>{if(promosReady)renderPromoAreas(false)},700);setInterval(refreshLive,15000);setInterval(updateCountdowns,30000)});
 });
 </script>
 <script>
