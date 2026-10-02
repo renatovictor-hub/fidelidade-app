@@ -167,7 +167,9 @@ async function confirmVipRequestForOrder(db, requestId, orderId) {
 }
 
 async function secureDeliveryQuote(body){
-    const destination=destinationWaypoint(body?.deliveryDestination);
+    const raw=body?.deliveryDestination||{};
+    const safeDestination={placeId:String(raw.placeId||"").trim(),address:String(raw.address||"").trim()};
+    const destination=destinationWaypoint(safeDestination);
     if(!destination)throw Object.assign(new Error("Dirección de entrega inválida."),{status:400});
     const apiKey=String(process.env.GOOGLE_ROUTES_API_KEY||"").trim();
     if(!apiKey)throw Object.assign(new Error("No podemos validar la tarifa de envío en este momento."),{status:503});
