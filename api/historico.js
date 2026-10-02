@@ -1,6 +1,6 @@
-import { getFirebaseAdmin } from "./_firebase.js";
-import { requireAdmin } from "./_admin-auth.js";
-import { requireClient } from "./_client-auth.js";
+import { getFirebaseAdmin } from "../lib/server/firebase.js";
+import { requireAdmin } from "../lib/server/admin-auth.js";
+import { requireClient } from "../lib/server/client-auth.js";
 
 const admin=getFirebaseAdmin();
 
