@@ -2,6 +2,8 @@ import { getFirebaseAdmin } from "./_firebase.js";
 import { requireAdmin, isValidSession as isAdminSession } from "./_admin-auth.js";
 import { requireClient } from "./_client-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { getRestaurantConfig } from "./_restaurant-config.js";
+const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
 
@@ -266,7 +268,7 @@ export default async function handler(req,res){
         const targets=stats.filter(s=>automationMatch(a,s,all.rewards)).slice(0,100);
         let sent=0;
         for(const s of targets){
-          const out=await enviarNotificacao({uid:s.uid,telefone:s.user.telefone||"",titulo:a.titulo,mensagem:a.mensaje,url:"https://fidelidad-uai-so.vercel.app/"}).catch(()=>null);
+          const out=await enviarNotificacao({uid:s.uid,telefone:s.user.telefone||"",titulo:a.titulo,mensagem:a.mensaje,url: CFG.domain+"/"}).catch(()=>null);
           if(out&&!out.error)sent++;
         }
         await db.ref("fidelity_automation_runs").push().set({automation_id:id,audiencia:targets.length,enviados:sent,data:new Date().toISOString()});
