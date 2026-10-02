@@ -12,14 +12,29 @@
   if(typeof originalSubmit!=='function')return;
   let sending=false;
   let upsellCocaQty=0;
-  let restaurantWhatsApp='5219986023759';
+  let restaurantWhatsApp='';
+  let restaurantConfig=null;
   let checkoutVipBenefits=[],selectedVipBenefit=null,selectedVipRequestId='';
   let COCA_PRICE=35;
 
   async function loadRestaurantContact(){
     try{
       const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
-      const d=await r.json();if(r.ok&&d.whatsapp)restaurantWhatsApp=String(d.whatsapp).replace(/\D/g,'');
+      const d=await r.json();if(!r.ok)return;
+      restaurantConfig=d;
+      restaurantWhatsApp=String(d.whatsapp||'').replace(/\D/g,'');
+      const shortName=d.short_name||d.name||'Restaurante';
+      document.title='Menú · '+shortName;
+      document.documentElement.style.setProperty('--purple',d.primary_color||'#6a0dad');
+      document.documentElement.style.setProperty('--yellow',d.accent_color||'#ffc400');
+      const brand=document.querySelector('.brand b');if(brand)brand.textContent=shortName+' · Menú';
+      document.querySelectorAll('.delivery-note').forEach(el=>{el.textContent=el.textContent.replaceAll('Uai Sô',shortName)});
+      const pickup=document.querySelector('#pickupInfo h3');if(pickup)pickup.textContent='Recoger en '+shortName;
+      if(d.modules?.delivery!==true){
+        const app=document.querySelector('.app');
+        if(app)app.innerHTML='<div style="padding:40px 22px;color:#fff;text-align:center"><h2>Pedidos no disponibles</h2><p>Este restaurante no tiene el módulo Delivery habilitado.</p><button class="icon-btn" style="margin:20px auto" onclick="backToApp()">‹</button></div>';
+        return;
+      }
     }catch(_){}
   }
   loadRestaurantContact();
