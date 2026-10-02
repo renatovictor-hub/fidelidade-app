@@ -702,7 +702,7 @@ export default async function handler(req, res) {
             const user=snap.val()||{};
             if(String(user.telefone||"").replace(/\D/g,"")!==telefone)return res.status(403).json({error:"No pudimos validar esta sesión"});
             const savedBirth=String(user.nascimento||user.cumpleanos||"").trim();
-            if(savedBirth&&nascimento&&savedBirth!==nascimento)return res.status(403).json({error:"No pudimos validar esta sesión"});
+            if(savedBirth&&(!nascimento||savedBirth!==nascimento))return res.status(403).json({error:"No pudimos validar esta sesión"});
             setClientSession(res,uid);
             return res.status(200).json({success:true,uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",nascimento:savedBirth});
         }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
