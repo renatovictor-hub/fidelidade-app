@@ -13,6 +13,7 @@
   let sending=false;
   let upsellCocaQty=0;
   let restaurantWhatsApp='5219986023759';
+  let checkoutVipBenefits=[],selectedVipBenefit=null,selectedVipRequestId='';
   const COCA_PRICE=35;
 
   async function loadRestaurantContact(){
@@ -60,6 +61,66 @@
   function renderUpsell(){const q=document.getElementById('upsellCocaQty'),m=document.getElementById('upsellCocaMinus');if(q)q.textContent=upsellCocaQty;if(m)m.disabled=upsellCocaQty<=0;}
   injectUpsell();
 
+  function vipAutomaticBenefit(b){
+    return b&&b.available&&['free_delivery','percent_discount','fixed_discount'].includes(String(b.type||''));
+  }
+  function vipPreview(subtotal,fee){
+    if(!selectedVipBenefit)return {discount:0,fee,total:subtotal+fee};
+    const type=String(selectedVipBenefit.type||''),value=Math.max(0,Number(selectedVipBenefit.value||0));
+    let discount=0,nextFee=fee;
+    if(type==='free_delivery')nextFee=0;
+    else if(type==='percent_discount')discount=Math.min(subtotal,Math.round((subtotal*Math.min(100,value)/100)*100)/100);
+    else if(type==='fixed_discount')discount=Math.min(subtotal,value);
+    return {discount,fee:nextFee,total:Math.max(0,Math.round((subtotal-discount+nextFee)*100)/100)};
+  }
+  function injectVipCheckout(){
+    if(document.getElementById('checkoutVipBenefits'))return;
+    const target=document.getElementById('checkoutUpsell')||document.getElementById('checkoutSummary');
+    if(!target)return;
+    const box=document.createElement('div');
+    box.id='checkoutVipBenefits';box.className='checkout-step hidden';
+    box.innerHTML='<h3>👑 Beneficios VIP</h3><p class="delivery-note" style="margin:0 0 8px">Elige un beneficio y se aplicará automáticamente a este pedido.</p><div id="checkoutVipBenefitsList"></div>';
+    target.insertAdjacentElement('beforebegin',box);
+  }
+  async function loadCheckoutVipBenefits(){
+    injectVipCheckout();
+    const box=document.getElementById('checkoutVipBenefits'),list=document.getElementById('checkoutVipBenefitsList');
+    const uid=getUid();
+    if(!box||!list||!/^user_\d+$/.test(uid)){if(box)box.classList.add('hidden');return}
+    try{
+      const r=await fetch('/api/fidelidad-growth?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json();if(!r.ok)throw new Error(d.error||'Error');
+      checkoutVipBenefits=(d.benefits||[]).filter(vipAutomaticBenefit);
+      if(!checkoutVipBenefits.length){box.classList.add('hidden');return}
+      box.classList.remove('hidden');
+      renderCheckoutVipBenefits();
+    }catch(_){box.classList.add('hidden')}
+  }
+  function renderCheckoutVipBenefits(){
+    const list=document.getElementById('checkoutVipBenefitsList');if(!list)return;
+    list.innerHTML=checkoutVipBenefits.map(b=>{
+      const active=selectedVipBenefit&&String(selectedVipBenefit.id)===String(b.id);
+      return '<button type="button" class="choice-card" data-checkout-vip="'+String(b.id)+'" style="width:100%;margin-top:7px;text-align:left;display:block;border:'+(active?'2px solid #7d2dc2':'1px solid #e5dbea')+';background:'+(active?'#f7efff':'#fff')+'"><b>'+String(b.icon||'🎁')+' '+String(b.title||'Beneficio')+'</b><small style="display:block;margin-top:4px;color:#6f6574">'+String(b.text||'')+'</small><span style="display:block;margin-top:5px;font-size:11px;font-weight:900;color:#6a0dad">'+(active?'✓ APLICADO':'APLICAR')+'</span></button>';
+    }).join('');
+    list.querySelectorAll('[data-checkout-vip]').forEach(btn=>btn.onclick=async()=>{
+      const benefit=checkoutVipBenefits.find(b=>String(b.id)===String(btn.dataset.checkoutVip));
+      if(!benefit)return;
+      if(selectedVipBenefit&&String(selectedVipBenefit.id)===String(benefit.id)){
+        selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderCheckoutVipBenefits();updateCheckout();return;
+      }
+      btn.disabled=true;
+      try{
+        const r=await fetch('/api/fidelidad-growth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_vip_benefit',uid:getUid(),benefit_id:benefit.id,channel:'delivery'})});
+        const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'No se pudo aplicar el beneficio');
+        selectedVipBenefit=benefit;selectedVipRequestId=d.request_id||'';localStorage.setItem('vip_benefit_request_id',selectedVipRequestId);
+        renderCheckoutVipBenefits();updateCheckout();
+        if(typeof showToast==='function')showToast('Beneficio aplicado');
+      }catch(e){if(typeof checkoutError==='function')checkoutError(e.message)}
+      finally{btn.disabled=false}
+    });
+  }
+  injectVipCheckout();
+
   if(typeof window.setDeliveryStatus==='function'){
     const nativeSetDeliveryStatus=window.setDeliveryStatus;
     window.setDeliveryStatus=function(text,type=''){
@@ -74,12 +135,20 @@
     };
   }
 
+  const nativeOpenCheckout=window.openCheckout;
+  window.openCheckout=function(){
+    selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');
+    nativeOpenCheckout();
+    loadCheckoutVipBenefits();
+  };
+
   const nativeUpdateCheckout=window.updateCheckout;
   window.updateCheckout=function(){
     nativeUpdateCheckout();
-    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*COCA_PRICE),fee=deliveryFee(),total=subtotal+fee,feeText=delivery?(fee?MXN.format(fee):'Por calcular'):'Sin costo';
+    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*COCA_PRICE),fee=deliveryFee(),preview=vipPreview(subtotal,delivery?fee:0),feeText=delivery?(fee?MXN.format(preview.fee):'Por calcular'):'Sin costo';
+    if(selectedVipBenefit?.type==='free_delivery'&&!delivery){selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderCheckoutVipBenefits()}
     const summary=document.getElementById('checkoutSummary');
-    if(summary)summary.innerHTML=`<div class="summary-line"><span>Subtotal</span><strong>${MXN.format(subtotal)}</strong></div>${upsellCocaQty?`<div class="summary-line"><span>Coca-Cola 600 ml × ${upsellCocaQty}</span><strong>${MXN.format(upsellCocaQty*COCA_PRICE)}</strong></div>`:''}<div class="summary-line"><span>${delivery?'Envío':'Retiro'}</span><strong>${feeText}</strong></div><div class="summary-line final"><span>Total</span><strong>${MXN.format(total)}</strong></div>`;
+    if(summary)summary.innerHTML=`<div class="summary-line"><span>Subtotal</span><strong>${MXN.format(subtotal)}</strong></div>${upsellCocaQty?`<div class="summary-line"><span>Coca-Cola 600 ml × ${upsellCocaQty}</span><strong>${MXN.format(upsellCocaQty*COCA_PRICE)}</strong></div>`:''}${selectedVipBenefit?`<div class="summary-line"><span>👑 ${selectedVipBenefit.title}</span><strong>${selectedVipBenefit.type==='free_delivery'?'Aplicado':('-'+MXN.format(preview.discount))}</strong></div>`:''}<div class="summary-line"><span>${delivery?'Envío':'Retiro'}</span><strong>${feeText}</strong></div><div class="summary-line final"><span>Total</span><strong>${MXN.format(preview.total)}</strong></div>`;
   };
 
   function normalizeDetailState(){
@@ -252,7 +321,7 @@
       if(needsQr)accessParts.push('Requiere QR para entrar');
       if(residentialInstructions)accessParts.push(`Acceso: ${residentialInstructions}`);
       const references=[baseReferences,...accessParts].filter(Boolean).join(' · ');
-      const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),deliveryDestination:fulfillment==='delivery'?{...(deliveryLocation||{}),address,placeId:deliveryPlaceId}:null,insidePlaza:!!document.getElementById('insidePlaza')?.checked,deliveryAt:scheduledAt,route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
+      const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),benefit_request_id:selectedVipRequestId||'',deliveryDestination:fulfillment==='delivery'?{...(deliveryLocation||{}),address,placeId:deliveryPlaceId}:null,insidePlaza:!!document.getElementById('insidePlaza')?.checked,deliveryAt:scheduledAt,route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
       const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
       const order=data.order||{},serverItems=Array.isArray(order.items)?order.items:items,lines=serverItems.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format((Number(i.unitPrice)||0)*(Number(i.qty)||1))}${i.details?`\n${i.details}`:''}`),serverSubtotal=Number(order.subtotal||0),serverFee=Number(order.deliveryFee||0),serverDiscount=Number(order.discount||0),serverTotal=Number(order.total||0),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)} · Total envío ${MXN.format(fee)}`:'',residentialText=isResidential?`\nResidencial: Sí${needsQr?' · Requiere QR':''}${residentialInstructions?`\nInstrucciones de acceso: ${residentialInstructions}`:''}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}${residentialText}\nReferencias: ${baseReferences||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
@@ -260,7 +329,7 @@
       localStorage.setItem('uaiso_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
       try{cart=[];}catch(_){}
-      upsellCocaQty=0;renderUpsell();
+      upsellCocaQty=0;selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderUpsell();
       localStorage.setItem('uaiso_video_cart','[]');
       if(typeof renderCartBadge==='function')renderCartBadge();
       if(waWindow)waWindow.location.href='https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(text);else location.href='https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(text);
