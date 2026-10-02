@@ -1,6 +1,8 @@
 import { getFirebaseAdmin } from "./_firebase.js";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { getRestaurantConfig } from "./_restaurant-config.js";
+const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
 
@@ -100,7 +102,7 @@ export default async function handler(req, res) {
           telefone,
           titulo,
           mensagem,
-          url: "https://fidelidad-uai-so.vercel.app/"
+          url: CFG.domain+"/"
         });
 
         if (!r?.error && !r?.skipped) {
@@ -405,7 +407,7 @@ export default async function handler(req, res) {
     }
     const titulo = String(req.body?.titulo || "").trim();
     const desc = String(req.body?.desc || "").trim();
-    const link = String(req.body?.link || "https://fidelidad-uai-so.vercel.app/").trim();
+    const link = String(req.body?.link || CFG.domain+"/").trim();
     const imagem = String(req.body?.imagem || "").trim();
     const exp = Math.max(Date.now()+60000, Number(req.body?.exp||0) || (Date.now()+86400000));
     const segmento = String(req.body?.segmento || "todos").trim();
