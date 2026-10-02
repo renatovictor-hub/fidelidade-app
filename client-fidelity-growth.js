@@ -69,8 +69,6 @@
       </div>
       <div class="cfg-collapsible-body"><div class="cfg-missions">${missionList.map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}${m.progress?.completed?'<button class="btn-primary cfg-claim" data-mission="'+m.id+'" style="margin-top:8px;width:100%">RECLAMAR PREMIO</button>':''}</div>`).join('')}</div></div>
     </div>`: '';
-    const hasSurprise=d.surprise&&(String(d.surprise.titulo||'').trim()||String(d.surprise.texto||'').trim());
-    const surprise=hasSurprise?`<div class="cfg-card cfg-surprise"><h3>🎁 ${d.surprise.titulo||'Beneficio especial'}</h3>${d.surprise.texto?`<p>${d.surprise.texto}</p>`:''}</div>`:'';
     const realBenefits=(d.benefits||[]).filter(b=>String(b?.text||'').trim());
     const benefits=realBenefits.length?`<div class="cfg-card cfg-collapsible" id="cfgBenefitsCard" role="button" tabindex="0" aria-expanded="false">
       <div class="cfg-collapsible-head">
@@ -85,7 +83,7 @@
           ${b.available?'<button class="btn-primary cfg-vip-redeem" data-benefit="'+b.id+'" style="margin-top:8px;width:100%">USAR BENEFICIO</button>':'<p class="cfg-complete" style="margin-top:7px">✓ Usos agotados</p>'}
         </div>`).join('')}</div></div>
     </div>`:'';
-    shell.innerHTML=nextHtml+surprise+benefits+missionHtml;
+    shell.innerHTML=nextHtml+benefits+missionHtml;
     renderProfileAchievements(d.badges||[]);
     shell.querySelectorAll('.cfg-collapsible').forEach(card=>{
       const toggle=()=>{const open=card.classList.toggle('is-open');card.setAttribute('aria-expanded',open?'true':'false')};
