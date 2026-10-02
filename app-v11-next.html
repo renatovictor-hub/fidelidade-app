@@ -48,7 +48,10 @@ frame.addEventListener('load',()=>{
   .client-banner-carousel{position:relative;width:100%;overflow:hidden;border-radius:18px;box-shadow:var(--shadow);margin:0 0 18px;background:#eee}
   .client-banner-track{display:flex;width:100%;transition:transform .55s ease}
   .client-banner-slide{min-width:100%;width:100%;flex:0 0 100%}
-  .client-banner-slide img{display:block;width:100%;aspect-ratio:16/5;object-fit:cover}
+  .client-banner-slide img{display:block;width:100%;height:180px;object-fit:cover}
+  .client-banner-nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.9);color:#6a0dad;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.18);cursor:pointer;z-index:3}
+  .client-banner-nav.prev{left:8px}.client-banner-nav.next{right:8px}
+  .client-banner-nav:active{transform:translateY(-50%) scale(.96)}
   .client-banner-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:5px;pointer-events:none}
   .client-banner-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 3px rgba(0,0,0,.2)}
   .client-banner-dot.active{background:#fff;transform:scale(1.25)}`;
@@ -84,12 +87,16 @@ frame.addEventListener('load',()=>{
         car=d.createElement('div');car.id='clientBannerCarousel';car.className='client-banner-carousel';
         fallback.insertAdjacentElement('beforebegin',car);fallback.remove();
       }
-      car.innerHTML='<div class="client-banner-track">'+items.map(x=>'<div class="client-banner-slide"><img src="'+esc(x.image)+'" alt="'+esc(x.alt||'Banner')+'"></div>').join('')+'</div>'+(items.length>1?'<div class="client-banner-dots">'+items.map((_,i)=>'<span class="client-banner-dot '+(i===0?'active':'')+'"></span>').join('')+'</div>':'');
+      car.innerHTML='<div class="client-banner-track">'+items.map(x=>'<div class="client-banner-slide"><img src="'+esc(x.image)+'" alt="'+esc(x.alt||'Banner')+'"></div>').join('')+'</div>'+(items.length>1?'<button type="button" class="client-banner-nav prev" aria-label="Banner anterior">‹</button><button type="button" class="client-banner-nav next" aria-label="Siguiente banner">›</button><div class="client-banner-dots">'+items.map((_,i)=>'<span class="client-banner-dot '+(i===0?'active':'')+'"></span>').join('')+'</div>':'');
       bannerIndex=0;
       const track=car.querySelector('.client-banner-track'),dots=[...car.querySelectorAll('.client-banner-dot')];
       const show=i=>{bannerIndex=(i+items.length)%items.length;track.style.transform='translateX(-'+(bannerIndex*100)+'%)';dots.forEach((x,j)=>x.classList.toggle('active',j===bannerIndex))};
+      const interval=Math.max(3000,Math.min(15000,Number(cfg.interval_ms||5000)));
+      const restart=()=>{clearInterval(bannerTimer);if(items.length>1)bannerTimer=setInterval(()=>show(bannerIndex+1),interval)};
+      car.querySelector('.client-banner-nav.prev')?.addEventListener('click',()=>{show(bannerIndex-1);restart()});
+      car.querySelector('.client-banner-nav.next')?.addEventListener('click',()=>{show(bannerIndex+1);restart()});
       clearInterval(bannerTimer);
-      if(items.length>1)bannerTimer=setInterval(()=>show(bannerIndex+1),Math.max(3000,Math.min(15000,Number(cfg.interval_ms||5000))));
+      if(items.length>1)restart();
     }catch(e){console.warn('Client banners:',e)}
   }
 
