@@ -26,6 +26,15 @@ const ORDER_STATUS = {
     cancelled: { label:"Cancelado", push:"Tu pedido fue cancelado. Contáctanos si necesitas ayuda." }
 };
 const ACTIVE_ORDER_STATUS = new Set(["received","accepted","preparing","waiting_driver","out_for_delivery"]);
+const ORDER_TRANSITIONS = {
+    received:new Set(["accepted","cancelled"]),
+    accepted:new Set(["preparing","cancelled"]),
+    preparing:new Set(["waiting_driver","cancelled"]),
+    waiting_driver:new Set(["out_for_delivery","cancelled"]),
+    out_for_delivery:new Set(["delivered","cancelled"]),
+    delivered:new Set(),
+    cancelled:new Set()
+};
 
 function cleanOrderText(value, max = 220) {
     return String(value ?? "").trim().slice(0, max);
@@ -57,23 +66,48 @@ function normalizeOrderName(value){
 }
 const ORDER_CATALOG_BY_NAME = Object.fromEntries(Object.entries(ORDER_CATALOG).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
 
-function secureOrderItems(items) {
+function normalizedCatalog(raw){
+    const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:ORDER_CATALOG;
+    const out={};
+    for(const [id,p] of Object.entries(source)){
+        if(!p||p.active===false)continue;
+        const price=Math.max(0,Number(p.price||0));
+        if(!id||!String(p.name||"").trim()||!Number.isFinite(price))continue;
+        out[id]={name:String(p.name).trim().slice(0,120),price,active:p.active!==false,modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]};
+    }
+    return Object.keys(out).length?out:ORDER_CATALOG;
+}
+function secureOrderItems(items,catalogRaw) {
     if (!Array.isArray(items)) return { items:[], invalid:true };
+    const catalog=normalizedCatalog(catalogRaw);
+    const byName=Object.fromEntries(Object.entries(catalog).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
     const priced=[];
     let invalid=false;
     for (const raw of items.slice(0,50)) {
         const requestedId=cleanOrderText(raw?.productId,80);
-        const byId=requestedId ? ORDER_CATALOG[requestedId] : null;
-        const byName=ORDER_CATALOG_BY_NAME[normalizeOrderName(raw?.name)];
-        const product=byId ? {id:requestedId,...byId} : byName;
+        const byId=requestedId ? catalog[requestedId] : null;
+        const byNameMatch=byName[normalizeOrderName(raw?.name)];
+        const product=byId ? {id:requestedId,...byId} : byNameMatch;
         if(!product){invalid=true;continue}
         const qty=Math.max(1,Math.min(99,Math.floor(Number(raw?.qty)||1)));
+        let modifierTotal=0,modifierDetails=[];
+        const requestedModifiers=Array.isArray(raw?.modifiers)?raw.modifiers.slice(0,20):[];
+        for(const m of requestedModifiers){
+            const mid=String(m?.id||"").trim();
+            const allowed=(product.modifiers||[]).find(x=>String(x?.id||"")===mid&&x?.active!==false);
+            if(!allowed){invalid=true;continue}
+            const mq=Math.max(1,Math.min(qty,Math.floor(Number(m?.qty)||1)));
+            modifierTotal+=Math.max(0,Number(allowed.price||0))*mq;
+            modifierDetails.push(String(allowed.name||mid)+" x"+mq);
+        }
         priced.push({
             productId:product.id,
             name:product.name,
             qty,
-            unitPrice:product.price,
-            details:cleanOrderText(raw?.details,300)
+            unitPrice:product.price+(modifierTotal/qty),
+            baseUnitPrice:product.price,
+            modifiers:requestedModifiers.map(m=>({id:String(m?.id||""),qty:Math.max(1,Math.floor(Number(m?.qty)||1))})),
+            details:modifierDetails.length?modifierDetails.join(", "):cleanOrderText(raw?.details,300)
         });
     }
     return { items:priced, invalid };
@@ -200,11 +234,79 @@ async function secureDeliveryQuote(body){
     };
 }
 
+async function loadMenuCatalog(db){
+    const snap=await db.ref("config/menu_catalog").once("value");
+    return normalizedCatalog(snap.val()||ORDER_CATALOG);
+}
+function promoEligibleForUser(p,user,rewards,uid){
+    const segmento=String(p?.segmento||"todos"),value=String(p?.valor_segmento??"").trim();
+    if(segmento==="todos"||!segmento)return true;
+    if(segmento==="cliente"){
+        const phone=String(user?.telefone||"").replace(/\D/g,"");
+        return value===uid||value.replace(/\D/g,"")===phone;
+    }
+    if(segmento==="pontos_min")return Number(user?.pontos||0)>=Math.max(0,Number(value||0));
+    if(segmento==="inativos_dias"){
+        const days=Math.max(1,Number(value||30)),ts=Date.parse(String(user?.ultima_compra||user?.updated_at||user?.created_at||""));
+        return !Number.isFinite(ts)||ts<=Date.now()-days*86400000;
+    }
+    if(segmento==="perto_recompensa"){
+        const max=Math.max(1,Number(value||20)),saldo=Number(user?.pontos||0);
+        return rewards.some(r=>Number(r?.pontos||0)>saldo&&Number(r.pontos)-saldo<=max);
+    }
+    return false;
+}
+async function refundVipBenefitForCancelledOrder(db,order){
+    if(!order?.vipBenefitRequestId||!["accepted","preparing","waiting_driver"].includes(String(order.status||"")))return false;
+    const ref=db.ref("vip_benefit_requests/"+order.vipBenefitRequestId),snap=await ref.once("value");
+    if(!snap.exists())return false;
+    const request=snap.val()||{};
+    if(request.status!=="confirmed"||request.refunded===true)return false;
+    const usageRef=db.ref(`users/${request.uid}/vip_benefit_usage/${request.benefit_id}/${request.period_key}`);
+    await usageRef.transaction(current=>Math.max(0,Number(current||0)-1),undefined,false);
+    await ref.update({status:"refunded",refunded:true,refunded_at:new Date().toISOString(),refund_reason:"order_cancelled"});
+    await db.ref("vip_benefit_redemptions").push().set({...request,request_id:order.vipBenefitRequestId,status:"refunded",order_id:order.id||"",refunded_at:new Date().toISOString()});
+    return true;
+}
+async function awardLoyaltyForDeliveredOrder(db,id,order){
+    if(!order?.uid||!/^user_\d+$/.test(String(order.uid)))return {awarded:false};
+    const [baseSnap,bonusSnap]=await Promise.all([db.ref("config/loyalty_base").once("value"),db.ref("config/bonus_pontos").once("value")]);
+    const baseCfg=baseSnap.val()||{},bonus=bonusSnap.val()||{};
+    const pesos=Math.max(1,Math.min(1000,Number(baseCfg.pesos_por_punto||10)));
+    const amount=Math.max(0,Number(order.subtotal||0)-Number(order.discount||0));
+    const basePts=Math.floor(amount/pesos);
+    if(basePts<=0)return {awarded:false};
+    const nowCancun=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Cancun"}));
+    const day=nowCancun.getDay(),hhmm=`${String(nowCancun.getHours()).padStart(2,"0")}:${String(nowCancun.getMinutes()).padStart(2,"0")}`;
+    const days=Array.isArray(bonus.dias)?bonus.dias.map(Number):[],ini=String(bonus.inicio||"00:00"),fim=String(bonus.fim||"23:59");
+    const inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
+    const mult=bonus.ativo===true&&days.includes(day)&&inside?Math.max(1,Math.min(5,Number(bonus.multiplicador||1))):1;
+    const points=Math.floor(basePts*mult),userRef=db.ref("users/"+order.uid);
+    let before=0,after=0;
+    const tx=await userRef.transaction(user=>{
+        if(!user)return;
+        user.loyalty_order_markers=user.loyalty_order_markers||{};
+        if(user.loyalty_order_markers[id])return;
+        before=Number(user.pontos||0);after=before+points;
+        user.pontos=after;
+        user.pontos_acumulados=Number(user.pontos_acumulados??before)+points;
+        user.ultima_compra=new Date().toISOString();
+        user.loyalty_order_markers[id]={points,at:new Date().toISOString()};
+        return user;
+    },undefined,false);
+    if(!tx.committed)return {awarded:false,duplicate:true};
+    const t=db.ref("transacoes").push();
+    await t.set({user_id:order.uid,nome:order.name||"",telefone:order.phone||"",tipo:"credito",origem:"delivery",order_id:id,valor_compra:amount,pontos:points,pontos_base:basePts,multiplicador_bonus:mult,saldo_anterior:before,saldo_novo:after,data:new Date().toISOString()});
+    await db.ref("pedidos/"+id).update({loyalty_awarded:true,loyalty_points:points,loyalty_awarded_at:new Date().toISOString()});
+    return {awarded:true,points};
+}
+
 async function handleOrderCreate(req, res) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
-    const secure = secureOrderItems(body.items);
+    const catalog=await loadMenuCatalog(db);
+    const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
@@ -391,11 +493,13 @@ async function handleOrderStatus(req, res) {
     const snap = await ref.once("value");
     if (!snap.exists()) return res.status(404).json({ error:"Pedido no encontrado" });
     const current = snap.val() || {};
+    if(!ORDER_TRANSITIONS[current.status]?.has(status))return res.status(409).json({error:`Transición inválida: ${current.status} → ${status}`});
     const now = new Date().toISOString();
     if (status === "accepted" && current.vipBenefitRequestId) {
         const confirmed = await confirmVipRequestForOrder(db, current.vipBenefitRequestId, id);
         if (!confirmed.ok) return res.status(409).json({ error: confirmed.exhausted ? "El beneficio VIP ya fue utilizado" : "La solicitud VIP ya no es válida para este pedido" });
     }
+    if(status==="cancelled")await refundVipBenefitForCancelledOrder(db,{...current,id});
     await ref.update({
         status,
         updatedAt: now,
@@ -408,8 +512,10 @@ async function handleOrderStatus(req, res) {
         updatedAt: now,
         history: { ...(current.history || {}), [status]:{ at:now, label:ORDER_STATUS[status].label } }
     };
+    let loyalty=null;
+    if(status==="delivered")loyalty=await awardLoyaltyForDeliveredOrder(db,id,order);
     await notifyOrderStatus(order);
-    return res.status(200).json({ success:true, order:publicOrder(id, order) });
+    return res.status(200).json({ success:true, order:publicOrder(id, order), loyalty });
 }
 
 export function calculateDeliveryFee(distanceKm) {
