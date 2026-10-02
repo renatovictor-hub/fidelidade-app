@@ -437,6 +437,12 @@ async function handleCustomersGet(req, res) {
             aniversario_em_dias: birthdayInDays(birthday),
             feedback_last_at: user?.feedback_last_at || "",
             google_review_clicked: user?.google_review_clicked === true,
+            push_status: {
+                permission: String(user?.push_status?.permission || "default"),
+                opted_in: user?.push_status?.opted_in === true,
+                token_present: user?.push_status?.token_present === true,
+                last_sync: user?.push_status?.last_sync || user?.push_last_sync || ""
+            },
             status: inactiveDays == null ? "sin_compras" : inactiveDays <= 30 ? "activo" : "inactivo",
             nuevo_30d: createdDays != null && createdDays <= 30
         };
@@ -448,6 +454,8 @@ async function handleCustomersGet(req, res) {
     const birthdays30 = customers.filter(c => c.aniversario_em_dias != null && c.aniversario_em_dias <= 30).length;
     const frequent = customers.filter(c => c.compras >= 3).length;
     const totalRevenue = Math.round(customers.reduce((s,c)=>s+c.gasto_total,0) * 100) / 100;
+    const pushActive = customers.filter(c => c.push_status?.permission === "granted" && c.push_status?.opted_in === true && c.push_status?.token_present === true).length;
+    const pushBlocked = customers.filter(c => c.push_status?.permission === "denied").length;
 
     return res.status(200).json({
         customers,
@@ -458,7 +466,9 @@ async function handleCustomersGet(req, res) {
             nuevos_30d: new30,
             frecuentes: frequent,
             aniversarios_30d: birthdays30,
-            gasto_total: totalRevenue
+            gasto_total: totalRevenue,
+            push_activos: pushActive,
+            push_bloqueados: pushBlocked
         }
     });
 }
