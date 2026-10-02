@@ -1,6 +1,13 @@
 (() => {
   if(document.getElementById("nivelesVipAdminCard")) return;
   const aside=document.querySelector("aside"); if(!aside) return;
+  let staging=document.getElementById("vipHiddenStaging");
+  if(!staging){
+    staging=document.createElement("div");
+    staging.id="vipHiddenStaging";
+    staging.style.setProperty("display","none","important");
+    document.body.appendChild(staging);
+  }
   const style=document.createElement("style");
   style.textContent=`
     #nivelesVipAdminCard{padding:16px}
@@ -32,7 +39,7 @@
   document.head.appendChild(style);
 
   const card=document.createElement("div");
-  card.className="card"; card.id="nivelesVipAdminCard"; card.style.display="none";
+  card.className="card"; card.id="nivelesVipAdminCard";
   const levelBlock=(key,label,icon)=>`
     <section class="vip-level-card">
       <div class="vip-level-title"><span>${icon} ${label}</span><small>Hasta 2 beneficios</small></div>
@@ -110,7 +117,7 @@
     </div>
     <div id="vipEstado" style="font-size:12px;color:#777;margin-top:9px;"></div>
   `;
-  aside.appendChild(card);
+  staging.appendChild(card);
   const $=id=>document.getElementById(id);
 
   function editors(level){return [...card.querySelectorAll('.vip-benefit-editor[data-level="'+level+'"]')]}
