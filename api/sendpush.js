@@ -249,13 +249,48 @@ export default async function handler(req, res) {
         const prata = Math.max(1, Math.floor(Number(value.prata || 300)));
         const ouro = Math.max(prata + 1, Math.floor(Number(value.ouro || 800)));
         const diamante = Math.max(ouro + 1, Math.floor(Number(value.diamante || 1500)));
+        const tipos = new Set(["free_delivery","percent_discount","fixed_discount","gift","custom"]);
+        const periodos = new Set(["monthly","level"]);
+        const cleanBenefit = (item,level,index) => {
+          const title = String(item?.title || "").trim().slice(0,80);
+          if (!title) return null;
+          const type = tipos.has(String(item?.type||"")) ? String(item.type) : "custom";
+          const period = periodos.has(String(item?.period||"")) ? String(item.period) : "monthly";
+          return {
+            id: String(item?.id || (level+"_"+(index+1))).replace(/[^a-zA-Z0-9_-]/g,"").slice(0,50),
+            title,
+            description: String(item?.description || "").trim().slice(0,180),
+            type,
+            value: Math.max(0, Math.min(100000, Number(item?.value || 0))),
+            uses: Math.max(1, Math.min(20, Math.floor(Number(item?.uses || 1)))),
+            period,
+            active: item?.active !== false
+          };
+        };
+        const levels = {};
+        for (const level of ["bronce","plata","oro","diamante"]) {
+          const source = Array.isArray(value?.benefits?.[level]) ? value.benefits[level] : [];
+          levels[level] = source.slice(0,2).map((item,index)=>cleanBenefit(item,level,index)).filter(Boolean);
+        }
+        const legacy = {
+          bronce:String(value.beneficio_bronce || "").trim().slice(0,120),
+          plata:String(value.beneficio_plata || "").trim().slice(0,120),
+          oro:String(value.beneficio_ouro || "").trim().slice(0,120),
+          diamante:String(value.beneficio_diamante || "").trim().slice(0,120)
+        };
+        for (const level of Object.keys(levels)) {
+          if (!levels[level].length && legacy[level]) levels[level].push({
+            id:level+"_1",title:legacy[level],description:"",type:"custom",value:0,uses:1,period:"monthly",active:true
+          });
+        }
         const limpio = {
           ativo: value.ativo !== false,
           prata, ouro, diamante,
-          beneficio_bronce: String(value.beneficio_bronce || "").trim().slice(0,120),
-          beneficio_plata: String(value.beneficio_plata || "").trim().slice(0,120),
-          beneficio_ouro: String(value.beneficio_ouro || "").trim().slice(0,120),
-          beneficio_diamante: String(value.beneficio_diamante || "").trim().slice(0,120),
+          benefits: levels,
+          beneficio_bronce: legacy.bronce,
+          beneficio_plata: legacy.plata,
+          beneficio_ouro: legacy.oro,
+          beneficio_diamante: legacy.diamante,
           updated_at: new Date().toISOString()
         };
         await db.ref("config/niveles_vip").set(limpio); await audit(limpio);
