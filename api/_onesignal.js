@@ -1,7 +1,9 @@
-const ONESIGNAL_APP_ID = "10fd0812-370f-408a-9ea5-cbb349f5d635";
+import { getRestaurantConfig } from "./_restaurant-config.js";
+const cfg=getRestaurantConfig();
+const ONESIGNAL_APP_ID = cfg.oneSignalAppId;
 
 function topicoUnico() {
-    return `uaiso-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`.slice(0, 64);
+    return `${cfg.id}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`.slice(0, 64);
 }
 
 function filtrosTelefones(telefones) {
@@ -14,7 +16,7 @@ function filtrosTelefones(telefones) {
     return filtros;
 }
 
-export async function enviarNotificacao({ uid, telefone, telefones, titulo, mensagem, url = "https://fidelidad-uai-so.vercel.app/", todos = false, imagem = "" }) {
+export async function enviarNotificacao({ uid, telefone, telefones, titulo, mensagem, url = cfg.domain+"/", todos = false, imagem = "" }) {
     const apiKey = String(process.env.ONESIGNAL_REST_KEY || process.env.ONESIGNAL_REST_API_KEY || "").trim();
     if (!apiKey) return { skipped: true };
 
@@ -26,7 +28,7 @@ export async function enviarNotificacao({ uid, telefone, telefones, titulo, mens
         priority: 10,
         ttl: 1209600,
         web_push_topic: topicoUnico(),
-        chrome_web_icon: "https://fidelidad-uai-so.vercel.app/logo.png",
+        chrome_web_icon: cfg.logo,
         ...(imagem ? { big_picture: imagem, chrome_web_image: imagem, ios_attachments: { promo: imagem } } : {})
     };
 
