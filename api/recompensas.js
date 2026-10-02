@@ -1,6 +1,8 @@
 import { getFirebaseAdmin } from "./_firebase.js";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { getRestaurantConfig } from "./_restaurant-config.js";
+const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
 
@@ -60,7 +62,7 @@ async function resgatarRecompensa(req, res) {
         telefone: cliente.telefone || "",
         titulo: "🎁 Recompensa canjeada",
         mensagem: `${recompensa.nome || "Tu recompensa"} fue canjeada por ${custo} puntos. Saldo: ${saldoNovo}.`,
-        url: "https://fidelidad-uai-so.vercel.app/recompensas.html"
+        url: CFG.domain+"/recompensas.html"
     }).catch(error => ({ error: true, details: error.message }));
 
     return res.status(200).json({
