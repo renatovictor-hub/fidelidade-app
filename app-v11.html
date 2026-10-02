@@ -147,11 +147,11 @@ button{font:inherit}
 </div>
 
 <script>
-const FB='https://fidelidade-app-9671c-default-rtdb.firebaseio.com';
 const qs=new URLSearchParams(location.search);
 let uid=String(qs.get('uid')||localStorage.getItem('uid')||'').trim();
 let client=null,movements=[],rewards=[],promos=[],vipCfg={},offerTab='active',feedbackStars=0;
-let activePromos=[],expiredPromos=[],birthdayBenefit=null,bonusBenefit=null;
+let activePromos=[],expiredPromos=[],birthdayBenefit=null,bonusBenefit=null,appDataCache=null;
+async function loadAppData(force=false){if(appDataCache&&!force)return appDataCache;const r=await fetch('/api/cliente?action=app_data&uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar la configuración');appDataCache=d;return d}
 
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmtDate(v,withTime=false){if(!v)return'—';const d=new Date(v);if(Number.isNaN(d.getTime()))return'—';return new Intl.DateTimeFormat('es-MX',withTime?{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'}).format(d)}
@@ -172,7 +172,7 @@ function renderMoves(target,items){const el=$(target);if(!items.length){el.inner
 function openMoves(){renderMoves('allMoves',movements);$('movesModal').classList.add('open')}function closeMoves(){$('movesModal').classList.remove('open')}
 
 async function loadClient(){if(!/^user_\d+$/.test(uid))throw new Error('No encontramos tu sesión.');const r=await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar tu cuenta');client=d;$('helloName').textContent='Hola, '+(d.nome||'Cliente');$('homePoints').textContent=Number(d.pontos||0);$('profileName').textContent=d.nome||'Mi cuenta';$('profileAvatar').textContent=initials(d.nome);$('profilePhone').textContent=maskPhone(d.telefone);$('profileBirthday').textContent=fmtBirthday(d.nascimento);$('profileSince').textContent=d.created_at?fmtDate(d.created_at):'—';$('profileRefs').textContent=Number(d.referidos_recompensados||0);$('statPoints').textContent=Number(d.pontos||0);$('qrName').textContent=d.nome||'Cliente';$('qrId').textContent='ID: '+uid.replace('user_','#');$('refStats').textContent=`${Number(d.referidos_recompensados||0)} amigos premiados · ${Number(d.pontos_indicacao_total||0)} puntos ganados`;updateReviewCards()}
-async function loadVip(){try{vipCfg=await(await fetch(`${FB}/config/niveles_vip.json?t=${Date.now()}`,{cache:'no-store'})).json()||{}}catch{vipCfg={}}updateLevel()}
+async function loadVip(){try{vipCfg=(await loadAppData()).vip||{}}catch{vipCfg={}}updateLevel()}
 async function loadMoves(){try{const r=await fetch(`/api/historico?public=1&uid=${encodeURIComponent(uid)}&limit=100&t=${Date.now()}`,{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Error');movements=d.movimientos||[];$('statPurchases').textContent=Number(d.compras||0);$('statRewards').textContent=Number(d.resgates||0);renderMoves('recentMoves',movements.slice(0,5))}catch{$('recentMoves').innerHTML='<div class="empty">No se pudo cargar el historial.</div>'}}
 async function loadRewards(){try{const d=await(await fetch('/api/recompensas-publicas',{cache:'no-store'})).json();rewards=d.recompensas||[];$('rewardsList').innerHTML=rewards.length?rewards.map(x=>`<div class="reward" data-points="${Math.max(0,Number(x.pontos)||0)}"><img src="${esc(x.imagem||'/logo.png')}" onerror="this.onerror=null;this.src='/logo.png'"><div class="body"><h3>${esc(x.nome)}</h3><div class="pts">${x.pontos} puntos</div><div class="desc">${esc(x.descricao||'')}</div></div><button type="button" onclick="location.href='/recompensas.html'">Canjear</button></div>`).join(''):'<div class="empty">No hay recompensas activas.</div>'}catch{$('rewardsList').innerHTML='<div class="empty">No se pudieron cargar recompensas.</div>'}}
 
@@ -180,7 +180,7 @@ function promoEnd(p){return p?.fim||p?.fecha_fin||p?.expires_at||p?.validade||''
 function promoActive(p){if(p?.ativa===false||p?.activo===false)return false;const end=promoEnd(p);if(!end)return true;const d=new Date(end);return Number.isNaN(d.getTime())||d.getTime()>=Date.now()}
 function promoTitle(p){return p?.titulo||p?.title||p?.nome||'Promoción especial'}function promoDesc(p){return p?.texto||p?.descricao||p?.descripcion||p?.mensagem||''}function promoImg(p){return p?.imagem||p?.image||p?.foto||''}
 function promoHtml(p,expired=false){return`<article class="offer ${expired?'expired':''}">${promoImg(p)?`<img src="${esc(promoImg(p))}" onerror="this.style.display='none'">`:''}<div class="body"><h3>${esc(promoTitle(p))}</h3><p>${esc(promoDesc(p))}</p><span class="tag">${expired?'FINALIZADA':'ACTIVA'}</span></div></article>`}
-async function loadPromos(){try{const d=await(await fetch(`${FB}/promos.json?t=${Date.now()}`,{cache:'no-store'})).json()||{};promos=Object.entries(d).map(([id,p])=>({id,...(p||{})}));activePromos=promos.filter(promoActive);expiredPromos=promos.filter(p=>!promoActive(p)).sort((a,b)=>new Date(promoEnd(b)||0)-new Date(promoEnd(a)||0));$('homeOffers').innerHTML=activePromos.length?activePromos.slice(0,2).map(p=>promoHtml(p)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';if(expiredPromos.length){$('previousBlock').style.display='block';$('homePrevious').innerHTML=expiredPromos.slice(0,3).map(p=>promoHtml(p,true)).join('')}else $('previousBlock').style.display='none';renderOfferTab()}catch{$('homeOffers').innerHTML='<div class="empty">No se pudieron cargar promociones.</div>';$('offersList').innerHTML='<div class="empty">No se pudieron cargar ofertas.</div>'}}
+async function loadPromos(){try{const d=await loadAppData(true);promos=Array.isArray(d.promos)?d.promos:[];activePromos=promos.filter(promoActive);expiredPromos=promos.filter(p=>!promoActive(p)).sort((a,b)=>new Date(promoEnd(b)||0)-new Date(promoEnd(a)||0));$('homeOffers').innerHTML=activePromos.length?activePromos.slice(0,2).map(p=>promoHtml(p)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';if(expiredPromos.length){$('previousBlock').style.display='block';$('homePrevious').innerHTML=expiredPromos.slice(0,3).map(p=>promoHtml(p,true)).join('')}else $('previousBlock').style.display='none';renderOfferTab()}catch{$('homeOffers').innerHTML='<div class="empty">No se pudieron cargar promociones.</div>';$('offersList').innerHTML='<div class="empty">No se pudieron cargar ofertas.</div>'}}
 
 function pendingFeedback(){if(!client?.ultima_compra||client?.reviews?.ativo===false)return false;if(client.feedback_last_purchase&&String(client.feedback_last_purchase)===String(client.ultima_compra))return false;const ts=new Date(client.ultima_compra).getTime();if(!Number.isFinite(ts))return false;const age=(Date.now()-ts)/86400000;return age>=0&&age<=Math.max(1,Number(client?.reviews?.dias_apos_compra||3))}
 function googleAvailable(){return !!client?.reviews?.google_url&&client?.google_review_clicked!==true}
@@ -199,7 +199,7 @@ async function loadBonus(){
   card?.classList.remove('show');
   bonusBenefit=null;
   try{
-    const c=await(await fetch(`${FB}/config/bonus_pontos.json?t=${Date.now()}`,{cache:'no-store'})).json()||{};
+    const c=(await loadAppData()).bonus||{};
     if(c.ativo===true){
       const now=cancunNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
       if(days.includes(day)&&inside){
@@ -219,8 +219,7 @@ async function loadBirthday(){
   card?.classList.remove('show');
   birthdayBenefit=null;
   try{
-    const [cfgR,userR]=await Promise.all([fetch(`${FB}/config/cumpleanos.json?t=${Date.now()}`,{cache:'no-store'}),fetch(`${FB}/users/${encodeURIComponent(uid)}.json?t=${Date.now()}`,{cache:'no-store'})]);
-    const cfg=await cfgR.json()||{},user=await userR.json()||{},b=parseBirth(user.nascimento||client?.nascimento);
+    const appData=await loadAppData(),cfg=appData.birthday||{},claims=appData.birthday_claims||{},b=parseBirth(client?.nascimento);
     if(cfg.ativo!==false&&b){
       const now=cancunNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));
       let found=null;
@@ -228,7 +227,7 @@ async function loadBirthday(){
         const bd=new Date(y,b.month-1,b.day,12,0,0),start=new Date(bd.getTime()-before*86400000),end=new Date(bd.getTime()+after*86400000);
         if(now>=start&&now<=end){found={year:y,date:bd};break}
       }
-      if(found&&user.cumpleanos_canjes?.[String(found.year)]!==true){
+      if(found&&claims?.[String(found.year)]!==true){
         birthdayBenefit={regalo:String(cfg.regalo||'Regalo especial de cumpleaños'),year:found.year};
         $('birthdayTitle').textContent=birthdayBenefit.regalo;
         $('birthdayText').textContent=`Disponible dentro de tu periodo de cumpleaños ${found.year}. Muéstralo al personal para canjearlo.`;
