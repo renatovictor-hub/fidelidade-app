@@ -9,8 +9,8 @@
     .fs-summary small{display:block;color:#6b606f;font-size:11px!important;font-weight:750}
     .fs-summary b{display:block;margin-top:3px;color:#5f168f;font-size:14px}
     .fs-base-card{grid-column:1/-1!important}
-    .fs-base-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
-    .fs-base-row button{width:auto!important;min-width:150px}
+    .fs-base-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+    .fs-base-row button{width:auto!important;min-width:150px;margin-top:29px!important;height:44px}
     .fs-impact{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff7d6;color:#6b5700;font-size:12px;line-height:1.5}
     .fs-history{grid-column:1/-1!important}
     .fs-history-list{display:grid;gap:7px;margin-top:10px;max-height:260px;overflow:auto}
@@ -25,7 +25,7 @@
     .fs-banner-actions{display:flex;gap:6px;padding:8px}
     .fs-banner-actions button{width:auto!important;flex:1;min-width:0!important;padding:7px!important;font-size:11px!important}
     .fs-banner-empty{padding:18px;border:1px dashed #d8c9df;border-radius:12px;color:#716477;text-align:center;margin-top:12px}
-    @media(max-width:900px){.fs-summary{grid-template-columns:1fr 1fr}.fs-base-row{grid-template-columns:1fr}.fs-base-row button{width:100%!important}.fs-banner-tools{grid-template-columns:1fr}.fs-banner-tools button{width:100%!important}}
+    @media(max-width:900px){.fs-summary{grid-template-columns:1fr 1fr}.fs-base-row{grid-template-columns:1fr}.fs-base-row button{width:100%!important;margin-top:0!important}.fs-banner-tools{grid-template-columns:1fr}.fs-banner-tools button{width:100%!important}}
   `;
   document.head.appendChild(style);
 
@@ -146,11 +146,7 @@
   }
 
   function decorateExisting(){
-    const vip=$('nivelesVipAdminCard'),bonus=$('bonusPontosAdminCard'),ref=$('referidosAdminCard');
-    if(vip&&!vip.dataset.saasReady){
-      vip.dataset.saasReady='1';
-      vip.querySelector('h3')?.insertAdjacentHTML('afterend','<span class="fs-card-note">Define la progresión por puntos acumulados históricos y qué beneficio recibe cada nivel.</span>');
-    }
+    const bonus=$('bonusPontosAdminCard'),ref=$('referidosAdminCard');
     if(bonus&&!bonus.dataset.saasReady){
       bonus.dataset.saasReady='1';
       bonus.querySelector('h3')?.insertAdjacentHTML('afterend','<span class="fs-card-note">Úsalo para mover demanda hacia días u horarios estratégicos. El multiplicador se aplica sobre la regla-base.</span>');
