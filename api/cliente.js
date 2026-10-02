@@ -150,7 +150,9 @@ async function handleOrderCreate(req, res) {
         if (snap.exists()) profile = snap.val() || {};
     }
     const status = "received";
-    const vipRequest = await claimVipRequestForOrder(db, body.benefit_request_id, uid, orderRef.key);
+    const requestedVipId = cleanOrderText(body.benefit_request_id, 120);
+    const vipRequest = requestedVipId ? await claimVipRequestForOrder(db, requestedVipId, uid, orderRef.key) : null;
+    if (requestedVipId && !vipRequest) return res.status(409).json({ error:"El beneficio VIP ya no está disponible para este pedido. Vuelve a solicitarlo." });
     const subtotal = cleanOrderMoney(body.subtotal);
     const originalDeliveryFee = cleanOrderMoney(body.deliveryFee);
     const vipPricing = vipRequest ? applyVipBenefitToOrder(vipRequest, subtotal, originalDeliveryFee) : { discount:0, deliveryFee:originalDeliveryFee, total:cleanOrderMoney(body.total) };
