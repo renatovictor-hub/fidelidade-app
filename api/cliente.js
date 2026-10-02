@@ -331,6 +331,8 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
         if(cfg.ativo!==false&&amount>=min){
             const friendPts=Math.max(0,Math.floor(Number(cfg.pontos_amigo||10)));
             const refPts=Math.max(0,Math.floor(Number(cfg.pontos_indicador||20)));
+            const refRef=db.ref("users/"+refUid),refSnap=await refRef.once("value");
+            if(!refSnap.exists())return {awarded:true,points,referral};
             let friendBefore=0,friendAfter=0;
             const claim=await userRef.transaction(user=>{
                 if(!user||user.referido_recompensado===true)return;
@@ -342,8 +344,6 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
                 return user;
             },undefined,false);
             if(claim.committed){
-                const refRef=db.ref("users/"+refUid),refSnap=await refRef.once("value");
-                if(refSnap.exists()){
                     let refBefore=0,refAfter=0;
                     await refRef.transaction(user=>{
                         if(!user)return;
@@ -363,7 +363,6 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
                         friendPts?enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"🎁 ¡Bonus por invitación!",mensagem:`Ganaste ${friendPts} puntos extra por tu primera compra con invitación.`,url:"https://fidelidad-uai-so.vercel.app/"}):null,
                         refPts?enviarNotificacao({uid:refUid,telefone:refSnap.val()?.telefone||"",titulo:"🤝 ¡Tu amigo compró!",mensagem:`Ganaste ${refPts} puntos porque tu amigo hizo su primera compra válida.`,url:"https://fidelidad-uai-so.vercel.app/"}):null
                     ]);
-                }
             }
         }
     }
@@ -376,13 +375,12 @@ async function handleOrderCreate(req, res) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+    const db = admin.database();
     const catalog=await loadMenuCatalog(db);
     const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
-
-    const db = admin.database();
     const orderRef = db.ref("pedidos").push();
     const now = new Date().toISOString();
     const code = `US-${now.slice(2,10).replace(/-/g,"")}-${orderRef.key.slice(-4).toUpperCase()}`;
