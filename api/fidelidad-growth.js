@@ -200,7 +200,7 @@ export default async function handler(req,res){
       const redeemed=stats.reduce((s,x)=>s+x.canjes,0);
       const automationPreview=all.automations.map(a=>({...a,audiencia:stats.filter(s=>automationMatch(a,s,all.rewards)).length}));
       return res.status(200).json({
-        success:true,missions:all.missions,automations:automationPreview,surprise:all.surprise,
+        success:true,missions:all.missions,automations:automationPreview,
         segments,roi:{ventas_fidelidad:revenue,clientes_con_compra:stats.filter(x=>x.compras>0).length,compras:stats.reduce((s,x)=>s+x.compras,0),canjes:redeemed,ticket_medio:stats.reduce((s,x)=>s+x.compras,0)?money(revenue/stats.reduce((s,x)=>s+x.compras,0)):0}
       });
     }
