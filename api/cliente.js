@@ -98,7 +98,7 @@ function normalizedCatalog(raw){
         if(!p||p.active===false)continue;
         const price=Math.max(0,Number(p.price||0));
         if(!id||!String(p.name||"").trim()||!Number.isFinite(price))continue;
-        out[id]={name:String(p.name).trim().slice(0,120),price,active:p.active!==false,modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]};
+        out[id]={name:String(p.name).trim().slice(0,120),category:String(p.category||"OTROS").trim().slice(0,80),price,active:p.active!==false,image:String(p.image||"").trim().slice(0,800),description:String(p.description||"").trim().slice(0,240),modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]};
     }
     return Object.keys(out).length?out:ORDER_CATALOG;
 }
@@ -858,7 +858,7 @@ export default async function handler(req, res) {
                 price:Math.max(0,Math.round(Number(m?.price||0)*100)/100),
                 active:m?.active!==false
             })).filter(m=>m.id&&m.name);
-            clean[pid]={name,price,active:p?.active!==false,modifiers};
+            clean[pid]={name,category:cleanOrderText(p?.category||"OTROS",80),price,active:p?.active!==false,image:cleanOrderText(p?.image,800),description:cleanOrderText(p?.description,240),modifiers};
         }
         if(!Object.keys(clean).length)return res.status(400).json({error:"El catálogo no puede quedar vacío"});
         await admin.database().ref("config/menu_catalog").set(clean);
