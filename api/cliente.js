@@ -332,7 +332,7 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
             const friendPts=Math.max(0,Math.floor(Number(cfg.pontos_amigo||10)));
             const refPts=Math.max(0,Math.floor(Number(cfg.pontos_indicador||20)));
             const refRef=db.ref("users/"+refUid),refSnap=await refRef.once("value");
-            if(!refSnap.exists())return {awarded:true,points,referral};
+            if(refSnap.exists()){
             let friendBefore=0,friendAfter=0;
             const claim=await userRef.transaction(user=>{
                 if(!user||user.referido_recompensado===true)return;
@@ -363,6 +363,7 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
                         friendPts?enviarNotificacao({uid:order.uid,telefone:order.phone||"",titulo:"🎁 ¡Bonus por invitación!",mensagem:`Ganaste ${friendPts} puntos extra por tu primera compra con invitación.`,url:"https://fidelidad-uai-so.vercel.app/"}):null,
                         refPts?enviarNotificacao({uid:refUid,telefone:refSnap.val()?.telefone||"",titulo:"🤝 ¡Tu amigo compró!",mensagem:`Ganaste ${refPts} puntos porque tu amigo hizo su primera compra válida.`,url:"https://fidelidad-uai-so.vercel.app/"}):null
                     ]);
+            }
             }
         }
     }
