@@ -61,6 +61,9 @@ export default async function handler(req, res) {
 
   // Job diário idempotente de aniversários. Pode ser chamado pelo Cron da Vercel.
   if (req.method === "GET" && String(req.query?.job || "") === "birthdays") {
+    const cronSecret=String(process.env.CRON_SECRET||"").trim();
+    const auth=String(req.headers?.authorization||"");
+    if(!cronSecret||auth!==`Bearer ${cronSecret}`)return res.status(401).json({error:"Cron no autorizado"});
     try {
       const [cfgSnap, usersSnap] = await Promise.all([
         db.ref("config/cumpleanos").once("value"),
@@ -197,6 +200,13 @@ export default async function handler(req, res) {
             google_clicks:googleClicks
           }
         });
+      }
+
+      if (String(req.query?.promos || "") === "1") {
+        const snap=await db.ref("promos").once("value");
+        const promos=Object.entries(snap.val()||{}).map(([id,p])=>({id,...(p||{})}))
+          .sort((a,b)=>Number(b.exp||0)-Number(a.exp||0));
+        return res.status(200).json({success:true,promos});
       }
 
       const snap = await db.ref("push_historico").limitToLast(30).once("value");
@@ -343,6 +353,22 @@ export default async function handler(req, res) {
       };
       await db.ref("config/bonus_pontos").set(limpio); await audit(limpio);
       return res.status(200).json({ success:true, config:limpio });
+    }
+
+    if (action === "delete_promo") {
+      const id=String(req.body?.id||"").trim();
+      if(!id)return res.status(400).json({error:"Promoción inválida"});
+      await db.ref("promos/"+id).remove();
+      return res.status(200).json({success:true});
+    }
+    if (action === "reactivate_promo") {
+      const id=String(req.body?.id||"").trim();
+      const seconds=Math.max(60,Math.min(2592000,Number(req.body?.seconds||86400)));
+      if(!id)return res.status(400).json({error:"Promoción inválida"});
+      const ref=db.ref("promos/"+id),snap=await ref.once("value");
+      if(!snap.exists())return res.status(404).json({error:"Promoción no encontrada"});
+      await ref.update({exp:Date.now()+seconds*1000,ativa:true,reactivated_at:new Date().toISOString()});
+      return res.status(200).json({success:true});
     }
 
     if (action === "preview_segment") {
