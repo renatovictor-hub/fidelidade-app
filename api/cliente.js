@@ -738,6 +738,7 @@ export default async function handler(req, res) {
             vip:vipSnap.val()||{},
             bonus:bonusSnap.val()||{},
             birthday:birthdaySnap.val()||{},
+            birthday_claims:user.cumpleanos_canjes||{},
             reviews:reviewsSnap.val()||{},
             promos,
             whatsapp:String(contact.whatsapp||"5219986023759").replace(/\D/g,"").slice(0,15)
