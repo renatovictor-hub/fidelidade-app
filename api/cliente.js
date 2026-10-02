@@ -420,6 +420,33 @@ export default async function handler(req, res) {
 
             if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
 
+            if (action === "push_sync") {
+                const agora = new Date().toISOString();
+                const userRef = admin.database().ref(`users/${uid}`);
+                const userSnap = await userRef.once("value");
+                if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
+
+                const permission = ["granted","denied","default"].includes(String(req.body?.permission || ""))
+                    ? String(req.body.permission) : "default";
+                const optedIn = req.body?.opted_in === true;
+                const subscriptionId = String(req.body?.subscription_id || "").trim().slice(0, 200);
+                const reason = String(req.body?.reason || "app_open").trim().slice(0, 50);
+
+                await userRef.update({
+                    push_status: {
+                        permission,
+                        opted_in: optedIn,
+                        subscription_id: subscriptionId,
+                        token_present: req.body?.token_present === true,
+                        last_sync: agora,
+                        last_reason: reason
+                    },
+                    push_last_sync: agora
+                });
+
+                return res.status(200).json({ success:true, last_sync:agora });
+            }
+
             if (action === "google_review_clicked") {
                 const agora = new Date().toISOString();
                 const userRef = admin.database().ref(`users/${uid}`);
