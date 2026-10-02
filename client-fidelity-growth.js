@@ -10,6 +10,15 @@
   #screen-home .points{margin-top:0!important}
   #screen-home .mini-tools-row{margin-top:10px!important}
   .cfg-profile-logros{margin-top:12px}.cfg-profile-logros .cfg-badges{margin-top:8px}.cfg-profile-logros .cfg-badge{background:#faf8fb;border:1px solid #eee7f1}
+  .cfg-collapsible{cursor:pointer}
+  .cfg-collapsible-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .cfg-collapsible-title{min-width:0}
+  .cfg-collapsible-title h3{margin:0}
+  .cfg-collapsible-summary{font-size:12px;color:#6f6673;margin:4px 0 0}
+  .cfg-collapsible-toggle{font-size:18px;font-weight:900;color:#7b32c5;transition:transform .2s ease}
+  .cfg-collapsible.is-open .cfg-collapsible-toggle{transform:rotate(180deg)}
+  .cfg-collapsible-body{display:none;margin-top:12px}
+  .cfg-collapsible.is-open .cfg-collapsible-body{display:block}
   @media(max-width:370px){.cfg-badges{grid-template-columns:1fr 1fr}.cfg-badge{padding:10px 6px}}
   `;document.head.appendChild(style);
 
@@ -52,19 +61,37 @@
     if(!shell){shell=document.createElement('div');shell.id='clientFidGrowth';shell.className='cfg-shell';const anchor=home.querySelector('.points')||home.querySelector('.hello')||home.firstElementChild;if(anchor?.parentNode)anchor.insertAdjacentElement('afterend',shell);else home.appendChild(shell)}
     const next=d.next_reward;
     const nextHtml=next?`<div class="cfg-card"><div class="cfg-next"><div><h3>🎯 Tu próxima recompensa</h3><p>${next.nome||'Recompensa'} · ${next.pontos} pts</p></div><strong>Faltan ${next.faltan}</strong></div><div class="cfg-progress"><i style="width:${Math.min(100,Math.round(((Number(d.client?.pontos||0))/(Number(next.pontos)||1))*100))}%"></i></div><p style="margin-top:7px">Con una compra aproximada de $ ${Number(next.compra_aprox||0).toLocaleString('es-MX')} podrías alcanzarla.</p></div>`:'';
-    const missionHtml=(d.missions||[]).length?`<div class="cfg-card"><h3>🎮 Misiones</h3><p>Completa retos y desbloquea beneficios.</p><div class="cfg-missions">${d.missions.slice(0,4).map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}${m.progress?.completed&&!m.claimed?'<button class="btn-primary cfg-claim" data-mission="'+m.id+'" style="margin-top:8px;width:100%">RECLAMAR PREMIO</button>':m.claimed?'<p class="cfg-complete" style="margin-top:7px">✓ Premio reclamado</p>':''}</div>`).join('')}</div></div>`: '';
+    const missionList=(d.missions||[]).filter(m=>!m.claimed).slice(0,4);
+    const missionHtml=missionList.length?`<div class="cfg-card cfg-collapsible" id="cfgMissionsCard" role="button" tabindex="0" aria-expanded="false">
+      <div class="cfg-collapsible-head">
+        <div class="cfg-collapsible-title"><h3>🎮 Misiones</h3><p class="cfg-collapsible-summary">${missionList.length} misión${missionList.length===1?'':'es'} disponible${missionList.length===1?'':'s'} · toca para ver</p></div>
+        <span class="cfg-collapsible-toggle">⌄</span>
+      </div>
+      <div class="cfg-collapsible-body"><div class="cfg-missions">${missionList.map(m=>`<div class="cfg-mission"><div class="cfg-mission-head"><b>${m.titulo}</b><span class="${m.progress?.completed?'cfg-complete':''}">${m.progress?.completed?'✓ Completa':(m.progress?.value||0)+' / '+(m.progress?.target||0)}</span></div><p>${m.descripcion||''}</p><div class="cfg-progress"><i style="width:${m.progress?.percent||0}%"></i></div>${m.premio_puntos?'<p style="margin-top:6px">🎁 Premio: '+m.premio_puntos+' pts</p>':''}${m.progress?.completed?'<button class="btn-primary cfg-claim" data-mission="'+m.id+'" style="margin-top:8px;width:100%">RECLAMAR PREMIO</button>':''}</div>`).join('')}</div></div>
+    </div>`: '';
     const hasSurprise=d.surprise&&(String(d.surprise.titulo||'').trim()||String(d.surprise.texto||'').trim());
     const surprise=hasSurprise?`<div class="cfg-card cfg-surprise"><h3>🎁 ${d.surprise.titulo||'Beneficio especial'}</h3>${d.surprise.texto?`<p>${d.surprise.texto}</p>`:''}</div>`:'';
     const realBenefits=(d.benefits||[]).filter(b=>String(b?.text||'').trim());
-    const benefits=realBenefits.length?`<div class="cfg-card"><h3>👑 Tus beneficios</h3><div class="cfg-missions">${realBenefits.map(b=>`
-      <div class="cfg-mission">
-        <div class="cfg-mission-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span class="${b.available?'':'cfg-complete'}">${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
-        <p>${b.text}</p>
-        <p style="margin-top:5px;font-size:11px;color:#756d79">${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
-        ${b.available?'<button class="btn-primary cfg-vip-redeem" data-benefit="'+b.id+'" style="margin-top:8px;width:100%">USAR BENEFICIO</button>':'<p class="cfg-complete" style="margin-top:7px">✓ Usos agotados</p>'}
-      </div>`).join('')}</div></div>`:'';
+    const benefits=realBenefits.length?`<div class="cfg-card cfg-collapsible" id="cfgBenefitsCard" role="button" tabindex="0" aria-expanded="false">
+      <div class="cfg-collapsible-head">
+        <div class="cfg-collapsible-title"><h3>👑 Tus beneficios</h3><p class="cfg-collapsible-summary">${realBenefits.filter(b=>b.available).length} beneficio${realBenefits.filter(b=>b.available).length===1?'':'s'} disponible${realBenefits.filter(b=>b.available).length===1?'':'s'} · toca para ver</p></div>
+        <span class="cfg-collapsible-toggle">⌄</span>
+      </div>
+      <div class="cfg-collapsible-body"><div class="cfg-missions">${realBenefits.map(b=>`
+        <div class="cfg-mission">
+          <div class="cfg-mission-head"><b>${b.icon||'🎁'} ${b.title||'Beneficio'}</b><span class="${b.available?'':'cfg-complete'}">${b.remaining} de ${b.limit} disponible${b.limit===1?'':'s'}</span></div>
+          <p>${b.text}</p>
+          <p style="margin-top:5px;font-size:11px;color:#756d79">${b.period==='monthly'?'Se renueva cada mes':'Disponible una vez mientras mantengas este nivel'}</p>
+          ${b.available?'<button class="btn-primary cfg-vip-redeem" data-benefit="'+b.id+'" style="margin-top:8px;width:100%">USAR BENEFICIO</button>':'<p class="cfg-complete" style="margin-top:7px">✓ Usos agotados</p>'}
+        </div>`).join('')}</div></div>
+    </div>`:'';
     shell.innerHTML=nextHtml+surprise+benefits+missionHtml;
     renderProfileAchievements(d.badges||[]);
+    shell.querySelectorAll('.cfg-collapsible').forEach(card=>{
+      const toggle=()=>{const open=card.classList.toggle('is-open');card.setAttribute('aria-expanded',open?'true':'false')};
+      card.addEventListener('click',e=>{if(e.target.closest('button'))return;toggle()});
+      card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();toggle()}});
+    });
     alignHome();
     shell.querySelectorAll('.cfg-vip-redeem').forEach(btn=>btn.onclick=async()=>{
       const benefit=realBenefits.find(x=>String(x.id)===String(btn.dataset.benefit));
