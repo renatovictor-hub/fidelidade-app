@@ -19,6 +19,13 @@ body.ready #previewLoader{display:none}
 <div id="previewLoader"><div><span></span>Cargando panel…</div></div>
 <iframe id="dashboardFrame" src="/dashboard.html?v=20260927-crm1" title="Dashboard Uai Sô"></iframe>
 <script>
+fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+  if(!cfg)return;
+  const name=cfg.short_name||cfg.name||'Restaurante';
+  document.title=name+' Admin Preview';
+  document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
+  const f=document.getElementById('dashboardFrame');if(f)f.title='Dashboard '+name;
+}).catch(()=>{});
 const frame=document.getElementById('dashboardFrame');
 const scripts=[
   ['/recompensas-admin.js?v=20261001-rewards1','recompensasAdminScript'],
