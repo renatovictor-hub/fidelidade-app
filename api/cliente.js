@@ -882,6 +882,9 @@ export default async function handler(req, res) {
             primary_color:RESTAURANT_CONFIG.primaryColor,
             accent_color:RESTAURANT_CONFIG.accentColor,
             logo:RESTAURANT_CONFIG.logo,
+            timezone:RESTAURANT_CONFIG.timezone,
+            currency:RESTAURANT_CONFIG.currency,
+            locale:RESTAURANT_CONFIG.locale,
             modules:RESTAURANT_CONFIG.modules,
             onesignal_app_id:RESTAURANT_CONFIG.oneSignalAppId
         });
