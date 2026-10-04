@@ -84,8 +84,12 @@ function normalizeOrderName(value){
 }
 const ORDER_CATALOG_BY_NAME = Object.fromEntries(Object.entries(ORDER_CATALOG).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
 
+function catalogFallback(){
+    return RESTAURANT_CONFIG.legacyCatalogFallback ? ORDER_CATALOG : {};
+}
 function normalizedCatalog(raw,includeInactive=false){
-    const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:ORDER_CATALOG;
+    const fallback=catalogFallback();
+    const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:fallback;
     const out={};
     for(const [id,p] of Object.entries(source)){
         if(!p||(!includeInactive&&p.active===false))continue;
@@ -93,7 +97,7 @@ function normalizedCatalog(raw,includeInactive=false){
         if(!id||!String(p.name||"").trim()||!Number.isFinite(price))continue;
         out[id]={name:String(p.name).trim().slice(0,120),category:String(p.category||"OTROS").trim().slice(0,80),price,active:p.active!==false,image:String(p.image||"").trim().slice(0,800),description:String(p.description||"").trim().slice(0,240),modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]};
     }
-    return Object.keys(out).length?out:ORDER_CATALOG;
+    return out;
 }
 function secureOrderItems(items,catalogRaw) {
     if (!Array.isArray(items)) return { items:[], invalid:true };
@@ -254,7 +258,7 @@ async function secureDeliveryQuote(body){
 
 async function loadMenuCatalog(db){
     const snap=await db.ref("config/menu_catalog").once("value");
-    return normalizedCatalog(snap.val()||ORDER_CATALOG);
+    return normalizedCatalog(snap.val()||catalogFallback());
 }
 function promoEligibleForUser(p,user,rewards,uid){
     const segmento=String(p?.segmento||"todos"),value=String(p?.valor_segmento??"").trim();
@@ -822,6 +826,7 @@ export default async function handler(req, res) {
                 logo:RESTAURANT_CONFIG.logo,
                 primary_color:RESTAURANT_CONFIG.primaryColor,
                 accent_color:RESTAURANT_CONFIG.accentColor,
+                instagram_url:RESTAURANT_CONFIG.instagramUrl,
                 modules:RESTAURANT_CONFIG.modules
             },
             vip:vipSnap.val()||{},
@@ -836,13 +841,13 @@ export default async function handler(req, res) {
 
     if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
         const snap=await admin.database().ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG,false)});
+        return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),false)});
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
         if(!requireAdmin(req,res))return;
         const snap=await admin.database().ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||ORDER_CATALOG,true)});
+        return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),true)});
     }
 
     if (req.method === "POST" && req.body?.action === "catalog_save") {
@@ -879,6 +884,7 @@ export default async function handler(req, res) {
             primary_color:RESTAURANT_CONFIG.primaryColor,
             accent_color:RESTAURANT_CONFIG.accentColor,
             logo:RESTAURANT_CONFIG.logo,
+            instagram_url:RESTAURANT_CONFIG.instagramUrl,
             timezone:RESTAURANT_CONFIG.timezone,
             currency:RESTAURANT_CONFIG.currency,
             locale:RESTAURANT_CONFIG.locale,
