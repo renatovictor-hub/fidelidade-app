@@ -206,7 +206,7 @@ async function sendFeedback(){if(feedbackStars<1)return alert('Selecciona de 1 a
 function openGoogle(){$('googleModal').classList.add('open')}function closeGoogle(){$('googleModal').classList.remove('open')}
 async function goGoogleReview(){const url=String(client?.reviews?.google_url||'').trim();if(!url)return alert('El enlace de Google no está configurado.');$('googleCard').classList.remove('show');client.google_review_clicked=true;closeGoogle();try{await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid,action:'google_review_clicked'})})}catch(_){}window.open(url,'_blank','noopener');renderOfferTab()}
 
-function cancunNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Cancun'}))}
+function restaurantNow(){const tz=String(window.__restaurantConfig?.timezone||'America/Cancun');return new Date(new Date().toLocaleString('en-US',{timeZone:tz}))}
 async function loadBonus(){
   const card=$('bonusCard');
   card?.classList.remove('show');
@@ -214,7 +214,7 @@ async function loadBonus(){
   try{
     const c=(await loadAppData()).bonus||{};
     if(c.ativo===true){
-      const now=cancunNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
+      const now=restaurantNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
       if(days.includes(day)&&inside){
         bonusBenefit={multiplicador:Number(c.multiplicador||2),inicio:ini,fim};
         $('bonusTitle').textContent=`Hoy ganas x${bonusBenefit.multiplicador} puntos`;
@@ -234,7 +234,7 @@ async function loadBirthday(){
   try{
     const appData=await loadAppData(),cfg=appData.birthday||{},claims=appData.birthday_claims||{},b=parseBirth(client?.nascimento);
     if(cfg.ativo!==false&&b){
-      const now=cancunNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));
+      const now=restaurantNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));
       let found=null;
       for(const y of [now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1]){
         const bd=new Date(y,b.month-1,b.day,12,0,0),start=new Date(bd.getTime()-before*86400000),end=new Date(bd.getTime()+after*86400000);
