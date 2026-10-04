@@ -246,6 +246,16 @@
     </style>
 
 <link rel="stylesheet" href="/dashboard-readability.css?v=20260927-1">
+<script>
+fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+  if(!cfg)return;
+  const name=cfg.short_name||cfg.name||'Restaurante';
+  document.title='Dashboard '+name+' - Gestión';
+  document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
+  document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+  const h=document.querySelector('header h1');if(h)h.textContent=name+' - Gestión';
+}).catch(()=>{});
+</script>
 </head>
 
 
