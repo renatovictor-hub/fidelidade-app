@@ -113,7 +113,7 @@
     if (!segundos || segundos <= 0) return alert("Ingresa una duración válida.");
     if (tipo !== "todos" && !valorSeg) return alert("Completa el dato de segmentación.");
     const exp = Date.now() + segundos * 1000;
-    const link = `https://fidelidad-uai-so.vercel.app/?promo=${encodeURIComponent(tituloVal)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+    const link = `${location.origin}/?promo=${encodeURIComponent(tituloVal)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
     const btn = card.querySelector('button[onclick="enviarPush()"]');
 
     if(!audiencePreview || audiencePreview.segmento!==tipo || audiencePreview.valor!==valorSeg){
