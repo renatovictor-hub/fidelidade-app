@@ -430,7 +430,7 @@ let crmData={customers:[],summary:{}};
       try{
         btn.disabled=true;btn.textContent='ENVIANDO...';
         const res=await fetch('/api/sendpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-          titulo:title,desc:msg,link:'https://fidelidad-uai-so.vercel.app/',imagem:'',segmento:'cliente',valorSegmento:x.telefone||x.uid
+          titulo:title,desc:msg,link:location.origin+'/',imagem:'',segmento:'cliente',valorSegmento:x.telefone||x.uid
         })});
         const data=await res.json();
         if(!res.ok||!data.success)throw new Error(data.error||'Error');
