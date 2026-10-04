@@ -134,6 +134,7 @@
       <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b id="uxRestaurantIdentity">Restaurante</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle" id="uxSettingsModuleDelivery">Activo</span></div></div></div>
       <div class="ux-panel ux-span-5"><h2>Contacto del restaurante</h2><p>Número utilizado por promociones, pedidos y beneficios VIP por WhatsApp.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;align-items:end"><div><label style="display:block;font-size:12px;font-weight:800;margin-bottom:5px">WhatsApp con código de país</label><input id="uxRestaurantWhatsApp" inputmode="tel" placeholder="Ej. 5219986023759"></div><button class="btn-primary" id="uxSaveRestaurantWhatsApp" style="width:auto!important">GUARDAR</button></div><div id="uxRestaurantWhatsAppState" style="font-size:11px;color:#6b6170;margin-top:7px"></div></div>
       <div class="ux-panel ux-span-12"><h2>Menú / Productos</h2><p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p><div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin-bottom:10px">Cargando catálogo…</div><div id="uxCatalogEditor"></div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn-secondary" id="uxCatalogAdd" style="width:auto!important">+ PRODUCTO</button><div style="display:flex;gap:8px"><button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button><button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button></div></div></div>
+      <div class="ux-panel ux-span-12"><h2>Diagnóstico de instalación</h2><p>Verifica que esta instalación tenga su infraestructura propia antes de entregar el sistema al restaurante.</p><div id="uxInstallStatus" class="ux-settings-list"><div class="ux-setting"><div><b>Comprobando configuración…</b><small>Firebase, OneSignal, Google y sesiones</small></div><span class="ux-toggle">...</span></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Desactivada solo en Preview</small></div><span class="ux-toggle off">Preview</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Opiniones y Google Reviews</h2><p>Configuración de solicitudes de reseña.</p><div id="uxSettingsReviewsHost"></div></div>
     </div>`;
@@ -304,10 +305,26 @@
     finally{if(btn){btn.disabled=false;btn.textContent='GUARDAR CATÁLOGO'}}
   }
 
+  let installStatusLoaded=false;
+  async function loadInstallationStatus(force=false){
+    if(installStatusLoaded&&!force)return;
+    const box=document.getElementById('uxInstallStatus');if(!box)return;
+    box.innerHTML='<div class="ux-setting"><div><b>Comprobando configuración…</b><small>Firebase, OneSignal, Google y sesiones</small></div><span class="ux-toggle">...</span></div>';
+    try{
+      const r=await fetch('/api/installation-status?t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'No se pudo verificar la instalación');
+      installStatusLoaded=true;
+      box.innerHTML=(d.items||[]).map(x=>'<div class="ux-setting"><div><b>'+String(x.label||'')+'</b><small>'+String(x.detail||'')+'</small></div><span class="ux-toggle '+(x.ok?'':'off')+'">'+(x.ok?'LISTO':'FALTA')+'</span></div>').join('')+
+        '<div class="ux-setting"><div><b>Estado general</b><small>'+(d.ready?'Esta instalación está lista para operar.':'Completa los elementos marcados como FALTA antes de entregar al cliente.')+'</small></div><span class="ux-toggle '+(d.ready?'':'off')+'">'+(d.ready?'LISTO':'REVISAR')+'</span></div>';
+    }catch(e){
+      box.innerHTML='<div class="ux-setting"><div><b>No se pudo verificar</b><small>'+String(e.message||'Error')+'</small></div><span class="ux-toggle off">ERROR</span></div>';
+    }
+  }
+
   function syncAll(){
     moveSettingsCards();loadDeploymentConfig();
     if(document.body.dataset.uxView==='ajustes'){
-      loadRestaurantContact();loadCatalog();
+      loadRestaurantContact();loadCatalog();loadInstallationStatus();
       const btn=document.getElementById('uxSaveRestaurantWhatsApp');
       if(btn&&!btn.dataset.bound){btn.dataset.bound='1';btn.onclick=saveRestaurantContact}
       const save=document.getElementById('uxCatalogSave'),reload=document.getElementById('uxCatalogReload'),add=document.getElementById('uxCatalogAdd');
