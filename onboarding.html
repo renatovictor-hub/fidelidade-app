@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#6a0dad">
-<title>Uai Sô Fidelidad</title>
+<title>Fidelidad</title>
 <link rel="manifest" href="/api/manifest">
 <script>
 window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'})
@@ -17,7 +17,7 @@ window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Da
       document.documentElement.style.setProperty('--p',cfg.primary_color||'#6a0dad');
       document.querySelectorAll('img.logo').forEach(x=>{if(cfg.logo)x.src=cfg.logo;x.alt=shortName});
       const h1=document.querySelector('.card h1');if(h1)h1.textContent='Instala '+shortName+' y recibe tus beneficios';
-      const ios=document.getElementById('iosGuide');if(ios)ios.innerHTML=ios.innerHTML.replaceAll('Uai Sô',shortName);
+      const ios=document.getElementById('iosGuide');if(ios)ios.innerHTML=ios.innerHTML.replaceAll('Restaurante',shortName);
       const installed=document.getElementById('installedMsg');if(installed)installed.textContent='✓ App instalada. Abriendo '+shortName+'…';
     }
     return cfg;
@@ -44,10 +44,10 @@ OneSignalDeferred.push(async function(OS) {
 </head>
 <body>
 <main class="wrap">
-<img src="/logo.png" class="logo" alt="Uai Sô">
+<img src="/logo.png" class="logo" alt="Restaurante">
 <section class="card">
 <div class="eyebrow">PROGRAMA DE FIDELIDAD</div>
-<h1>Instala Uai Sô y recibe tus beneficios</h1>
+<h1>Instala Restaurante y recibe tus beneficios</h1>
 <p class="lead">Tu tarjeta de fidelidad siempre contigo. La instalación es rápida y no ocupa casi espacio.</p>
 <div class="benefits">
 <div class="benefit"><span class="ico">🎁</span><span>Acumula puntos y canjea recompensas</span></div>
@@ -56,8 +56,8 @@ OneSignalDeferred.push(async function(OS) {
 <div class="benefit"><span class="ico">🎂</span><span>Accede a regalos y beneficios especiales</span></div>
 </div>
 <button id="installBtn" class="install">INSTALAR APP</button>
-<div id="iosGuide" class="ios"><b>En iPhone:</b><br>1. Toca <b>Compartir</b> ⬆️ en Safari.<br>2. Elige <b>Agregar a pantalla de inicio</b>.<br>3. Toca <b>Agregar</b> y abre Uai Sô desde el nuevo ícono.</div>
-<div id="installedMsg" class="installed">✓ App instalada. Abriendo Uai Sô…</div>
+<div id="iosGuide" class="ios"><b>En iPhone:</b><br>1. Toca <b>Compartir</b> ⬆️ en Safari.<br>2. Elige <b>Agregar a pantalla de inicio</b>.<br>3. Toca <b>Agregar</b> y abre Restaurante desde el nuevo ícono.</div>
+<div id="installedMsg" class="installed">✓ App instalada. Abriendo Restaurante…</div>
 <p class="note">Después de instalar, te pediremos tu nombre y permiso para recibir notificaciones. Así no pierdes promociones ni recompensas.</p>
 <div class="steps"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
 </section>
