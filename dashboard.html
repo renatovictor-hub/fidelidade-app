@@ -1851,7 +1851,7 @@ async function enviarPush() {
 
     const link =
 
-        `https://fidelidad-uai-so.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+        `${location.origin}/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
 
 
     log(
