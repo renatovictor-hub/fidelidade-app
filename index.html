@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Uai Sô Fidelidad</title>
+<title>Fidelidad</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link rel="manifest" href="/api/manifest">
@@ -17,11 +17,19 @@ window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Da
   .then(r=>r.ok?r.json():null).catch(()=>null).then(cfg=>{
     if(cfg){
       window.__restaurantConfig=cfg;
-      document.title=(cfg.short_name||cfg.name||'Fidelidad')+' Fidelidad';
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content',cfg.primary_color||'#6a0dad');
-      document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
-      document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
-      const logo=document.querySelector('img.logo');if(logo&&cfg.logo)logo.src=cfg.logo;
+      const applyBrand=()=>{
+        const name=cfg.short_name||cfg.name||'Restaurante';
+        document.title=name+' Fidelidad';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content',cfg.primary_color||'#6a0dad');
+        document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
+        document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+        document.querySelectorAll('img.logo,[data-restaurant-logo]').forEach(logo=>{if(cfg.logo)logo.src=cfg.logo;logo.alt=name});
+        const success=document.getElementById('successBrandText');if(success)success.innerHTML='Para empezar a usar <b>'+name+'</b> y ganar puntos:';
+        const feedback=document.getElementById('feedbackBrandText');if(feedback)feedback.textContent='Tu opinión nos ayuda a mejorar '+name+'.';
+        const insta=document.getElementById('restaurantInstagram');
+        if(insta){const url=String(cfg.instagram_url||'').trim();insta.style.display=url?'':'none';if(url)insta.href=url}
+      };
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyBrand,{once:true});else applyBrand();
     }
     return cfg;
   });
@@ -579,7 +587,7 @@ button {
         </h2>
 
         <p>
-            Para empezar a usar <b>Uai Sô</b> y ganar puntos:
+            <span id="successBrandText">Para empezar a usar la app y ganar puntos:</span>
         </p>
 
         <div style="
@@ -664,7 +672,7 @@ button {
         </h2>
 
         <p>
-            Entérate antes que todos cuando salgan nuevas coxinhas y pasteles.
+            Recibe promociones, novedades y avisos importantes del restaurante.
         </p>
 
         <button
@@ -764,13 +772,13 @@ button {
         <!-- MENU SUPERIOR -->
 
         <div class="action-menu">
-            <a href="https://instagram.com/fooduaiso" target="_blank" class="btn-small">
+            <a id="restaurantInstagram" href="#" target="_blank" class="btn-small" style="display:none">
                 <i class="fab fa-instagram"></i> Instagram
             </a>
             <a href="#" class="btn-small">
                 <i class="fas fa-utensils"></i> Nuestro Menú
             </a>
-            <a href="/recompensas.html" class="btn-small" onclick="sessionStorage.setItem('uaiso_internal_return','1')">
+            <a href="/recompensas.html" class="btn-small" onclick="sessionStorage.setItem('loyalty_internal_return','1')">
                 <i class="fas fa-gift"></i> Recompensas
             </a>
         </div>
@@ -958,7 +966,7 @@ button {
   <div style="width:100%;max-width:350px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 18px 45px rgba(0,0,0,.28);text-align:center;">
     <div style="font-size:28px;margin-bottom:4px;">⭐</div>
     <div style="font-size:19px;font-weight:900;color:#6a0dad;">¿Cómo estuvo tu experiencia?</div>
-    <div style="font-size:12px;color:#777;margin-top:4px;">Tu opinión nos ayuda a mejorar Uai Sô.</div>
+    <div style="font-size:12px;color:#777;margin-top:4px;"><span id="feedbackBrandText">Tu opinión nos ayuda a mejorar.</span></div>
     <div id="feedbackStars" style="display:flex;justify-content:center;gap:8px;margin:16px 0 12px;">
       <button type="button" onclick="seleccionarEstrellas(1)" data-star="1" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(2)" data-star="2" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(3)" data-star="3" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(4)" data-star="4" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(5)" data-star="5" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button>
     </div>
@@ -1373,9 +1381,9 @@ window.onload = async () => {
     );
 
 
-    const retornoInterno = sessionStorage.getItem("uaiso_internal_return") === "1";
+    const retornoInterno = sessionStorage.getItem("loyalty_internal_return") === "1";
     if (retornoInterno) {
-        sessionStorage.removeItem("uaiso_internal_return");
+        sessionStorage.removeItem("loyalty_internal_return");
         if (nome) return abrirApp();
     }
 
