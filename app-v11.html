@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#6a0dad">
-<title>Uai Sô Fidelidad 1.1</title>
+<title>Fidelidad</title>
 <link rel="manifest" href="/api/manifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -64,11 +64,11 @@ button{font:inherit}
 </head>
 <body>
 <div class="app">
-  <header class="top"><img src="/logo.png" alt="Uai Sô"><span class="version">v1.1</span></header>
+  <header class="top"><img src="/logo.png" alt="Restaurante"><span class="version">v1.1</span></header>
 
   <section id="screen-home" class="screen active">
     <div class="quick">
-      <a href="https://instagram.com/fooduaiso" target="_blank" rel="noopener">◎ Instagram</a>
+      <a id="restaurantInstagram" href="#" target="_blank" rel="noopener" style="display:none">◎ Instagram</a>
       <a href="/menu-videos.html" onclick="openVideoMenu(event)">🍴 Nuestro Menú</a>
     </div>
     <div class="hello"><h2 id="helloName">Hola</h2><p>¡Qué bueno verte de nuevo!</p></div>
@@ -91,9 +91,9 @@ button{font:inherit}
     <div id="birthdayCard" class="system-card birthday"><div class="system-row"><div class="system-icon">🎂</div><div class="system-main"><div class="system-kicker">BENEFICIO DE CUMPLEAÑOS</div><div id="birthdayTitle" class="system-title">Tienes un regalo</div><div id="birthdayText" class="system-text"></div></div></div></div>
     <div id="bonusCard" class="system-card bonus"><div class="system-row"><div class="system-icon">⚡</div><div class="system-main"><div class="system-kicker">PUNTOS BONUS</div><div id="bonusTitle" class="system-title">Bonus activo</div><div id="bonusText" class="system-text"></div></div></div></div>
     <div id="feedbackCard" class="system-card feedback"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">TU OPINIÓN</div><div class="system-title">Califica tu compra reciente</div><div class="system-text">Tu opinión nos ayuda a mejorar.</div></div><button class="system-action" onclick="openFeedback()">OPINAR</button></div></div>
-    <div id="googleCard" class="system-card google"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">GOOGLE</div><div class="system-title">¿Te gusta Uai Sô?</div><div class="system-text">Tu reseña ayuda a que más personas nos encuentren.</div></div><button class="system-action" onclick="openGoogle()">EVALUAR</button></div></div>
+    <div id="googleCard" class="system-card google"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">GOOGLE</div><div class="system-title">¿Te gusta este restaurante?</div><div class="system-text">Tu reseña ayuda a que más personas nos encuentren.</div></div><button class="system-action" onclick="openGoogle()">EVALUAR</button></div></div>
 
-    <img src="/banner.jpg" class="banner" alt="Uai Sô Brazilian Style Food">
+    <img src="/banner.jpg" class="banner" alt="Restaurante">
     <div class="section-title">🔥 Promociones Activas</div>
     <div id="homeOffers" class="list"><div class="loading">Cargando promociones…</div></div>
     <div id="previousBlock" style="display:none"><div class="previous-title">↶ Anteriores</div><div id="homePrevious" class="list"></div></div>
@@ -106,7 +106,7 @@ button{font:inherit}
 
   <section id="screen-qr" class="screen">
     <div class="subhead"><div><h1>Mi QR</h1><p>Muéstralo al momento de tu compra.</p></div></div>
-    <div class="qr-card"><img class="logo" src="/logo.png" alt="Uai Sô"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
+    <div class="qr-card"><img class="logo" src="/logo.png" alt="Restaurante"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
   </section>
 
   <section id="screen-offers" class="screen">
@@ -142,7 +142,7 @@ button{font:inherit}
 </div>
 
 <div id="googleModal" class="modal" onclick="if(event.target===this)closeGoogle()">
-  <div class="sheet"><div class="sheetbar"></div><h3 class="modal-title">⭐ ¿Nos calificas en Google?</h3><p class="modal-copy">Tu reseña pública ayuda a otras personas a descubrir Uai Sô. Este acceso se mostrará una sola vez en el app.</p><button class="primary" onclick="goGoogleReview()">ABRIR GOOGLE</button><button class="secondary" onclick="closeGoogle()">Ahora no</button></div>
+  <div class="sheet"><div class="sheetbar"></div><h3 class="modal-title">⭐ ¿Nos calificas en Google?</h3><p class="modal-copy">Tu reseña pública ayuda a otras personas a descubrir este restaurante. Este acceso se mostrará una sola vez en el app.</p><button class="primary" onclick="goGoogleReview()">ABRIR GOOGLE</button><button class="secondary" onclick="closeGoogle()">Ahora no</button></div>
 </div>
 
 <script>
@@ -150,7 +150,7 @@ const qs=new URLSearchParams(location.search);
 let uid=String(qs.get('uid')||localStorage.getItem('uid')||'').trim();
 let client=null,movements=[],rewards=[],promos=[],vipCfg={},offerTab='active',feedbackStars=0;
 let activePromos=[],expiredPromos=[],birthdayBenefit=null,bonusBenefit=null,appDataCache=null;
-let restaurantCfg={name:'Uai Sô Brazilian Food',short_name:'Uai Sô',logo:'/logo.png',primary_color:'#6a0dad',accent_color:'#ffcc00',modules:{loyalty:true,delivery:false}};
+let restaurantCfg={name:'Restaurante',short_name:'Restaurante',logo:'/logo.png',primary_color:'#6a0dad',accent_color:'#ffcc00',instagram_url:'',modules:{loyalty:true,delivery:false}};
 async function loadAppData(force=false){if(appDataCache&&!force)return appDataCache;const r=await fetch('/api/cliente?action=app_data&uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar la configuración');appDataCache=d;return d}
 
 function applyRestaurantBrand(cfg){
@@ -165,6 +165,12 @@ function applyRestaurantBrand(cfg){
   const banner=document.querySelector('#screen-home img.banner');if(banner)banner.alt=restaurantCfg.name||shortName;
   const feedbackCopy=document.querySelector('#feedbackModal .modal-copy');if(feedbackCopy)feedbackCopy.textContent='Califica tu experiencia. El comentario es opcional y queda como opinión privada para '+shortName+'.';
   const googleCopy=document.querySelector('#googleModal .modal-copy');if(googleCopy)googleCopy.textContent='Tu reseña pública ayuda a otras personas a descubrir '+shortName+'. Este acceso se mostrará una sola vez en el app.';
+  const insta=document.getElementById('restaurantInstagram');
+  if(insta){
+    const url=String(restaurantCfg.instagram_url||'').trim();
+    insta.style.display=url?'':'none';
+    if(url)insta.href=url;
+  }
 }
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmtDate(v,withTime=false){if(!v)return'—';const d=new Date(v);if(Number.isNaN(d.getTime()))return'—';return new Intl.DateTimeFormat('es-MX',withTime?{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'}).format(d)}
