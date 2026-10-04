@@ -33,9 +33,9 @@ export default async function handler(req, res) {
         const pontosBase = Math.floor(valorNormalizado / pesosPorPunto);
         if (pontosBase <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
         const bonus = bonusSnap.val() || {};
-        const agoraCancun = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Cancun" }));
-        const dia = agoraCancun.getDay(); // 0 domingo ... 6 sábado
-        const hhmm = `${String(agoraCancun.getHours()).padStart(2,"0")}:${String(agoraCancun.getMinutes()).padStart(2,"0")}`;
+        const agoraLocal = new Date(new Date().toLocaleString("en-US", { timeZone: CFG.timezone }));
+        const dia = agoraLocal.getDay(); // 0 domingo ... 6 sábado
+        const hhmm = `${String(agoraLocal.getHours()).padStart(2,"0")}:${String(agoraLocal.getMinutes()).padStart(2,"0")}`;
         const dias = Array.isArray(bonus.dias) ? bonus.dias.map(Number) : [];
         const inicio = String(bonus.inicio || "00:00");
         const fim = String(bonus.fim || "23:59");
