@@ -29,7 +29,7 @@
       document.documentElement.style.setProperty('--purple',d.primary_color||'#6a0dad');
       document.documentElement.style.setProperty('--yellow',d.accent_color||'#ffc400');
       const brand=document.querySelector('.brand b');if(brand)brand.textContent=shortName+' · Menú';
-      document.querySelectorAll('.delivery-note').forEach(el=>{el.textContent=el.textContent.replaceAll('Uai Sô',shortName)});
+      document.querySelectorAll('.delivery-note').forEach(el=>{el.textContent=el.textContent.replaceAll('el restaurante',shortName)});
       const pickup=document.querySelector('#pickupInfo h3');if(pickup)pickup.textContent='Recoger en '+shortName;
       if(d.modules?.delivery!==true){
         const app=document.querySelector('.app');
@@ -376,11 +376,11 @@
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
       const order=data.order||{},serverItems=Array.isArray(order.items)?order.items:items,lines=serverItems.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format((Number(i.unitPrice)||0)*(Number(i.qty)||1))}${i.details?`\n${i.details}`:''}`),serverSubtotal=Number(order.subtotal||0),serverFee=Number(order.deliveryFee||0),serverDiscount=Number(order.discount||0),serverTotal=Number(order.total||0),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)} · Total envío ${MXN.format(fee)}`:'',residentialText=isResidential?`\nResidencial: Sí${needsQr?' · Requiere QR':''}${residentialInstructions?`\nInstrucciones de acceso: ${residentialInstructions}`:''}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}${residentialText}\nReferencias: ${baseReferences||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
       const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n\n')}\n\nSubtotal: ${MXN.format(serverSubtotal)}\n${serverDiscount?`Descuento VIP: -${MXN.format(serverDiscount)}\n`:''}${fulfillment==='delivery'?`Envío: ${MXN.format(serverFee)}\n`:''}TOTAL: ${MXN.format(serverTotal)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
-      localStorage.setItem('uaiso_checkout_profile',JSON.stringify({name,phone}));
+      localStorage.setItem('restaurant_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
       try{cart=[];}catch(_){}
       upsellCocaQty=0;selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderUpsell();
-      localStorage.setItem('uaiso_video_cart','[]');
+      localStorage.setItem('restaurant_video_cart','[]');
       if(typeof renderCartBadge==='function')renderCartBadge();
       if(waWindow)waWindow.location.href='https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(text);else location.href='https://api.whatsapp.com/send?phone='+restaurantWhatsApp+'&text='+encodeURIComponent(text);
     }catch(e){
