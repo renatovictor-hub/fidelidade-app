@@ -97,7 +97,7 @@
       banner.className='card fs-banner-card';
       banner.innerHTML=`
         <h3>🖼️ Banner del app del cliente</h3>
-        <span class="fs-card-note">Sube de 1 a 6 imágenes. Con varias imágenes, el app las muestra como carrusel automático de derecha a izquierda. Si no subes ninguna, se mantiene el banner actual de Uai Sô.</span>
+        <span class="fs-card-note">Sube de 1 a 6 imágenes. Con varias imágenes, el app las muestra como carrusel automático de derecha a izquierda. Si no subes ninguna, se mantiene el banner actual del restaurante.</span>
         <div class="fs-banner-tools">
           <div class="input-group" style="margin:0">
             <label for="fsBannerFiles">Imágenes del banner</label>
