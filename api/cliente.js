@@ -294,7 +294,7 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
     const amount=Math.max(0,Number(order.subtotal||0)-Number(order.discount||0));
     const basePts=Math.floor(amount/pesos);
     if(basePts<=0)return {awarded:false};
-    const nowCancun=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Cancun"}));
+    const nowCancun=new Date(new Date().toLocaleString("en-US",{timeZone:RESTAURANT_CONFIG.timezone}));
     const day=nowCancun.getDay(),hhmm=`${String(nowCancun.getHours()).padStart(2,"0")}:${String(nowCancun.getMinutes()).padStart(2,"0")}`;
     const days=Array.isArray(bonus.dias)?bonus.dias.map(Number):[],ini=String(bonus.inicio||"00:00"),fim=String(bonus.fim||"23:59");
     const inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
@@ -607,7 +607,7 @@ function isOutsideServiceHours(deliveryAt) {
         const hour = Number(deliveryAt.slice(11, 13));
         return hour < 8 || hour >= 23;
     }
-    const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Cancun", hour: "2-digit", hour12: false }).format(new Date()));
+    const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: RESTAURANT_CONFIG.timezone, hour: "2-digit", hour12: false }).format(new Date()));
     return hour < 8 || hour >= 23;
 }
 
@@ -621,7 +621,7 @@ function destinationWaypoint(destination) {
     }
     const address = String(destination?.address || "").trim().slice(0, 240);
     if (address.length < 8) return null;
-    return { address: /canc[uú]n|quintana roo|m[eé]xico/i.test(address) ? address : `${address}, Cancún, Quintana Roo, México` };
+    return { address: /canc[uú]n|quintana roo|m[eé]xico/i.test(address) ? address : `${address}, ${RESTAURANT_CONFIG.addressSuffix}` };
 }
 
 async function handlePlaceAutocomplete(req, res) {
