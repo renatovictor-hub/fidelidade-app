@@ -39,6 +39,7 @@ bootstrapRestaurant();
 frame.addEventListener('load',()=>{
   const w=frame.contentWindow,d=frame.contentDocument;
   if(!w||!d)return;
+  w.__restaurantConfig=publicConfig||{};
   d.documentElement.dataset.plan=hasDelivery?'fidelity_delivery':'fidelity';
   if(publicConfig){
     d.documentElement.style.setProperty('--roxo',publicConfig.primary_color||'#6a0dad');
