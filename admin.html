@@ -42,6 +42,16 @@
     </section>
 
     <script>
+        fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+            if(!cfg)return;
+            const name=cfg.short_name||cfg.name||'Restaurante';
+            document.title=name+' - Acceso Administrativo';
+            document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
+            document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+            const h=document.querySelector('#loginView h1');if(h)h.textContent=name;
+            const frame=document.getElementById('dashboardFrame');if(frame)frame.title='Dashboard '+name;
+        }).catch(()=>{});
+
         const TAB_KEY = 'uaiso_admin_tab_unlocked';
         const INACTIVITY_MS = 10 * 60 * 1000;
         const BACKGROUND_LOCK_MS = 30 * 1000;
