@@ -23,6 +23,7 @@
       const d=await r.json();if(!r.ok)return;
       restaurantConfig=d;
       restaurantWhatsApp=String(d.whatsapp||'').replace(/\D/g,'');
+      window.__restaurantWhatsApp=restaurantWhatsApp;
       const shortName=d.short_name||d.name||'Restaurante';
       document.title='Menú · '+shortName;
       document.documentElement.style.setProperty('--purple',d.primary_color||'#6a0dad');
