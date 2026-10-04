@@ -311,7 +311,7 @@
     const box=document.getElementById('uxInstallStatus');if(!box)return;
     box.innerHTML='<div class="ux-setting"><div><b>Comprobando configuración…</b><small>Firebase, OneSignal, Google y sesiones</small></div><span class="ux-toggle">...</span></div>';
     try{
-      const r=await fetch('/api/installation-status?t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
+      const r=await fetch('/api/cliente?action=installation_status&t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(d.error||'No se pudo verificar la instalación');
       installStatusLoaded=true;
       box.innerHTML=(d.items||[]).map(x=>'<div class="ux-setting"><div><b>'+String(x.label||'')+'</b><small>'+String(x.detail||'')+'</small></div><span class="ux-toggle '+(x.ok?'':'off')+'">'+(x.ok?'LISTO':'FALTA')+'</span></div>').join('')+
