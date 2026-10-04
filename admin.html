@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uai Sô - Acceso Administrativo</title>
+    <title>Restaurante - Acceso Administrativo</title>
     <style>
         :root { --roxo:#6a0dad; --amarelo:#ffcc00; }
         * { box-sizing:border-box; }
@@ -26,7 +26,7 @@
 <body>
     <section id="loginView">
         <div class="login-card">
-            <h1>Uai Sô</h1>
+            <h1>Restaurante</h1>
             <p>Acceso seguro al panel administrativo</p>
             <form id="loginForm">
                 <label for="password">Contraseña</label>
@@ -38,7 +38,7 @@
     </section>
 
     <section id="dashboardView">
-        <iframe id="dashboardFrame" title="Dashboard Uai Sô"></iframe>
+        <iframe id="dashboardFrame" title="Dashboard Restaurante"></iframe>
     </section>
 
     <script>
@@ -52,7 +52,7 @@
             const frame=document.getElementById('dashboardFrame');if(frame)frame.title='Dashboard '+name;
         }).catch(()=>{});
 
-        const TAB_KEY = 'uaiso_admin_tab_unlocked';
+        const TAB_KEY = 'restaurant_admin_tab_unlocked';
         const INACTIVITY_MS = 10 * 60 * 1000;
         const BACKGROUND_LOCK_MS = 30 * 1000;
         let inactivityTimer = null;
