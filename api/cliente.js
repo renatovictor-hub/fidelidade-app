@@ -872,6 +872,20 @@ export default async function handler(req, res) {
         return res.status(200).json({success:true,catalog:clean});
     }
 
+    if (req.method === "GET" && String(req.query.action || "") === "installation_status") {
+        if(!requireAdmin(req,res))return;
+        const has=name=>String(process.env[name]||"").trim().length>0;
+        const items=[
+            {id:"identity",label:"Identidad del restaurante",ok:!!(RESTAURANT_CONFIG.id&&RESTAURANT_CONFIG.name&&RESTAURANT_CONFIG.domain&&RESTAURANT_CONFIG.whatsapp),detail:"Nombre, dominio y WhatsApp"},
+            {id:"firebase",label:"Firebase",ok:["FIREBASE_PROJECT_ID","FIREBASE_DATABASE_URL","FIREBASE_CLIENT_EMAIL","FIREBASE_PRIVATE_KEY"].every(has),detail:"Proyecto y cuenta de servicio aislados"},
+            {id:"onesignal",label:"OneSignal",ok:!!RESTAURANT_CONFIG.oneSignalAppId&&has("ONESIGNAL_REST_KEY"),detail:"App y REST key del restaurante"},
+            {id:"google",label:"Google Maps / Routes",ok:RESTAURANT_CONFIG.modules.delivery?has("GOOGLE_ROUTES_API_KEY"):true,detail:RESTAURANT_CONFIG.modules.delivery?"Obligatorio para Delivery":"No requerido sin Delivery"},
+            {id:"admin_security",label:"Seguridad del panel",ok:has("DASHBOARD_PASSWORD")&&(has("ADMIN_SESSION_SECRET")||has("DASHBOARD_PASSWORD")),detail:"Contraseña y sesión administrativa"},
+            {id:"client_security",label:"Sesión de clientes",ok:has("CLIENT_SESSION_SECRET")||has("DASHBOARD_PASSWORD"),detail:"Firma de sesión de cliente"}
+        ];
+        return res.status(200).json({ready:items.every(x=>x.ok),restaurant:{id:RESTAURANT_CONFIG.id,name:RESTAURANT_CONFIG.name,modules:RESTAURANT_CONFIG.modules},items});
+    }
+
     if (req.method === "GET" && String(req.query.action || "") === "public_config") {
         const snap = await admin.database().ref("config/restaurant_contact").once("value");
         const cfg = snap.val() || {};
