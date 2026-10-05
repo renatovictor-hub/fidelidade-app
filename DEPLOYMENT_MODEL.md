@@ -42,7 +42,7 @@ A new restaurant receives a separate deployment and separate infrastructure cred
 - OneSignal app/key
 - Admin/client session secrets
 
-Use `.env.restaurant.example` as the deployment checklist.
+Use `restaurant.env.example` as the deployment checklist.
 
 ## Modules
 
