@@ -51,16 +51,17 @@
   }
   const uid=new URLSearchParams(location.search).get('uid')||'';
   if(!/^user_\d+$/.test(uid))return;
-  let restaurantWhatsApp='5219986023759';
-  async function loadRestaurantContact(){
+  let restaurantWhatsApp='';
+  let hasIntegratedDelivery=false;
+  const restaurantConfigPromise=(async()=>{
     try{
       const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
-      const d=await r.json();if(r.ok&&d.whatsapp)restaurantWhatsApp=String(d.whatsapp).replace(/\D/g,'');
-    }catch(_){}
-  }
-  loadRestaurantContact();
-  const currentPlan=String(new URLSearchParams(location.search).get('plan')||'fidelity').toLowerCase();
-  const hasIntegratedDelivery=currentPlan!=='fidelity';
+      const d=await r.json();if(!r.ok)return null;
+      restaurantWhatsApp=String(d.whatsapp||'').replace(/\D/g,'');
+      hasIntegratedDelivery=d.modules?.delivery===true;
+      return d;
+    }catch(_){return null}
+  })();
   if(!window.__uaiVipFetchPatched){
     window.__uaiVipFetchPatched=true;
     const nativeFetch=window.fetch.bind(window);
@@ -84,6 +85,7 @@
   }
   async function load(){
     try{
+      await restaurantConfigPromise;
       const r=await fetch('/api/fidelidad-growth?uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});
       const d=await r.json();if(!r.ok)return;
       render(d);
