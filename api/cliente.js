@@ -625,7 +625,12 @@ function destinationWaypoint(destination) {
     }
     const address = String(destination?.address || "").trim().slice(0, 240);
     if (address.length < 8) return null;
-    return { address: /canc[uú]n|quintana roo|m[eé]xico/i.test(address) ? address : `${address}, ${RESTAURANT_CONFIG.addressSuffix}` };
+    const suffix=String(RESTAURANT_CONFIG.addressSuffix||"").trim();
+    if(!suffix)return {address};
+    const norm=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    const city=norm(suffix.split(",")[0]);
+    const full=norm(address);
+    return { address: city&&full.includes(city) ? address : `${address}, ${suffix}` };
 }
 
 async function handlePlaceAutocomplete(req, res) {
