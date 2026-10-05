@@ -22,7 +22,7 @@
         #dashboardView { display:none; width:100%; min-height:100vh; background:#f0f2f5; }
         #dashboardFrame { display:block; width:100%; height:100vh; border:0; background:#f0f2f5; }
     </style>
-</head>
+<script src="/admin-module-loader.js?v=20261005-1"></script>\n</head>
 <body>
     <section id="loginView">
         <div class="login-card">
@@ -100,60 +100,8 @@
                     doc.head.appendChild(style);
                 }
 
-                if (!doc.getElementById('recompensasAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'recompensasAdminScript';
-                    script.src = '/recompensas-admin.js?v=20260825-2';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('notificacoesAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'notificacoesAdminScript';
-                    script.src = '/notificacoes-admin.js?v=20261002-consolidation1';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('cumpleanosAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'cumpleanosAdminScript';
-                    script.src = '/cumpleanos-admin.js?v=20260826-1';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('bonusPontosAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'bonusPontosAdminScript';
-                    script.src = '/bonus-pontos-admin.js?v=20260831-1';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('referidosAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'referidosAdminScript';
-                    script.src = '/referidos-admin.js?v=20260831-1';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('nivelesVipAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'nivelesVipAdminScript';
-                    script.src = '/niveles-vip-admin.js?v=20261002-consolidation1';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('reviewsAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'reviewsAdminScript';
-                    script.src = '/reviews-admin.js?v=20260831-1';
-                    doc.body.appendChild(script);
-                }
-
-                if (!doc.getElementById('pedidosAdminScript')) {
-                    const script = doc.createElement('script');
-                    script.id = 'pedidosAdminScript';
-                    script.src = '/pedidos-admin.js?v=20260912-1';
-                    doc.body.appendChild(script);
+                if (typeof window.loadRestaurantAdminModules === 'function') {
+                    window.loadRestaurantAdminModules(doc).catch(error => console.error('Admin modules:', error));
                 }
 
                 ['pointerdown','keydown','touchstart'].forEach(eventName => {
