@@ -9,7 +9,7 @@
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f7f5f9}iframe{display:block;width:100%;height:100%;border:0;background:#f7f5f9}</style>
 <link rel="stylesheet" href="/client-readability.css?v=20260927-1">
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script src="/client-push-sync.js?v=20261004-multiclient1" defer></script>
+<script src="/client-push-sync.js?v=20261005-multirest2" defer></script>
 </head>
 <body>
 <iframe id="app" title="Fidelidad"></iframe>
@@ -82,7 +82,7 @@ frame.addEventListener('load',()=>{
     const quick=d.querySelector('#screen-home .quick');
     if(quick&&quick.children.length===1)quick.style.display='none';
   }
-  if(!d.getElementById('clientFidelityGrowthScript')){const gs=d.createElement('script');gs.id='clientFidelityGrowthScript';gs.src='/client-fidelity-growth.js?v=20261002-consolidation2';d.body.appendChild(gs)}
+  if(!d.getElementById('clientFidelityGrowthScript')){const gs=d.createElement('script');gs.id='clientFidelityGrowthScript';gs.src='/client-fidelity-growth.js?v=20261005-multirest2';d.body.appendChild(gs)}
 
   let promoCache=[],promosReady=false,clientState=null,lastTab='home',liveRefreshing=false,restaurantWhatsApp=String(publicConfig?.whatsapp||'').replace(/\D/g,'');
   const badImages=new Set();
