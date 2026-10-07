@@ -409,7 +409,6 @@ async function handleDeliveryQuote(req, res) {
 
 export default async function handler(req, res) {
     const tenant = tenantFromRequest(req);
-    const tenant = tenantFromRequest(req);
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -509,7 +508,7 @@ export default async function handler(req, res) {
             const uid = String(req.body?.uid || "").trim();
             const action = String(req.body?.action || "").trim();
 
-            if (!/^user_\\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+            if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
             if (!requireClient(req,res,uid,tenant)) return;
 
             if (action === "google_review_clicked") {
