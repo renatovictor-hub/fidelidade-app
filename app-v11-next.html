@@ -42,8 +42,11 @@ frame.addEventListener('load',()=>{
   w.__restaurantConfig=publicConfig||{};
   d.documentElement.dataset.plan=hasDelivery?'fidelity_delivery':'fidelity';
   if(publicConfig){
-    d.documentElement.style.setProperty('--roxo',publicConfig.primary_color||'#6a0dad');
-    d.documentElement.style.setProperty('--amarelo',publicConfig.accent_color||'#ffcc00');
+    const primary=publicConfig.primary_color||'#6a0dad',accent=publicConfig.accent_color||'#ffcc00';
+    d.documentElement.style.setProperty('--roxo',primary);
+    d.documentElement.style.setProperty('--amarelo',accent);
+    d.documentElement.style.setProperty('--p',primary);
+    d.documentElement.style.setProperty('--p2',accent);
   }
 
   const style=d.createElement('style');
