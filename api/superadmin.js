@@ -64,6 +64,7 @@ const legacyUaiSo={
   name:"Uai Sô Brazilian Food",
   city:"Cancún",
   country:"MX",
+  whatsapp:"5219986023759",
   status:"legacy",
   active:true,
   source:"legacy",
@@ -87,6 +88,12 @@ function publicCompany(id,c={}){
     notes:clean(c.notes,500),source:c.source||"saas"
   };
 }
+async function getCompany(id){
+  const slug=slugify(id);
+  if(slug==="uai-so") return legacyUaiSo;
+  const snap=await admin.database().ref("saas/companies/"+slug).once("value");
+  return snap.exists()?publicCompany(slug,snap.val()||{}):null;
+}
 async function listCompanies(){
   const snap=await admin.database().ref("saas/companies").once("value");
   const rows=Object.entries(snap.val()||{}).map(([id,c])=>publicCompany(id,c));
@@ -107,8 +114,14 @@ async function createCompany(req,res){
     branding:{primary:body.branding?.primary,secondary:body.branding?.secondary},
     notes:body.notes
   });
-  await ref.set({...company,createdBy:"superadmin"});
-  return res.status(201).json({success:true,company});
+  const db=admin.database();
+  await db.ref().update({
+    [`saas/companies/${slug}`]: {...company,createdBy:"superadmin"},
+    [`saas/tenantData/${slug}/config/company`]: company,
+    [`saas/tenantData/${slug}/config/fidelity`]: {enabled:company.modules.fidelity===true,createdAt:now},
+    [`saas/tenantData/${slug}/config/modules`]: company.modules
+  });
+  return res.status(201).json({success:true,company,previewUrl:`/tenant-preview.html?company=${encodeURIComponent(slug)}`});
 }
 async function updateCompany(req,res){
   const id=slugify(req.body?.id); if(!id||id==="uai-so")return res.status(400).json({error:"Empresa inválida para edición en esta fase"});
@@ -127,6 +140,13 @@ async function updateCompany(req,res){
 
 export default async function handler(req,res){
   res.setHeader("Cache-Control","no-store");
+
+  if(req.method==="GET"&&String(req.query?.action||"")==="public_company"){
+    const company=await getCompany(req.query?.company);
+    if(!company||company.active===false)return res.status(404).json({error:"Empresa no encontrada"});
+    return res.status(200).json({company});
+  }
+
   if(!secret())return res.status(503).json({error:"SUPERADMIN_PASSWORD no configurada"});
 
   if(req.method==="POST"&&req.body?.action==="login"){
