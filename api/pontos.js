@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { tenantFromRequest, tenantPath, tenantRef } from "./_tenant.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -17,9 +18,10 @@ const PESOS_POR_PONTO = 10;
 const VALOR_MAXIMO_COMPRA = 100000;
 
 export default async function handler(req, res) {
+    const tenant = tenantFromRequest(req);
     res.setHeader("Cache-Control", "no-store");
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-    if (!requireAdmin(req, res)) return;
+    if (!requireAdmin(req, res, tenant)) return;
 
     try {
         const { uid, valorCompra } = req.body || {};
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
         const db = admin.database();
 
         // Regra de bônus configurável por dia/horário, usando horário local de Cancún.
-        const bonusSnap = await db.ref("config/bonus_pontos").once("value");
+        const bonusSnap = await tenantRef(db, tenant, "config/bonus_pontos").once("value");
         const bonus = bonusSnap.val() || {};
         const agoraCancun = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Cancun" }));
         const dia = agoraCancun.getDay(); // 0 domingo ... 6 sábado
@@ -50,7 +52,7 @@ export default async function handler(req, res) {
         const bonusAtivo = bonus.ativo === true && dias.includes(dia) && dentroHorario;
         const multiplicadorAplicado = bonusAtivo ? multip : 1;
         const pontosGanhos = Math.floor(pontosBase * multiplicadorAplicado);
-        const userRef = db.ref(`users/${uidLimpo}`);
+        const userRef = tenantRef(db, tenant, `users/${uidLimpo}`);
         const snapshot = await userRef.once("value");
         if (!snapshot.exists()) return res.status(404).json({ error: "Cliente no encontrado" });
 
@@ -58,14 +60,14 @@ export default async function handler(req, res) {
         const pontosAtuais = Number(cliente.pontos || 0);
         const saldoCompra = pontosAtuais + pontosGanhos;
         const agora = new Date().toISOString();
-        const transacaoRef = db.ref("transacoes").push();
+        const transacaoRef = tenantRef(db, tenant, "transacoes").push();
         const updates = {};
 
         const acumuladosAtuais = Number(cliente.pontos_acumulados ?? cliente.pontos ?? 0);
-        updates[`users/${uidLimpo}/pontos`] = saldoCompra;
-        updates[`users/${uidLimpo}/pontos_acumulados`] = acumuladosAtuais + pontosGanhos;
-        updates[`users/${uidLimpo}/ultima_compra`] = agora;
-        updates[`transacoes/${transacaoRef.key}`] = {
+        updates[tenantPath(tenant, `users/${uidLimpo}/pontos`)] = saldoCompra;
+        updates[tenantPath(tenant, `users/${uidLimpo}/pontos_acumulados`)] = acumuladosAtuais + pontosGanhos;
+        updates[tenantPath(tenant, `users/${uidLimpo}/ultima_compra`)] = agora;
+        updates[tenantPath(tenant, `transacoes/${transacaoRef.key}`)] = {
             user_id: uidLimpo, nome: cliente.nome || cliente.nombre || "", telefone: cliente.telefone || "",
             tipo: "credito", valor_compra: valorNormalizado, pontos: pontosGanhos,
             pontos_base: pontosBase, multiplicador_bonus: multiplicadorAplicado,
@@ -85,7 +87,7 @@ export default async function handler(req, res) {
             const compraMin = Math.max(0, Number(cfgRef.compra_minima || 100));
 
             if (ativoRef && valorNormalizado >= compraMin) {
-                const indicadorSnap = await db.ref(`users/${refUid}`).once("value");
+                const indicadorSnap = await tenantRef(db, tenant, `users/${refUid}`).once("value");
 
                 if (indicadorSnap.exists()) {
                     indicadorCliente = indicadorSnap.val();
@@ -95,18 +97,18 @@ export default async function handler(req, res) {
                     const novoSaldoIndicador = saldoIndicador + pontosIndicador;
                     saldoFinalCliente = saldoCompra + pontosAmigo;
 
-                    updates[`users/${uidLimpo}/pontos`] = saldoFinalCliente;
-                    updates[`users/${uidLimpo}/pontos_acumulados`] = acumuladosAtuais + pontosGanhos + pontosAmigo;
-                    updates[`users/${uidLimpo}/referido_recompensado`] = true;
-                    updates[`users/${uidLimpo}/referido_recompensado_em`] = agora;
-                    updates[`users/${refUid}/pontos`] = novoSaldoIndicador;
-                    updates[`users/${refUid}/pontos_acumulados`] = Number(indicadorCliente.pontos_acumulados ?? indicadorCliente.pontos ?? 0) + pontosIndicador;
-                    updates[`users/${refUid}/referidos_recompensados`] = Number(indicadorCliente.referidos_recompensados || 0) + 1;
-                    updates[`users/${refUid}/pontos_indicacao_total`] = Number(indicadorCliente.pontos_indicacao_total || 0) + pontosIndicador;
+                    updates[tenantPath(tenant, `users/${uidLimpo}/pontos`)] = saldoFinalCliente;
+                    updates[tenantPath(tenant, `users/${uidLimpo}/pontos_acumulados`)] = acumuladosAtuais + pontosGanhos + pontosAmigo;
+                    updates[tenantPath(tenant, `users/${uidLimpo}/referido_recompensado`)] = true;
+                    updates[tenantPath(tenant, `users/${uidLimpo}/referido_recompensado_em`)] = agora;
+                    updates[tenantPath(tenant, `users/${refUid}/pontos`)] = novoSaldoIndicador;
+                    updates[tenantPath(tenant, `users/${refUid}/pontos_acumulados`)] = Number(indicadorCliente.pontos_acumulados ?? indicadorCliente.pontos ?? 0) + pontosIndicador;
+                    updates[tenantPath(tenant, `users/${refUid}/referidos_recompensados`)] = Number(indicadorCliente.referidos_recompensados || 0) + 1;
+                    updates[tenantPath(tenant, `users/${refUid}/pontos_indicacao_total`)] = Number(indicadorCliente.pontos_indicacao_total || 0) + pontosIndicador;
 
                     if (pontosAmigo > 0) {
-                        const tAmigo = db.ref("transacoes").push();
-                        updates[`transacoes/${tAmigo.key}`] = {
+                        const tAmigo = tenantRef(db, tenant, "transacoes").push();
+                        updates[tenantPath(tenant, `transacoes/${tAmigo.key}`)] = {
                             user_id: uidLimpo,
                             nome: cliente.nome || cliente.nombre || "",
                             telefone: cliente.telefone || "",
@@ -121,8 +123,8 @@ export default async function handler(req, res) {
                     }
 
                     if (pontosIndicador > 0) {
-                        const tIndicador = db.ref("transacoes").push();
-                        updates[`transacoes/${tIndicador.key}`] = {
+                        const tIndicador = tenantRef(db, tenant, "transacoes").push();
+                        updates[tenantPath(tenant, `transacoes/${tIndicador.key}`)] = {
                             user_id: refUid,
                             nome: indicadorCliente.nome || indicadorCliente.nombre || "",
                             telefone: indicadorCliente.telefone || "",
