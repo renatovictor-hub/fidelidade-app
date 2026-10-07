@@ -1,4 +1,6 @@
 import admin from "firebase-admin";
+import crypto from "crypto";
+import { setClientSession } from "./_client-auth.js";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
 
@@ -24,6 +26,27 @@ const ORDER_STATUS = {
     cancelled: { label:"Cancelado", push:"Tu pedido fue cancelado. Contáctanos si necesitas ayuda." }
 };
 const ACTIVE_ORDER_STATUS = new Set(["received","accepted","preparing","waiting_driver","out_for_delivery"]);
+
+function requestIp(req){
+    return String(req.headers?.["x-forwarded-for"]||req.headers?.["x-real-ip"]||"unknown").split(",")[0].trim().slice(0,100);
+}
+async function authRateLimit(db,req,phone){
+    const key=crypto.createHash("sha256").update(requestIp(req)+"|"+String(phone||"")).digest("hex");
+    const ref=db.ref("security/auth_attempts/"+key),now=Date.now(),windowMs=15*60*1000,max=8;
+    let blocked=false;
+    const tx=await ref.transaction(current=>{
+        const cur=current||{};
+        const start=Number(cur.window_start||0);
+        const count=Number(cur.count||0);
+        if(!start||now-start>windowMs)return {window_start:now,count:1,last_at:now};
+        if(count>=max){blocked=true;return cur}
+        return {window_start:start,count:count+1,last_at:now};
+    },undefined,false);
+    const value=tx.snapshot?.val()||{};
+    if(Number(value.count||0)>max)blocked=true;
+    return {allowed:!blocked,key,ref};
+}
+async function clearAuthRate(ref){try{await ref?.remove()}catch(_){}}
 
 function cleanOrderText(value, max = 220) {
     return String(value ?? "").trim().slice(0, max);
@@ -387,6 +410,65 @@ export default async function handler(req, res) {
 
     if (!["GET","POST","PATCH"].includes(req.method)) {
         return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    if (req.method === "POST" && req.body?.action === "auth_register") {
+        try {
+            const nome=cleanOrderText(req.body?.nome,100);
+            const telefone=String(req.body?.telefone||"").replace(/\D/g,"");
+            const nascimento=String(req.body?.nascimento||"").trim();
+            const referidoPor=cleanOrderText(req.body?.referido_por,80);
+            if(nome.length<2||telefone.length!==10||!/^\d{4}-\d{2}-\d{2}$/.test(nascimento))return res.status(400).json({error:"Datos de registro inválidos"});
+            const db=admin.database();
+            const rate=await authRateLimit(db,req,telefone);
+            if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
+            const existingSnap=await db.ref("users").orderByChild("telefone").equalTo(telefone).once("value");
+            let uid,user,recovered=false;
+            if(existingSnap.exists()){
+                [uid,user]=Object.entries(existingSnap.val())[0];
+                const savedBirth=String(user?.nascimento||user?.cumpleanos||"").trim();
+                if(!savedBirth||savedBirth!==nascimento)return res.status(403).json({error:"No es posible recuperar esta cuenta automáticamente. Contacta al restaurante para verificar tu identidad."});
+                await db.ref(`users/${uid}`).update({nascimento,updated_at:new Date().toISOString()});
+                recovered=true;
+            }else{
+                const randomId=crypto.randomBytes(8).readBigUInt64BE().toString();
+                uid="user_"+randomId;
+                user={nome,telefone,nascimento,pontos:0,pontos_acumulados:0};
+                await db.ref(`users/${uid}`).set({
+                    ...user,user_id:uid,
+                    referido_por:/^user_\d+$/.test(referidoPor)&&referidoPor!==uid?referidoPor:null,
+                    referido_recompensado:false,
+                    created_at:new Date().toISOString(),
+                    updated_at:new Date().toISOString()
+                });
+            }
+            setClientSession(res,uid);
+            await clearAuthRate(rate.ref);
+            return res.status(200).json({success:true,uid,nome:user?.nome||user?.nombre||nome,telefone,nascimento,recovered});
+        } catch(error) {
+            return res.status(500).json({error:"No se pudo crear la sesión del cliente",details:error.message});
+        }
+    }
+
+    if (req.method === "POST" && req.body?.action === "session_restore") {
+        try{
+            const uid=cleanOrderText(req.body?.uid,80);
+            const telefone=String(req.body?.telefone||"").replace(/\D/g,"");
+            const nascimento=String(req.body?.nascimento||"").trim();
+            if(!/^user_\d+$/.test(uid)||telefone.length!==10)return res.status(400).json({error:"Datos de sesión inválidos"});
+            const db=admin.database();
+            const rate=await authRateLimit(db,req,telefone);
+            if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
+            const snap=await db.ref(`users/${uid}`).once("value");
+            if(!snap.exists())return res.status(404).json({error:"Cliente no encontrado"});
+            const user=snap.val()||{};
+            if(String(user.telefone||"").replace(/\D/g,"")!==telefone)return res.status(403).json({error:"No pudimos validar esta sesión"});
+            const savedBirth=String(user.nascimento||user.cumpleanos||"").trim();
+            if(!savedBirth||!nascimento||savedBirth!==nascimento)return res.status(403).json({error:"No pudimos validar esta sesión"});
+            setClientSession(res,uid);
+            await clearAuthRate(rate.ref);
+            return res.status(200).json({success:true,uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",nascimento:savedBirth});
+        }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
     }
 
     if (req.method === "POST" && req.body?.action === "delivery_quote") {
