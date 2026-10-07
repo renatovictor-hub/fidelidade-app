@@ -21,8 +21,10 @@ window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Da
         const name=cfg.short_name||cfg.name||'Restaurante';
         document.title=name+' Fidelidad';
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content',cfg.primary_color||'#6a0dad');
-        document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
-        document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+        const primary=cfg.primary_color||'#6a0dad',accent=cfg.accent_color||'#ffcc00';
+        document.documentElement.style.setProperty('--roxo',primary);
+        document.documentElement.style.setProperty('--amarelo',accent);
+        document.documentElement.style.setProperty('--gradiente','linear-gradient(135deg,'+primary+','+accent+')');
         document.querySelectorAll('img.logo,[data-restaurant-logo]').forEach(logo=>{if(cfg.logo)logo.src=cfg.logo;logo.alt=name});
         const success=document.getElementById('successBrandText');if(success)success.innerHTML='Para empezar a usar <b>'+name+'</b> y ganar puntos:';
         const feedback=document.getElementById('feedbackBrandText');if(feedback)feedback.textContent='Tu opinión nos ayuda a mejorar '+name+'.';
