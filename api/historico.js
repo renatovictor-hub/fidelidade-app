@@ -1,5 +1,6 @@
 import admin from "firebase-admin";
 import { requireAdmin } from "./_admin-auth.js";
+import { requireClient } from "./_client-auth.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -14,7 +15,6 @@ if (!admin.apps.length) {
 
 export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Access-Control-Allow-Origin", "*");
 
     if (req.method !== "GET") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
         }
 
         if (publicMode) {
+            if (!requireClient(req,res,uid)) return;
             const userSnap = await admin.database().ref(`users/${uid}`).once("value");
             if (!userSnap.exists()) {
                 return res.status(404).json({ error: "Cliente no encontrado" });
