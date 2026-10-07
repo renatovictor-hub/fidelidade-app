@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uai Sô SaaS · Empresas</title>
+<style>
+:root{--p:#6a0dad;--y:#ffcc00;--bg:#f5f2f7;--txt:#2f2434;--mut:#736b77}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:var(--txt)}
+header{background:linear-gradient(135deg,#5d0c98,#852bd0);color:#fff;padding:20px 24px;border-bottom:4px solid var(--y)}
+header h1{margin:0;font-size:22px}header p{margin:5px 0 0;opacity:.86;font-size:13px}
+.wrap{max-width:1250px;margin:auto;padding:20px}.hidden{display:none!important}
+.card{background:#fff;border:1px solid #e8e0eb;border-radius:16px;padding:18px;box-shadow:0 8px 25px rgba(58,22,72,.05)}
+.login{max-width:420px;margin:9vh auto}.login input{margin-top:12px}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid #ddd2e1;border-radius:10px;font:inherit;background:#fff}textarea{min-height:82px;resize:vertical}
+button{border:0;border-radius:10px;min-height:42px;padding:10px 14px;font-weight:800;cursor:pointer}.primary{background:var(--p);color:#fff}.secondary{background:#eee7f2;color:#5c167f}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:15px}.top button{width:auto}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.kpi{background:#fff;border:1px solid #e8e0eb;border-radius:14px;padding:14px}.kpi small{color:var(--mut);font-weight:700}.kpi b{display:block;font-size:24px;color:var(--p);margin-top:4px}
+.grid{display:grid;grid-template-columns:380px 1fr;gap:14px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+label{font-size:12px;font-weight:800;color:#5e5263;display:block;margin:0 0 5px}.mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{display:flex;gap:8px;align-items:center;padding:9px;border:1px solid #ebe3ee;border-radius:10px}.check input{width:auto;min-height:auto}
+.company{border:1px solid #e9e2ec;border-radius:13px;padding:13px;margin-bottom:9px;background:#fcfbfd}.row{display:flex;justify-content:space-between;gap:10px}.company h3{margin:0;font-size:16px}.meta{color:var(--mut);font-size:12px;margin-top:4px}.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}.chip{font-size:11px;font-weight:800;background:#f0e7f6;color:#671195;padding:4px 7px;border-radius:999px}.status{background:#e8f7ee;color:#157a47}.status.draft{background:#fff5d9;color:#856500}.status.provisioning{background:#eaf2ff;color:#2560a8}.status.legacy{background:#eee;color:#666}
+.note{background:#fff8de;border:1px solid #ead79a;padding:10px 12px;border-radius:10px;font-size:12px;color:#675411;margin-bottom:12px}
+.err{color:#a32222;font-size:13px;margin-top:9px}.ok{color:#167745;font-size:13px;margin-top:9px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head><body>
+<header><h1>Painel Mestre · Empresas</h1><p>Cadastro e controle dos restaurantes que usarão a plataforma</p></header>
+<div class="wrap">
+<section id="login" class="card login"><h2>Acesso do proprietário</h2><p>Use a senha exclusiva de superadministrador.</p><input id="pwd" type="password" autocomplete="current-password" placeholder="Senha mestre"><button class="primary" style="width:100%;margin-top:10px" onclick="doLogin()">ENTRAR</button><div id="loginMsg" class="err"></div></section>
+<section id="app" class="hidden">
+<div class="top"><div><b>Gestão SaaS</b><div class="meta">Esta área não é o painel operacional do restaurante.</div></div><button class="secondary" onclick="logout()">Sair</button></div>
+<div class="note"><b>Importante:</b> cadastrar uma empresa aqui cria o registro comercial/tenant, mas ainda não publica automaticamente um novo app. O provisionamento será ativado quando terminarmos a separação multiempresa.</div>
+<div class="kpis"><div class="kpi"><small>Empresas</small><b id="kTotal">0</b></div><div class="kpi"><small>Ativas</small><b id="kActive">0</b></div><div class="kpi"><small>Rascunho</small><b id="kDraft">0</b></div><div class="kpi"><small>Provisionando</small><b id="kProv">0</b></div></div>
+<div class="grid">
+<div class="card"><h2>Nova empresa</h2>
+<div class="form-grid">
+<div class="full"><label>Nome comercial</label><input id="name" placeholder="Ex: Restaurante Mineiro"></div>
+<div><label>Identificador (slug)</label><input id="slug" placeholder="restaurante-mineiro"></div>
+<div><label>WhatsApp</label><input id="whatsapp" placeholder="+52..."></div>
+<div><label>Cidade</label><input id="city" placeholder="Cancún"></div>
+<div><label>País</label><input id="country" value="MX" maxlength="2"></div>
+<div class="full"><label>Razão social (opcional)</label><input id="legalName"></div>
+<div class="full"><label>Módulos contratados</label><div class="mods">
+<label class="check"><input id="mFid" type="checkbox" checked> Fidelidade</label>
+<label class="check"><input id="mNotif" type="checkbox" checked> Notificações</label>
+<label class="check"><input id="mDel" type="checkbox"> Delivery</label>
+<label class="check"><input id="mOrd" type="checkbox"> Pedidos</label>
+</div></div>
+<div><label>Cor principal</label><input id="primary" value="#6a0dad"></div>
+<div><label>Cor secundária</label><input id="secondary" value="#ffcc00"></div>
+<div class="full"><label>Observações</label><textarea id="notes" placeholder="Plano, condições, informações internas..."></textarea></div>
+</div>
+<button id="createBtn" class="primary" style="width:100%;margin-top:12px" onclick="createCompany()">CRIAR EMPRESA</button><div id="createMsg"></div>
+</div>
+<div class="card"><div class="row"><div><h2 style="margin:0">Empresas cadastradas</h2><div class="meta">Uai Sô aparece como empresa legada até concluirmos a migração.</div></div><button class="secondary" onclick="load()">Atualizar</button></div><div id="companies" style="margin-top:13px"></div></div>
+</div></section></div>
+<script>
+const $=id=>document.getElementById(id);const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function api(pathOpt={}){const r=await fetch("/api/superadmin",{cache:"no-store",credentials:"same-origin",...pathOpt});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Error");return d}
+async function check(){try{await load()}catch{$("login").classList.remove("hidden");$("app").classList.add("hidden")}}
+async function doLogin(){try{$("loginMsg").textContent="";await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"login",password:$("pwd").value})});$("pwd").value="";await load()}catch(e){$("loginMsg").textContent=e.message}}
+async function logout(){await api({method:"DELETE"}).catch(()=>{});$("app").classList.add("hidden");$("login").classList.remove("hidden")}
+function moduleChips(m){return [["Fidelidade",m?.fidelity],["Notificações",m?.notifications],["Delivery",m?.delivery],["Pedidos",m?.orders]].filter(x=>x[1]).map(x=>'<span class="chip">'+x[0]+'</span>').join("")}
+function render(data){$("kTotal").textContent=data.summary?.total||0;$("kActive").textContent=data.summary?.active||0;$("kDraft").textContent=data.summary?.draft||0;$("kProv").textContent=data.summary?.provisioning||0;const rows=data.companies||[];$("companies").innerHTML=rows.length?rows.map(c=>'<div class="company"><div class="row"><div><h3>'+esc(c.name||c.id)+'</h3><div class="meta">'+esc(c.city||"")+(c.country?" · "+esc(c.country):"")+' · '+esc(c.id)+'</div></div><span class="chip status '+esc(c.status)+'">'+esc(c.status)+'</span></div><div class="chips">'+moduleChips(c.modules)+'</div>'+(c.notes?'<div class="meta" style="margin-top:8px">'+esc(c.notes)+'</div>':"")+'</div>').join(""):'<div class="meta">Nenhuma empresa cadastrada.</div>'}
+async function load(){const d=await api();$("login").classList.add("hidden");$("app").classList.remove("hidden");render(d)}
+async function createCompany(){const btn=$("createBtn"),msg=$("createMsg");btn.disabled=true;msg.className="";msg.textContent="";try{const body={action:"create_company",name:$("name").value,slug:$("slug").value,whatsapp:$("whatsapp").value,city:$("city").value,country:$("country").value,legalName:$("legalName").value,modules:{fidelity:$("mFid").checked,notifications:$("mNotif").checked,delivery:$("mDel").checked,orders:$("mOrd").checked},branding:{primary:$("primary").value,secondary:$("secondary").value},notes:$("notes").value};const d=await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});msg.className="ok";msg.textContent="Empresa "+d.company.name+" criada como rascunho.";["name","slug","whatsapp","legalName","notes"].forEach(id=>$(id).value="");await load()}catch(e){msg.className="err";msg.textContent=e.message}finally{btn.disabled=false}}
+check();
+</script></body></html>
