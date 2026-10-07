@@ -81,7 +81,7 @@ export default async function handler(req, res) {
 
         const refUid = String(cliente.referido_por || "").trim();
         if (/^user_\d+$/.test(refUid) && refUid !== uidLimpo && cliente.referido_recompensado !== true) {
-            const cfgRefSnap = await db.ref("config/referidos").once("value");
+            const cfgRefSnap = await tenantRef(db, tenant, "config/referidos").once("value");
             const cfgRef = cfgRefSnap.val() || {};
             const ativoRef = cfgRef.ativo !== false;
             const compraMin = Math.max(0, Number(cfgRef.compra_minima || 100));
