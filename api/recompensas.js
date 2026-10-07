@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
+import { tenantFromRequest, tenantPath, tenantRef } from "./_tenant.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -14,20 +15,21 @@ if (!admin.apps.length) {
 }
 
 async function resgatarRecompensa(req, res) {
+    const tenant = tenantFromRequest(req);
     const uid = String(req.body?.uid || "").trim();
     const recompensaId = String(req.body?.recompensaId || "").trim();
     if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error: "UID inválido" });
     if (!recompensaId) return res.status(400).json({ error: "Recompensa obligatoria" });
 
     const db = admin.database();
-    const recompensaSnap = await db.ref(`recompensas/${recompensaId}`).once("value");
+    const recompensaSnap = await tenantRef(db, tenant, `recompensas/${recompensaId}`).once("value");
     if (!recompensaSnap.exists()) return res.status(404).json({ error: "Recompensa no encontrada" });
     const recompensa = recompensaSnap.val();
     const custo = Math.floor(Number(recompensa.pontos || 0));
     if (recompensa.ativa === false) return res.status(400).json({ error: "Esta recompensa está inactiva" });
     if (!Number.isFinite(custo) || custo <= 0) return res.status(400).json({ error: "Recompensa con puntos inválidos" });
 
-    const userSnap = await db.ref(`users/${uid}`).once("value");
+    const userSnap = await tenantRef(db, tenant, `users/${uid}`).once("value");
     if (!userSnap.exists()) return res.status(404).json({ error: "Cliente no encontrado" });
     const cliente = userSnap.val();
     const saldoAnterior = Number(cliente.pontos || 0);
@@ -35,10 +37,10 @@ async function resgatarRecompensa(req, res) {
 
     const saldoNovo = saldoAnterior - custo;
     const agora = new Date().toISOString();
-    const transacaoRef = db.ref("transacoes").push();
+    const transacaoRef = tenantRef(db, tenant, "transacoes").push();
     const updates = {};
-    updates[`users/${uid}/pontos`] = saldoNovo;
-    updates[`transacoes/${transacaoRef.key}`] = {
+    updates[tenantPath(tenant, `users/${uid}/pontos`)] = saldoNovo;
+    updates[tenantPath(tenant, `transacoes/${transacaoRef.key}`)] = {
         user_id: uid,
         nome: cliente.nome || cliente.nombre || "",
         telefone: cliente.telefone || "",
@@ -76,12 +78,13 @@ async function resgatarRecompensa(req, res) {
 }
 
 export default async function handler(req, res) {
+    const tenant = tenantFromRequest(req);
     res.setHeader("Cache-Control", "no-store");
 
     if (req.method === "OPTIONS") return res.status(200).end();
-    if (!requireAdmin(req, res)) return;
+    if (!requireAdmin(req, res, tenant)) return;
 
-    const ref = admin.database().ref("recompensas");
+    const ref = tenantRef(admin.database(), tenant, "recompensas");
 
     try {
         if (req.method === "POST" && String(req.query?.action || req.body?.action || "") === "redeem") {
