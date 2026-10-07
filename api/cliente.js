@@ -153,7 +153,7 @@ async function handleOrderCreate(req, res) {
 
 async function handleCustomersGet(req, res) {
     const tenant = tenantFromRequest(req);
-    if (!requireAdmin(req, res)) return;
+    if (!requireAdmin(req, res, tenant)) return;
 
     const db = admin.database();
     const [usersSnap, txSnap] = await Promise.all([
@@ -249,7 +249,7 @@ async function handleOrdersGet(req, res) {
     const tenant = tenantFromRequest(req);
     const db = admin.database();
     if (String(req.query.admin || "") === "1") {
-        if (!requireAdmin(req, res)) return;
+        if (!requireAdmin(req, res, tenant)) return;
         const snap = await tenantRef(db, tenant, "pedidos").orderByChild("createdAt").limitToLast(100).once("value");
         const raw = snap.val() || {};
         const orders = Object.entries(raw).map(([id, order]) => publicOrder(id, order)).sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -266,7 +266,7 @@ async function handleOrdersGet(req, res) {
 
 async function handleOrderStatus(req, res) {
     const tenant = tenantFromRequest(req);
-    if (!requireAdmin(req, res)) return;
+    if (!requireAdmin(req, res, tenant)) return;
     const id = cleanOrderText(req.body?.id, 100);
     const status = cleanOrderText(req.body?.status, 40);
     if (!id || !ORDER_STATUS[status]) return res.status(400).json({ error:"Pedido o estado inválido" });
