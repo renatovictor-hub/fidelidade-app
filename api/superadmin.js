@@ -41,6 +41,12 @@ function timingEqual(a,b){
   return aa.length===bb.length&&crypto.timingSafeEqual(aa,bb);
 }
 function clean(v,max=120){return String(v??"").trim().slice(0,max)}
+function makeAdminAccess(password){
+  const salt=crypto.randomBytes(16).toString("hex");
+  const hash=crypto.scryptSync(String(password||""),Buffer.from(salt,"hex"),32).toString("hex");
+  return {salt,hash,updatedAt:new Date().toISOString()};
+}
+function tempPassword(){return "R-"+crypto.randomBytes(6).toString("base64url")+"9!"}
 function slugify(v){
   return clean(v,80).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50);
 }
@@ -107,6 +113,8 @@ async function createCompany(req,res){
   const ref=admin.database().ref("saas/companies/"+slug),snap=await ref.once("value");
   if(snap.exists())return res.status(409).json({error:"Ya existe una empresa con este identificador"});
   const now=new Date().toISOString();
+  const temporaryPassword=tempPassword();
+  const adminAccess=makeAdminAccess(temporaryPassword);
   const company=publicCompany(slug,{
     slug,name,legalName:body.legalName,city:body.city,country:body.country||"MX",whatsapp:body.whatsapp,
     status:"draft",active:true,createdAt:now,updatedAt:now,
@@ -116,12 +124,12 @@ async function createCompany(req,res){
   });
   const db=admin.database();
   await db.ref().update({
-    [`saas/companies/${slug}`]: {...company,createdBy:"superadmin"},
+    [`saas/companies/${slug}`]: {...company,createdBy:"superadmin",adminAccess},
     [`saas/tenantData/${slug}/config/company`]: company,
     [`saas/tenantData/${slug}/config/fidelity`]: {enabled:company.modules.fidelity===true,createdAt:now},
     [`saas/tenantData/${slug}/config/modules`]: company.modules
   });
-  return res.status(201).json({success:true,company,previewUrl:`/tenant-preview.html?company=${encodeURIComponent(slug)}`});
+  return res.status(201).json({success:true,company,temporaryPassword,previewUrl:`/tenant-preview.html?company=${encodeURIComponent(slug)}`,dashboardUrl:`/tenant-dashboard.html?company=${encodeURIComponent(slug)}`});
 }
 async function updateCompany(req,res){
   const id=slugify(req.body?.id); if(!id||id==="uai-so")return res.status(400).json({error:"Empresa inválida para edición en esta fase"});
@@ -164,6 +172,12 @@ export default async function handler(req,res){
     return res.status(200).json({authenticated:true,companies,summary:{total:companies.length,active:companies.filter(x=>x.active).length,draft:companies.filter(x=>x.status==="draft").length,provisioning:companies.filter(x=>x.status==="provisioning").length}});
   }
   if(req.method==="POST"&&req.body?.action==="create_company")return createCompany(req,res);
+  if(req.method==="POST"&&req.body?.action==="reset_company_password"){
+    const id=slugify(req.body?.id);if(!id||id==="uai-so")return res.status(400).json({error:"Empresa inválida"});
+    const ref=admin.database().ref("saas/companies/"+id),snap=await ref.once("value");if(!snap.exists())return res.status(404).json({error:"Empresa no encontrada"});
+    const temporaryPassword=tempPassword();await ref.child("adminAccess").set(makeAdminAccess(temporaryPassword));
+    return res.status(200).json({success:true,id,temporaryPassword,dashboardUrl:`/tenant-dashboard.html?company=${encodeURIComponent(id)}`});
+  }
   if(req.method==="PATCH"&&req.body?.action==="update_company")return updateCompany(req,res);
   return res.status(405).json({error:"Method not allowed"});
 }
