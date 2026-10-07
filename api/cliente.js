@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import crypto from "crypto";
-import { setClientSession } from "./_client-auth.js";
+import { requireClient, setClientSession } from "./_client-auth.js";
+import { tenantFromRequest, tenantPath, tenantRef } from "./_tenant.js";
 import { requireAdmin } from "./_admin-auth.js";
 import { enviarNotificacao } from "./_onesignal.js";
 
@@ -104,6 +105,7 @@ async function notifyOrderStatus(order) {
 }
 
 async function handleOrderCreate(req, res) {
+    const tenant = tenantFromRequest(req);
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
@@ -111,12 +113,12 @@ async function handleOrderCreate(req, res) {
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
 
     const db = admin.database();
-    const orderRef = db.ref("pedidos").push();
+    const orderRef = tenantRef(db, tenant, "pedidos").push();
     const now = new Date().toISOString();
     const code = `US-${now.slice(2,10).replace(/-/g,"")}-${orderRef.key.slice(-4).toUpperCase()}`;
     let profile = {};
     if (uid) {
-        const snap = await db.ref(`users/${uid}`).once("value");
+        const snap = await tenantRef(db, tenant, `users/${uid}`).once("value");
         if (snap.exists()) profile = snap.val() || {};
     }
     const status = "received";
@@ -145,17 +147,18 @@ async function handleOrderCreate(req, res) {
     };
 
     await orderRef.set(order);
-    if (uid) await db.ref(`users/${uid}/ultimo_pedido`).set({ id:orderRef.key, code, status, updatedAt:now });
+    if (uid) await tenantRef(db, tenant, `users/${uid}/ultimo_pedido`).set({ id:orderRef.key, code, status, updatedAt:now });
     return res.status(201).json({ success:true, order:publicOrder(orderRef.key, order) });
 }
 
 async function handleCustomersGet(req, res) {
+    const tenant = tenantFromRequest(req);
     if (!requireAdmin(req, res)) return;
 
     const db = admin.database();
     const [usersSnap, txSnap] = await Promise.all([
-        db.ref("users").once("value"),
-        db.ref("transacoes").once("value")
+        tenantRef(db, tenant, "users").once("value"),
+        tenantRef(db, tenant, "transacoes").once("value")
     ]);
 
     const usersRaw = usersSnap.val() || {};
@@ -243,10 +246,11 @@ async function handleCustomersGet(req, res) {
 }
 
 async function handleOrdersGet(req, res) {
+    const tenant = tenantFromRequest(req);
     const db = admin.database();
     if (String(req.query.admin || "") === "1") {
         if (!requireAdmin(req, res)) return;
-        const snap = await db.ref("pedidos").orderByChild("createdAt").limitToLast(100).once("value");
+        const snap = await tenantRef(db, tenant, "pedidos").orderByChild("createdAt").limitToLast(100).once("value");
         const raw = snap.val() || {};
         const orders = Object.entries(raw).map(([id, order]) => publicOrder(id, order)).sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
         return res.status(200).json({ orders, statuses:ORDER_STATUS });
@@ -254,20 +258,21 @@ async function handleOrdersGet(req, res) {
 
     const uid = cleanOrderText(req.query.uid, 80);
     if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
-    const snap = await db.ref("pedidos").orderByChild("uid").equalTo(uid).limitToLast(30).once("value");
+    const snap = await tenantRef(db, tenant, "pedidos").orderByChild("uid").equalTo(uid).limitToLast(30).once("value");
     const raw = snap.val() || {};
     const orders = Object.entries(raw).map(([id, order]) => publicOrder(id, order)).sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     return res.status(200).json({ orders, active:orders.find(order => ACTIVE_ORDER_STATUS.has(order.status)) || null });
 }
 
 async function handleOrderStatus(req, res) {
+    const tenant = tenantFromRequest(req);
     if (!requireAdmin(req, res)) return;
     const id = cleanOrderText(req.body?.id, 100);
     const status = cleanOrderText(req.body?.status, 40);
     if (!id || !ORDER_STATUS[status]) return res.status(400).json({ error:"Pedido o estado inválido" });
 
     const db = admin.database();
-    const ref = db.ref(`pedidos/${id}`);
+    const ref = tenantRef(db, tenant, `pedidos/${id}`);
     const snap = await ref.once("value");
     if (!snap.exists()) return res.status(404).json({ error:"Pedido no encontrado" });
     const current = snap.val() || {};
@@ -277,7 +282,7 @@ async function handleOrderStatus(req, res) {
         updatedAt: now,
         [`history/${status}`]: { at:now, label:ORDER_STATUS[status].label }
     });
-    if (current.uid) await db.ref(`users/${current.uid}/ultimo_pedido`).set({ id, code:current.code || id, status, updatedAt:now });
+    if (current.uid) await tenantRef(db, tenant, `users/${current.uid}/ultimo_pedido`).set({ id, code:current.code || id, status, updatedAt:now });
     const order = {
         ...current,
         status,
@@ -322,6 +327,7 @@ function destinationWaypoint(destination) {
 }
 
 async function handlePlaceAutocomplete(req, res) {
+    const tenant = tenantFromRequest(req);
     const input = String(req.body?.input || "").trim().slice(0, 120);
     if (input.length < 3) return res.status(200).json({ suggestions: [] });
     const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
@@ -364,6 +370,7 @@ async function handlePlaceAutocomplete(req, res) {
 }
 
 async function handleDeliveryQuote(req, res) {
+    const tenant = tenantFromRequest(req);
     const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
     if (!apiKey) return res.status(503).json({ error: "El cálculo automático todavía no está habilitado.", code: "GOOGLE_MAPS_NOT_CONFIGURED" });
     const destination = destinationWaypoint(req.body?.destination);
@@ -401,6 +408,8 @@ async function handleDeliveryQuote(req, res) {
 }
 
 export default async function handler(req, res) {
+    const tenant = tenantFromRequest(req);
+    const tenant = tenantFromRequest(req);
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -422,19 +431,19 @@ export default async function handler(req, res) {
             const db=admin.database();
             const rate=await authRateLimit(db,req,telefone);
             if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
-            const existingSnap=await db.ref("users").orderByChild("telefone").equalTo(telefone).once("value");
+            const existingSnap=await tenantRef(db, tenant, "users").orderByChild("telefone").equalTo(telefone).once("value");
             let uid,user,recovered=false;
             if(existingSnap.exists()){
                 [uid,user]=Object.entries(existingSnap.val())[0];
                 const savedBirth=String(user?.nascimento||user?.cumpleanos||"").trim();
                 if(!savedBirth||savedBirth!==nascimento)return res.status(403).json({error:"No es posible recuperar esta cuenta automáticamente. Contacta al restaurante para verificar tu identidad."});
-                await db.ref(`users/${uid}`).update({nascimento,updated_at:new Date().toISOString()});
+                await tenantRef(db, tenant, `users/${uid}`).update({nascimento,updated_at:new Date().toISOString()});
                 recovered=true;
             }else{
                 const randomId=crypto.randomBytes(8).readBigUInt64BE().toString();
                 uid="user_"+randomId;
                 user={nome,telefone,nascimento,pontos:0,pontos_acumulados:0};
-                await db.ref(`users/${uid}`).set({
+                await tenantRef(db, tenant, `users/${uid}`).set({
                     ...user,user_id:uid,
                     referido_por:/^user_\d+$/.test(referidoPor)&&referidoPor!==uid?referidoPor:null,
                     referido_recompensado:false,
@@ -442,7 +451,7 @@ export default async function handler(req, res) {
                     updated_at:new Date().toISOString()
                 });
             }
-            setClientSession(res,uid);
+            setClientSession(res,uid,tenant);
             await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user?.nome||user?.nombre||nome,telefone,nascimento,recovered});
         } catch(error) {
@@ -459,13 +468,13 @@ export default async function handler(req, res) {
             const db=admin.database();
             const rate=await authRateLimit(db,req,telefone);
             if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
-            const snap=await db.ref(`users/${uid}`).once("value");
+            const snap=await tenantRef(db, tenant, `users/${uid}`).once("value");
             if(!snap.exists())return res.status(404).json({error:"Cliente no encontrado"});
             const user=snap.val()||{};
             if(String(user.telefone||"").replace(/\D/g,"")!==telefone)return res.status(403).json({error:"No pudimos validar esta sesión"});
             const savedBirth=String(user.nascimento||user.cumpleanos||"").trim();
             if(!savedBirth||!nascimento||savedBirth!==nascimento)return res.status(403).json({error:"No pudimos validar esta sesión"});
-            setClientSession(res,uid);
+            setClientSession(res,uid,tenant);
             await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",nascimento:savedBirth});
         }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
@@ -500,11 +509,12 @@ export default async function handler(req, res) {
             const uid = String(req.body?.uid || "").trim();
             const action = String(req.body?.action || "").trim();
 
-            if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+            if (!/^user_\\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
+            if (!requireClient(req,res,uid,tenant)) return;
 
             if (action === "google_review_clicked") {
                 const agora = new Date().toISOString();
-                const userRef = admin.database().ref(`users/${uid}`);
+                const userRef = tenantRef(admin.database(), tenant, `users/${uid}`);
                 const userSnap = await userRef.once("value");
                 if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
@@ -522,15 +532,15 @@ export default async function handler(req, res) {
 
             if (estrelas < 1 || estrelas > 5) return res.status(400).json({ error:"Calificación inválida" });
 
-            const userRef = admin.database().ref(`users/${uid}`);
+            const userRef = tenantRef(admin.database(), tenant, `users/${uid}`);
             const userSnap = await userRef.once("value");
             if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
             const user = userSnap.val() || {};
             const agora = new Date().toISOString();
-            const feedbackRef = admin.database().ref("feedback").push();
+            const feedbackRef = tenantRef(admin.database(), tenant, "feedback").push();
             await admin.database().ref().update({
-                [`feedback/${feedbackRef.key}`]: {
+                [tenantPath(tenant, `feedback/${feedbackRef.key}`)]: {
                     user_id: uid,
                     nome: user.nome || user.nombre || "",
                     telefone: user.telefone || "",
@@ -539,8 +549,8 @@ export default async function handler(req, res) {
                     compra_ref: compraRef || user.ultima_compra || "",
                     data: agora
                 },
-                [`users/${uid}/feedback_last_at`]: agora,
-                [`users/${uid}/feedback_last_purchase`]: compraRef || user.ultima_compra || agora
+                [tenantPath(tenant, `users/${uid}/feedback_last_at`)]: agora,
+                [tenantPath(tenant, `users/${uid}/feedback_last_purchase`)]: compraRef || user.ultima_compra || agora
             });
 
             return res.status(200).json({ success:true, id:feedbackRef.key });
@@ -552,14 +562,15 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: "UID obligatorio" });
         }
 
-        const snapshot = await admin.database().ref(`users/${uid}`).once("value");
+        if (!requireClient(req,res,uid,tenant)) return;
+        const snapshot = await tenantRef(admin.database(), tenant, `users/${uid}`).once("value");
 
         if (!snapshot.exists()) {
             return res.status(404).json({ error: "Cliente no encontrado" });
         }
 
         const cliente = snapshot.val();
-        const reviewsSnap = await admin.database().ref("config/reviews").once("value");
+        const reviewsSnap = await tenantRef(admin.database(), tenant, "config/reviews").once("value");
         const reviewsCfg = reviewsSnap.val() || {};
 
         return res.status(200).json({
