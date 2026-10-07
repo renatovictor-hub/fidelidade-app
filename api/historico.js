@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import { requireAdmin } from "./_admin-auth.js";
 import { requireClient } from "./_client-auth.js";
+import { tenantFromRequest, tenantRef } from "./_tenant.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -14,6 +15,7 @@ if (!admin.apps.length) {
 }
 
 export default async function handler(req, res) {
+    const tenant = tenantFromRequest(req);
     res.setHeader("Cache-Control", "no-store");
 
     if (req.method !== "GET") {
@@ -32,16 +34,14 @@ export default async function handler(req, res) {
         }
 
         if (publicMode) {
-            if (!requireClient(req,res,uid)) return;
-            const userSnap = await admin.database().ref(`users/${uid}`).once("value");
+            if (!requireClient(req,res,uid,tenant)) return;
+            const userSnap = await tenantRef(admin.database(), tenant, `users/${uid}`).once("value");
             if (!userSnap.exists()) {
                 return res.status(404).json({ error: "Cliente no encontrado" });
             }
         }
 
-        const snapshot = await admin
-            .database()
-            .ref("transacoes")
+        const snapshot = await tenantRef(admin.database(), tenant, "transacoes")
             .orderByChild("user_id")
             .equalTo(uid)
             .once("value");
