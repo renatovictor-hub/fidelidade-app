@@ -129,7 +129,7 @@ async function createCompany(req,res){
     [`saas/tenantData/${slug}/config/fidelity`]: {enabled:company.modules.fidelity===true,createdAt:now},
     [`saas/tenantData/${slug}/config/modules`]: company.modules
   });
-  return res.status(201).json({success:true,company,temporaryPassword,previewUrl:`/tenant-preview.html?company=${encodeURIComponent(slug)}`,dashboardUrl:`/tenant-dashboard.html?company=${encodeURIComponent(slug)}`});
+  return res.status(201).json({success:true,company,temporaryPassword,previewUrl:`/preview-v11.html?company=${encodeURIComponent(slug)}`,dashboardUrl:`/admin-preview.html?company=${encodeURIComponent(slug)}`});
 }
 async function updateCompany(req,res){
   const id=slugify(req.body?.id); if(!id||id==="uai-so")return res.status(400).json({error:"Empresa inválida para edición en esta fase"});
@@ -176,7 +176,7 @@ export default async function handler(req,res){
     const id=slugify(req.body?.id);if(!id||id==="uai-so")return res.status(400).json({error:"Empresa inválida"});
     const ref=admin.database().ref("saas/companies/"+id),snap=await ref.once("value");if(!snap.exists())return res.status(404).json({error:"Empresa no encontrada"});
     const temporaryPassword=tempPassword();await ref.child("adminAccess").set(makeAdminAccess(temporaryPassword));
-    return res.status(200).json({success:true,id,temporaryPassword,dashboardUrl:`/tenant-dashboard.html?company=${encodeURIComponent(id)}`});
+    return res.status(200).json({success:true,id,temporaryPassword,dashboardUrl:`/admin-preview.html?company=${encodeURIComponent(id)}`});
   }
   if(req.method==="PATCH"&&req.body?.action==="update_company")return updateCompany(req,res);
   return res.status(405).json({error:"Method not allowed"});
