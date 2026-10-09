@@ -1,18 +1,10 @@
-import admin from "firebase-admin";
-import { requireAdmin } from "./_admin-auth.js";
-import { enviarNotificacao } from "./_onesignal.js";
-import { tenantFromRequest, tenantPath, tenantRef } from "./_tenant.js";
+import { getFirebaseAdmin } from "../lib/server/firebase.js";
+import { requireAdmin } from "../lib/server/admin-auth.js";
+import { enviarNotificacao } from "../lib/server/onesignal.js";
+import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
+const CFG=getRestaurantConfig();
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-        }),
-        databaseURL: "https://fidelidade-app-9671c-default-rtdb.firebaseio.com"
-    });
-}
+const admin=getFirebaseAdmin();
 
 async function resgatarRecompensa(req, res) {
     const tenant = tenantFromRequest(req);
@@ -29,18 +21,29 @@ async function resgatarRecompensa(req, res) {
     if (recompensa.ativa === false) return res.status(400).json({ error: "Esta recompensa está inactiva" });
     if (!Number.isFinite(custo) || custo <= 0) return res.status(400).json({ error: "Recompensa con puntos inválidos" });
 
-    const userSnap = await tenantRef(db, tenant, `users/${uid}`).once("value");
-    if (!userSnap.exists()) return res.status(404).json({ error: "Cliente no encontrado" });
-    const cliente = userSnap.val();
-    const saldoAnterior = Number(cliente.pontos || 0);
-    if (!Number.isFinite(saldoAnterior) || saldoAnterior < custo) return res.status(400).json({ error: "Puntos insuficientes", saldo: saldoAnterior, necesarios: custo });
+    const userRef = tenantRef(db, tenant, `users/${uid}`);
+    const beforeSnap = await userRef.once("value");
+    if (!beforeSnap.exists()) return res.status(404).json({ error: "Cliente no encontrado" });
+    const cliente = beforeSnap.val() || {};
+    let saldoAnterior = Number(cliente.pontos || 0);
+    let saldoNovo = saldoAnterior;
 
-    const saldoNovo = saldoAnterior - custo;
+    const tx = await userRef.child("pontos").transaction(current => {
+        const saldo = Number(current || 0);
+        if (!Number.isFinite(saldo) || saldo < custo) return;
+        saldoAnterior = saldo;
+        saldoNovo = saldo - custo;
+        return saldoNovo;
+    }, undefined, false);
+
+    if (!tx.committed) {
+        const saldoAtual = Number(tx.snapshot?.val() || saldoAnterior || 0);
+        return res.status(400).json({ error: "Puntos insuficientes o saldo actualizado por otra operación", saldo: saldoAtual, necesarios: custo });
+    }
+
     const agora = new Date().toISOString();
     const transacaoRef = tenantRef(db, tenant, "transacoes").push();
-    const updates = {};
-    updates[tenantPath(tenant, `users/${uid}/pontos`)] = saldoNovo;
-    updates[tenantPath(tenant, `transacoes/${transacaoRef.key}`)] = {
+    await transacaoRef.set({
         user_id: uid,
         nome: cliente.nome || cliente.nombre || "",
         telefone: cliente.telefone || "",
@@ -53,15 +56,14 @@ async function resgatarRecompensa(req, res) {
         saldo_anterior: saldoAnterior,
         saldo_novo: saldoNovo,
         data: agora
-    };
-    await db.ref().update(updates);
+    });
 
     const push = await enviarNotificacao({
         uid,
         telefone: cliente.telefone || "",
         titulo: "🎁 Recompensa canjeada",
         mensagem: `${recompensa.nome || "Tu recompensa"} fue canjeada por ${custo} puntos. Saldo: ${saldoNovo}.`,
-        url: "https://fidelidad-uai-so.vercel.app/recompensas.html"
+        url: CFG.domain+"/recompensas.html"
     }).catch(error => ({ error: true, details: error.message }));
 
     return res.status(200).json({
@@ -92,12 +94,28 @@ export default async function handler(req, res) {
         }
 
         if (req.method === "GET") {
-            const snapshot = await ref.once("value");
+            const [snapshot, txSnap] = await Promise.all([
+                ref.once("value"),
+                tenantRef(admin.database(), tenant, "transacoes").orderByChild("origem").equalTo("recompensa").once("value")
+            ]);
             const data = snapshot.val() || {};
+            const stats = {};
+            Object.values(txSnap.val() || {}).forEach(item => {
+                const id = String(item?.recompensa_id || "");
+                if (!id) return;
+                if (!stats[id]) stats[id] = { canjes: 0, ultimo_canje: "" };
+                stats[id].canjes += 1;
+                if (String(item?.data || "") > stats[id].ultimo_canje) stats[id].ultimo_canje = String(item.data || "");
+            });
             const recompensas = Object.entries(data)
-                .map(([id, item]) => ({ id, ...item }))
+                .map(([id, item]) => ({ id, ...item, canjes: stats[id]?.canjes || 0, ultimo_canje: stats[id]?.ultimo_canje || "" }))
                 .sort((a, b) => Number(a.pontos || 0) - Number(b.pontos || 0));
-            return res.status(200).json({ total: recompensas.length, recompensas });
+            return res.status(200).json({
+                total: recompensas.length,
+                activas: recompensas.filter(x => x.ativa !== false).length,
+                canjes: recompensas.reduce((n,x) => n + Number(x.canjes || 0), 0),
+                recompensas
+            });
         }
 
         if (req.method === "POST") {
@@ -105,6 +123,8 @@ export default async function handler(req, res) {
             const descricao = String(req.body?.descricao || "").trim();
             const pontos = Math.floor(Number(req.body?.pontos));
             if (!nome) return res.status(400).json({ error: "Nombre obligatorio" });
+            if (nome.length > 80) return res.status(400).json({ error: "El nombre no puede superar 80 caracteres" });
+            if (descricao.length > 240) return res.status(400).json({ error: "La descripción no puede superar 240 caracteres" });
             if (!Number.isFinite(pontos) || pontos <= 0) return res.status(400).json({ error: "Puntos inválidos" });
             const novaRef = ref.push();
             const recompensa = { nome, descricao, pontos, ativa: true, created_at: new Date().toISOString() };
@@ -123,9 +143,14 @@ export default async function handler(req, res) {
             if (req.body?.nome !== undefined) {
                 const nome = String(req.body.nome || "").trim();
                 if (!nome) return res.status(400).json({ error: "Nombre inválido" });
+                if (nome.length > 80) return res.status(400).json({ error: "El nombre no puede superar 80 caracteres" });
                 atualizacoes.nome = nome;
             }
-            if (req.body?.descricao !== undefined) atualizacoes.descricao = String(req.body.descricao || "").trim();
+            if (req.body?.descricao !== undefined) {
+                const descricao = String(req.body.descricao || "").trim();
+                if (descricao.length > 240) return res.status(400).json({ error: "La descripción no puede superar 240 caracteres" });
+                atualizacoes.descricao = descricao;
+            }
             if (req.body?.pontos !== undefined) {
                 const pontos = Math.floor(Number(req.body.pontos));
                 if (!Number.isFinite(pontos) || pontos <= 0) return res.status(400).json({ error: "Puntos inválidos" });
