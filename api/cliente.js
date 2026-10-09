@@ -420,6 +420,43 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
+    if (req.method === "GET" && String(req.query?.action || "") === "public_config") {
+        try {
+            if (tenant === "uai-so") {
+                return res.status(200).json({
+                    id:"uai-so",
+                    name:"Uai Sô Brazilian Food",
+                    short_name:"Uai Sô",
+                    primary_color:"#6a0dad",
+                    accent_color:"#ffcc00",
+                    logo:"/logo.png",
+                    whatsapp:"5219986023759",
+                    modules:{loyalty:true,delivery:true,orders:true,notifications:true}
+                });
+            }
+            const snap=await admin.database().ref(`saas/companies/${tenant}`).once("value");
+            if(!snap.exists())return res.status(404).json({error:"Empresa no encontrada"});
+            const cfg=snap.val()||{};
+            return res.status(200).json({
+                id:tenant,
+                name:String(cfg.name||"Restaurante"),
+                short_name:String(cfg.short_name||cfg.name||"Restaurante"),
+                primary_color:String(cfg.branding?.primary||"#6a0dad"),
+                accent_color:String(cfg.branding?.secondary||"#ffcc00"),
+                logo:String(cfg.logo||""),
+                whatsapp:String(cfg.whatsapp||""),
+                modules:{
+                    loyalty:cfg.modules?.fidelity!==false,
+                    delivery:cfg.modules?.delivery===true,
+                    orders:cfg.modules?.orders===true,
+                    notifications:cfg.modules?.notifications!==false
+                }
+            });
+        } catch(error) {
+            return res.status(500).json({error:"No se pudo cargar la configuración",details:error.message});
+        }
+    }
+
     if (req.method === "POST" && req.body?.action === "auth_register") {
         try {
             const nome=cleanOrderText(req.body?.nome,100);
