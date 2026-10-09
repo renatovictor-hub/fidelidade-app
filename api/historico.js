@@ -13,7 +13,8 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const tenant=tenantFromRequest(req);
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
     const db=tenantDatabase(admin.database(),tenant);
     const publicMode = String(req.query.public || "") === "1";
     if (!publicMode && !requireAdmin(req, res)) return;
