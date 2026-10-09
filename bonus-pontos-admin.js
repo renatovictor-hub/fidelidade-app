@@ -75,15 +75,17 @@
 
   $("bonusSalvar").onclick=async()=>{
     const diasAtivos=[...document.querySelectorAll("#bonusDias input:checked")].map(x=>Number(x.value));
-    if(!diasAtivos.length) return alert("Selecciona por lo menos un día.");
+    const ativo=$("bonusAtivo").checked;
+    if(ativo&&!diasAtivos.length) return alert("Selecciona por lo menos un día para activar el bonus.");
     const cfg={
-      ativo:$("bonusAtivo").checked,
+      ativo,
       multiplicador:Number($("bonusMultiplicador").value||2),
       inicio:$("bonusInicio").value||"00:00",
       fim:$("bonusFim").value||"23:59",
       dias:diasAtivos,
       updated_at:new Date().toISOString()
     };
+    const btn=$("bonusSalvar");btn.disabled=true;btn.textContent="GUARDANDO...";
     const r=await fetch("/api/sendpush",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -93,6 +95,8 @@
     $("bonusEstado").textContent=r.ok
       ? (cfg.ativo?"✅ Bonus activo y guardado":"✅ Configuración guardada; bonus desactivado")
       : "❌ "+(data.error||"Error al guardar.");
+    btn.disabled=false;btn.textContent="GUARDAR BONUS";
+    if(r.ok) window.dispatchEvent(new CustomEvent("uai:fidelity-config-saved",{detail:{config:"bonus_pontos"}}));
   };
 
   // Atualiza o preview de pontos do dashboard de acordo com a regra salva.
@@ -110,7 +114,7 @@
   const calcOriginal=window.calcularPontosCompra;
   window.calcularPontosCompra=async function(){
     const valor=Number(document.getElementById("valorCompra")?.value||0);
-    const base=Math.floor(valor/10);
+    const base=Math.floor(valor/(Number(typeof PESOS_POR_PONTO!=="undefined"?PESOS_POR_PONTO:10)||10));
     const cfg=await getCfg();
 
     const agora=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Cancun"}));
