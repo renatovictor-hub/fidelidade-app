@@ -1,5 +1,6 @@
 import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import crypto from "crypto";
+import { tenantFromRequest, tenantPath, tenantRef } from "./_tenant.js";
 import { requireAdmin, isValidSession as isAdminSession } from "../lib/server/admin-auth.js";
 import { requireClient, setClientSession } from "../lib/server/client-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
