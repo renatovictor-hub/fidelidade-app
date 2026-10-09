@@ -909,6 +909,22 @@ export default async function handler(req, res) {
         return res.status(200).json({ready:items.every(x=>x.ok),restaurant:{id:RESTAURANT_CONFIG.id,name:RESTAURANT_CONFIG.name,modules:RESTAURANT_CONFIG.modules},items});
     }
 
+    if (req.method === "GET" && String(req.query.action || "") === "preview_diagnostics") {
+        if (process.env.VERCEL_ENV !== "preview") return res.status(403).json({error:"Disponible solo en Preview"});
+        const db=admin.database();
+        const [usersSnap,txSnap,ordersSnap,rewardsSnap]=await Promise.all([
+            tenantRef(db,tenant,"users").once("value"),
+            tenantRef(db,tenant,"transacoes").once("value"),
+            tenantRef(db,tenant,"pedidos").once("value"),
+            tenantRef(db,tenant,"recompensas").once("value")
+        ]);
+        const users=usersSnap.val()||{},tx=txSnap.val()||{},orders=ordersSnap.val()||{},rewards=rewardsSnap.val()||{};
+        const phone=String(req.query?.telefone||"").replace(/\D/g,"");
+        const phoneMatch=phone?Object.values(users).some(u=>String(u?.telefone||"").replace(/\D/g,"")===phone):null;
+        const totalPoints=Object.values(users).reduce((s,u)=>s+Number(u?.pontos||0),0);
+        return res.status(200).json({tenant,users:Object.keys(users).length,transactions:Object.keys(tx).length,orders:Object.keys(orders).length,rewards:Object.keys(rewards).length,totalPoints,phoneMatch});
+    }
+
     if (req.method === "GET" && String(req.query.action || "") === "public_config") {
         const snap = await tenantRef(admin.database(), tenant, "config/restaurant_contact").once("value");
         const cfg = snap.val() || {};
