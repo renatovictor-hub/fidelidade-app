@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#6a0dad">
-<title>Uai Sô Fidelidad 1.1</title>
-<link rel="manifest" href="/manifest.json">
+<title>Fidelidad</title>
+<link rel="manifest" href="/api/manifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
@@ -30,13 +30,13 @@ button{font:inherit}
 .qr-mini{border:0;background:#fff;color:var(--p);border-radius:13px;min-width:104px;padding:8px;font-size:10px;font-weight:900;cursor:pointer}.qr-mini .ico{font-size:22px;display:block;margin-bottom:3px}
 .mini-tools-row{position:relative;display:flex;gap:8px;align-items:flex-start;min-height:58px;margin-bottom:11px;transition:min-height .22s ease}
 .mini-tools-row.has-expanded{min-height:164px}
-.mini-tool-card{position:relative;flex:1 1 0;width:calc(50% - 4px);min-width:0;border-radius:14px;padding:9px 11px;cursor:pointer;overflow:hidden;transition:width .22s ease,left .22s ease,right .22s ease,padding .22s ease,box-shadow .22s ease}
+.mini-tool-card{position:relative;flex:1 1 0;width:calc(50% - 4px);min-width:0;min-height:70px;border-radius:14px;padding:9px 11px;cursor:pointer;overflow:hidden;transition:width .22s ease,left .22s ease,right .22s ease,padding .22s ease,box-shadow .22s ease}
 .vip-card{background:#fff;border:1px solid #eadff4;box-shadow:0 4px 12px rgba(106,13,173,.07)}
 .ref-card{background:linear-gradient(135deg,#f4eaff,#ead9ff);border:1px solid #d8b9ff;box-shadow:0 4px 12px rgba(106,13,173,.08)}
-.mini-tool-card.expanded{position:absolute;top:0;width:100%;z-index:20;padding:13px 14px;overflow:visible}
+.mini-tool-card.expanded{position:absolute;top:0;width:100%;min-height:0;z-index:20;padding:13px 14px;overflow:visible}
 .vip-card.expanded{left:0;right:auto;box-shadow:0 8px 20px rgba(106,13,173,.16)}
 .ref-card.expanded{right:0;left:auto;box-shadow:0 8px 20px rgba(106,13,173,.16)}
-.mini-head{min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:7px}.mini-main{min-width:0}.mini-kicker{font-size:9px;color:#7b6b86;font-weight:800}.mini-title{font-size:14px;font-weight:900;color:var(--p);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mini-toggle{flex:none;color:var(--p);font-size:13px;font-weight:900;transition:transform .18s ease}.mini-details{display:none;padding-top:3px}.mini-tool-card.expanded .mini-details{display:block}.mini-tool-card.expanded .mini-toggle{transform:rotate(180deg)}
+.mini-head{min-height:50px;display:flex;align-items:center;justify-content:space-between;gap:7px}.mini-main{min-width:0}.mini-kicker{font-size:9px;color:#7b6b86;font-weight:800}.mini-title{font-size:14px;font-weight:900;color:var(--p);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mini-toggle{flex:none;color:var(--p);font-size:13px;font-weight:900;transition:transform .18s ease}.mini-details{display:none;padding-top:3px}.mini-tool-card.expanded .mini-details{display:block}.mini-tool-card.expanded .mini-toggle{transform:rotate(180deg)}
 .vip-progress{height:7px;background:#eee7f4;border-radius:999px;overflow:hidden;margin-top:9px}.vip-progress>div{height:100%;background:linear-gradient(90deg,var(--p),#9b30ff);border-radius:999px;transition:width .35s ease}
 .invite-btn{width:100%;margin-top:10px;background:var(--p);color:#fff;border:0;border-radius:10px;padding:10px;font-weight:800;font-size:11px}
 .system-card{display:none;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin:0 0 9px;box-shadow:0 4px 12px rgba(70,32,92,.05)}
@@ -64,12 +64,11 @@ button{font:inherit}
 </head>
 <body>
 <div class="app">
-  <header class="top"><img src="/logo.png" alt="Uai Sô"><span class="version">v1.1</span></header>
+  <header class="top"><img src="/logo.png" alt="Restaurante"><span class="version">v1.1</span></header>
 
   <section id="screen-home" class="screen active">
-    <div id="counter" class="counter">🔥 +301 clientes conectados</div>
     <div class="quick">
-      <a href="https://instagram.com/fooduaiso" target="_blank" rel="noopener">◎ Instagram</a>
+      <a id="restaurantInstagram" href="#" target="_blank" rel="noopener" style="display:none">◎ Instagram</a>
       <a href="/menu-videos.html" onclick="openVideoMenu(event)">🍴 Nuestro Menú</a>
     </div>
     <div class="hello"><h2 id="helloName">Hola</h2><p>¡Qué bueno verte de nuevo!</p></div>
@@ -92,9 +91,9 @@ button{font:inherit}
     <div id="birthdayCard" class="system-card birthday"><div class="system-row"><div class="system-icon">🎂</div><div class="system-main"><div class="system-kicker">BENEFICIO DE CUMPLEAÑOS</div><div id="birthdayTitle" class="system-title">Tienes un regalo</div><div id="birthdayText" class="system-text"></div></div></div></div>
     <div id="bonusCard" class="system-card bonus"><div class="system-row"><div class="system-icon">⚡</div><div class="system-main"><div class="system-kicker">PUNTOS BONUS</div><div id="bonusTitle" class="system-title">Bonus activo</div><div id="bonusText" class="system-text"></div></div></div></div>
     <div id="feedbackCard" class="system-card feedback"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">TU OPINIÓN</div><div class="system-title">Califica tu compra reciente</div><div class="system-text">Tu opinión nos ayuda a mejorar.</div></div><button class="system-action" onclick="openFeedback()">OPINAR</button></div></div>
-    <div id="googleCard" class="system-card google"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">GOOGLE</div><div class="system-title">¿Te gusta Uai Sô?</div><div class="system-text">Tu reseña ayuda a que más personas nos encuentren.</div></div><button class="system-action" onclick="openGoogle()">EVALUAR</button></div></div>
+    <div id="googleCard" class="system-card google"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">GOOGLE</div><div class="system-title">¿Te gusta este restaurante?</div><div class="system-text">Tu reseña ayuda a que más personas nos encuentren.</div></div><button class="system-action" onclick="openGoogle()">EVALUAR</button></div></div>
 
-    <img src="/banner.jpg" class="banner" alt="Uai Sô Brazilian Style Food">
+    <img src="/banner.jpg" class="banner" alt="Restaurante">
     <div class="section-title">🔥 Promociones Activas</div>
     <div id="homeOffers" class="list"><div class="loading">Cargando promociones…</div></div>
     <div id="previousBlock" style="display:none"><div class="previous-title">↶ Anteriores</div><div id="homePrevious" class="list"></div></div>
@@ -107,7 +106,7 @@ button{font:inherit}
 
   <section id="screen-qr" class="screen">
     <div class="subhead"><div><h1>Mi QR</h1><p>Muéstralo al momento de tu compra.</p></div></div>
-    <div class="qr-card"><img class="logo" src="/logo.png" alt="Uai Sô"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
+    <div class="qr-card"><img class="logo" src="/logo.png" alt="Restaurante"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
   </section>
 
   <section id="screen-offers" class="screen">
@@ -139,20 +138,40 @@ button{font:inherit}
 <div id="movesModal" class="modal" onclick="if(event.target===this)closeMoves()"><div class="sheet"><div class="sheetbar"></div><div class="mov-head"><h3 style="margin:0;color:var(--p)">Todos los movimientos</h3><button class="linkbtn" onclick="closeMoves()">Cerrar</button></div><div id="allMoves" class="moves" style="margin-top:8px"></div></div></div>
 
 <div id="feedbackModal" class="modal" onclick="if(event.target===this)closeFeedback()">
-  <div class="sheet"><div class="sheetbar"></div><h3 class="modal-title">¿Cómo estuvo tu compra?</h3><p class="modal-copy">Califica tu experiencia. El comentario es opcional y queda como opinión privada para Uai Sô.</p><div id="feedbackStars" class="stars"><button class="star" data-star="1" onclick="setStars(1)">★</button><button class="star" data-star="2" onclick="setStars(2)">★</button><button class="star" data-star="3" onclick="setStars(3)">★</button><button class="star" data-star="4" onclick="setStars(4)">★</button><button class="star" data-star="5" onclick="setStars(5)">★</button></div><textarea id="feedbackComment" class="feedback-text" placeholder="¿Quieres contarnos algo? (opcional)"></textarea><button id="feedbackSend" class="primary" onclick="sendFeedback()">ENVIAR OPINIÓN</button><button class="secondary" onclick="closeFeedback()">Ahora no</button></div>
+  <div class="sheet"><div class="sheetbar"></div><h3 class="modal-title">¿Cómo estuvo tu compra?</h3><p class="modal-copy">Califica tu experiencia. El comentario es opcional y queda como opinión privada para este restaurante.</p><div id="feedbackStars" class="stars"><button class="star" data-star="1" onclick="setStars(1)">★</button><button class="star" data-star="2" onclick="setStars(2)">★</button><button class="star" data-star="3" onclick="setStars(3)">★</button><button class="star" data-star="4" onclick="setStars(4)">★</button><button class="star" data-star="5" onclick="setStars(5)">★</button></div><textarea id="feedbackComment" class="feedback-text" placeholder="¿Quieres contarnos algo? (opcional)"></textarea><button id="feedbackSend" class="primary" onclick="sendFeedback()">ENVIAR OPINIÓN</button><button class="secondary" onclick="closeFeedback()">Ahora no</button></div>
 </div>
 
 <div id="googleModal" class="modal" onclick="if(event.target===this)closeGoogle()">
-  <div class="sheet"><div class="sheetbar"></div><h3 class="modal-title">⭐ ¿Nos calificas en Google?</h3><p class="modal-copy">Tu reseña pública ayuda a otras personas a descubrir Uai Sô. Este acceso se mostrará una sola vez en el app.</p><button class="primary" onclick="goGoogleReview()">ABRIR GOOGLE</button><button class="secondary" onclick="closeGoogle()">Ahora no</button></div>
+  <div class="sheet"><div class="sheetbar"></div><h3 class="modal-title">⭐ ¿Nos calificas en Google?</h3><p class="modal-copy">Tu reseña pública ayuda a otras personas a descubrir este restaurante. Este acceso se mostrará una sola vez en el app.</p><button class="primary" onclick="goGoogleReview()">ABRIR GOOGLE</button><button class="secondary" onclick="closeGoogle()">Ahora no</button></div>
 </div>
 
 <script>
-const FB='https://fidelidade-app-9671c-default-rtdb.firebaseio.com';
 const qs=new URLSearchParams(location.search);
 let uid=String(qs.get('uid')||localStorage.getItem('uid')||'').trim();
 let client=null,movements=[],rewards=[],promos=[],vipCfg={},offerTab='active',feedbackStars=0;
-let activePromos=[],expiredPromos=[],birthdayBenefit=null,bonusBenefit=null;
+let activePromos=[],expiredPromos=[],birthdayBenefit=null,bonusBenefit=null,appDataCache=null;
+let restaurantCfg={name:'Restaurante',short_name:'Restaurante',logo:'/logo.png',primary_color:'#6a0dad',accent_color:'#ffcc00',instagram_url:'',modules:{loyalty:true,delivery:false}};
+async function loadAppData(force=false){if(appDataCache&&!force)return appDataCache;const r=await fetch('/api/cliente?action=app_data&uid='+encodeURIComponent(uid)+'&t='+Date.now(),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar la configuración');appDataCache=d;return d}
 
+function applyRestaurantBrand(cfg){
+  restaurantCfg={...restaurantCfg,...(cfg||{})};
+  const shortName=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad';
+  document.title=shortName+' Fidelidad';
+  document.documentElement.style.setProperty('--p',restaurantCfg.primary_color||'#6a0dad');
+  document.documentElement.style.setProperty('--p2',restaurantCfg.primary_color||'#6a0dad');
+  document.querySelectorAll('img[src="/logo.png"],img.logo').forEach(img=>{if(restaurantCfg.logo)img.src=restaurantCfg.logo;img.alt=shortName});
+  const top=document.querySelector('.top img');if(top&&restaurantCfg.logo)top.src=restaurantCfg.logo;
+  const googleTitle=document.querySelector('#googleCard .system-title');if(googleTitle)googleTitle.textContent='¿Te gusta '+shortName+'?';
+  const banner=document.querySelector('#screen-home img.banner');if(banner)banner.alt=restaurantCfg.name||shortName;
+  const feedbackCopy=document.querySelector('#feedbackModal .modal-copy');if(feedbackCopy)feedbackCopy.textContent='Califica tu experiencia. El comentario es opcional y queda como opinión privada para '+shortName+'.';
+  const googleCopy=document.querySelector('#googleModal .modal-copy');if(googleCopy)googleCopy.textContent='Tu reseña pública ayuda a otras personas a descubrir '+shortName+'. Este acceso se mostrará una sola vez en el app.';
+  const insta=document.getElementById('restaurantInstagram');
+  if(insta){
+    const url=String(restaurantCfg.instagram_url||'').trim();
+    insta.style.display=url?'':'none';
+    if(url)insta.href=url;
+  }
+}
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmtDate(v,withTime=false){if(!v)return'—';const d=new Date(v);if(Number.isNaN(d.getTime()))return'—';return new Intl.DateTimeFormat('es-MX',withTime?{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'short',year:'numeric'}).format(d)}
 function fmtBirthday(v){if(!v)return'No registrado';const d=new Date(v+'T12:00:00');if(Number.isNaN(d.getTime()))return'No registrado';return new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long'}).format(d)}
@@ -172,7 +191,7 @@ function renderMoves(target,items){const el=$(target);if(!items.length){el.inner
 function openMoves(){renderMoves('allMoves',movements);$('movesModal').classList.add('open')}function closeMoves(){$('movesModal').classList.remove('open')}
 
 async function loadClient(){if(!/^user_\d+$/.test(uid))throw new Error('No encontramos tu sesión.');const r=await fetch(`/api/cliente?uid=${encodeURIComponent(uid)}&t=${Date.now()}`,{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cargar tu cuenta');client=d;$('helloName').textContent='Hola, '+(d.nome||'Cliente');$('homePoints').textContent=Number(d.pontos||0);$('profileName').textContent=d.nome||'Mi cuenta';$('profileAvatar').textContent=initials(d.nome);$('profilePhone').textContent=maskPhone(d.telefone);$('profileBirthday').textContent=fmtBirthday(d.nascimento);$('profileSince').textContent=d.created_at?fmtDate(d.created_at):'—';$('profileRefs').textContent=Number(d.referidos_recompensados||0);$('statPoints').textContent=Number(d.pontos||0);$('qrName').textContent=d.nome||'Cliente';$('qrId').textContent='ID: '+uid.replace('user_','#');$('refStats').textContent=`${Number(d.referidos_recompensados||0)} amigos premiados · ${Number(d.pontos_indicacao_total||0)} puntos ganados`;updateReviewCards()}
-async function loadVip(){try{vipCfg=await(await fetch(`${FB}/config/niveles_vip.json?t=${Date.now()}`,{cache:'no-store'})).json()||{}}catch{vipCfg={}}updateLevel()}
+async function loadVip(){try{vipCfg=(await loadAppData()).vip||{}}catch{vipCfg={}}updateLevel()}
 async function loadMoves(){try{const r=await fetch(`/api/historico?public=1&uid=${encodeURIComponent(uid)}&limit=100&t=${Date.now()}`,{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Error');movements=d.movimientos||[];$('statPurchases').textContent=Number(d.compras||0);$('statRewards').textContent=Number(d.resgates||0);renderMoves('recentMoves',movements.slice(0,5))}catch{$('recentMoves').innerHTML='<div class="empty">No se pudo cargar el historial.</div>'}}
 async function loadRewards(){try{const d=await(await fetch('/api/recompensas-publicas',{cache:'no-store'})).json();rewards=d.recompensas||[];$('rewardsList').innerHTML=rewards.length?rewards.map(x=>`<div class="reward" data-points="${Math.max(0,Number(x.pontos)||0)}"><img src="${esc(x.imagem||'/logo.png')}" onerror="this.onerror=null;this.src='/logo.png'"><div class="body"><h3>${esc(x.nome)}</h3><div class="pts">${x.pontos} puntos</div><div class="desc">${esc(x.descricao||'')}</div></div><button type="button" onclick="location.href='/recompensas.html'">Canjear</button></div>`).join(''):'<div class="empty">No hay recompensas activas.</div>'}catch{$('rewardsList').innerHTML='<div class="empty">No se pudieron cargar recompensas.</div>'}}
 
@@ -180,7 +199,7 @@ function promoEnd(p){return p?.fim||p?.fecha_fin||p?.expires_at||p?.validade||''
 function promoActive(p){if(p?.ativa===false||p?.activo===false)return false;const end=promoEnd(p);if(!end)return true;const d=new Date(end);return Number.isNaN(d.getTime())||d.getTime()>=Date.now()}
 function promoTitle(p){return p?.titulo||p?.title||p?.nome||'Promoción especial'}function promoDesc(p){return p?.texto||p?.descricao||p?.descripcion||p?.mensagem||''}function promoImg(p){return p?.imagem||p?.image||p?.foto||''}
 function promoHtml(p,expired=false){return`<article class="offer ${expired?'expired':''}">${promoImg(p)?`<img src="${esc(promoImg(p))}" onerror="this.style.display='none'">`:''}<div class="body"><h3>${esc(promoTitle(p))}</h3><p>${esc(promoDesc(p))}</p><span class="tag">${expired?'FINALIZADA':'ACTIVA'}</span></div></article>`}
-async function loadPromos(){try{const d=await(await fetch(`${FB}/promos.json?t=${Date.now()}`,{cache:'no-store'})).json()||{};promos=Object.entries(d).map(([id,p])=>({id,...(p||{})}));activePromos=promos.filter(promoActive);expiredPromos=promos.filter(p=>!promoActive(p)).sort((a,b)=>new Date(promoEnd(b)||0)-new Date(promoEnd(a)||0));$('homeOffers').innerHTML=activePromos.length?activePromos.slice(0,2).map(p=>promoHtml(p)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';if(expiredPromos.length){$('previousBlock').style.display='block';$('homePrevious').innerHTML=expiredPromos.slice(0,3).map(p=>promoHtml(p,true)).join('')}else $('previousBlock').style.display='none';renderOfferTab()}catch{$('homeOffers').innerHTML='<div class="empty">No se pudieron cargar promociones.</div>';$('offersList').innerHTML='<div class="empty">No se pudieron cargar ofertas.</div>'}}
+async function loadPromos(){try{const d=await loadAppData(true);promos=Array.isArray(d.promos)?d.promos:[];activePromos=promos.filter(promoActive);expiredPromos=promos.filter(p=>!promoActive(p)).sort((a,b)=>new Date(promoEnd(b)||0)-new Date(promoEnd(a)||0));$('homeOffers').innerHTML=activePromos.length?activePromos.slice(0,2).map(p=>promoHtml(p)).join(''):'<div class="empty">No hay promociones activas ahora.</div>';if(expiredPromos.length){$('previousBlock').style.display='block';$('homePrevious').innerHTML=expiredPromos.slice(0,3).map(p=>promoHtml(p,true)).join('')}else $('previousBlock').style.display='none';renderOfferTab()}catch{$('homeOffers').innerHTML='<div class="empty">No se pudieron cargar promociones.</div>';$('offersList').innerHTML='<div class="empty">No se pudieron cargar ofertas.</div>'}}
 
 function pendingFeedback(){if(!client?.ultima_compra||client?.reviews?.ativo===false)return false;if(client.feedback_last_purchase&&String(client.feedback_last_purchase)===String(client.ultima_compra))return false;const ts=new Date(client.ultima_compra).getTime();if(!Number.isFinite(ts))return false;const age=(Date.now()-ts)/86400000;return age>=0&&age<=Math.max(1,Number(client?.reviews?.dias_apos_compra||3))}
 function googleAvailable(){return !!client?.reviews?.google_url&&client?.google_review_clicked!==true}
@@ -193,15 +212,15 @@ async function sendFeedback(){if(feedbackStars<1)return alert('Selecciona de 1 a
 function openGoogle(){$('googleModal').classList.add('open')}function closeGoogle(){$('googleModal').classList.remove('open')}
 async function goGoogleReview(){const url=String(client?.reviews?.google_url||'').trim();if(!url)return alert('El enlace de Google no está configurado.');$('googleCard').classList.remove('show');client.google_review_clicked=true;closeGoogle();try{await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid,action:'google_review_clicked'})})}catch(_){}window.open(url,'_blank','noopener');renderOfferTab()}
 
-function cancunNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Cancun'}))}
+function restaurantNow(){const tz=String(window.__restaurantConfig?.timezone||'America/Cancun');return new Date(new Date().toLocaleString('en-US',{timeZone:tz}))}
 async function loadBonus(){
   const card=$('bonusCard');
   card?.classList.remove('show');
   bonusBenefit=null;
   try{
-    const c=await(await fetch(`${FB}/config/bonus_pontos.json?t=${Date.now()}`,{cache:'no-store'})).json()||{};
+    const c=(await loadAppData()).bonus||{};
     if(c.ativo===true){
-      const now=cancunNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
+      const now=restaurantNow(),day=now.getDay(),hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,days=Array.isArray(c.dias)?c.dias.map(Number):[],ini=String(c.inicio||'00:00'),fim=String(c.fim||'23:59'),inside=ini<=fim?(hhmm>=ini&&hhmm<=fim):(hhmm>=ini||hhmm<=fim);
       if(days.includes(day)&&inside){
         bonusBenefit={multiplicador:Number(c.multiplicador||2),inicio:ini,fim};
         $('bonusTitle').textContent=`Hoy ganas x${bonusBenefit.multiplicador} puntos`;
@@ -219,16 +238,15 @@ async function loadBirthday(){
   card?.classList.remove('show');
   birthdayBenefit=null;
   try{
-    const [cfgR,userR]=await Promise.all([fetch(`${FB}/config/cumpleanos.json?t=${Date.now()}`,{cache:'no-store'}),fetch(`${FB}/users/${encodeURIComponent(uid)}.json?t=${Date.now()}`,{cache:'no-store'})]);
-    const cfg=await cfgR.json()||{},user=await userR.json()||{},b=parseBirth(user.nascimento||client?.nascimento);
+    const appData=await loadAppData(),cfg=appData.birthday||{},claims=appData.birthday_claims||{},b=parseBirth(client?.nascimento);
     if(cfg.ativo!==false&&b){
-      const now=cancunNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));
+      const now=restaurantNow(),before=Math.max(0,Number(cfg.dias_antes||0)),after=Math.max(0,Number(cfg.dias_depois||0));
       let found=null;
       for(const y of [now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1]){
         const bd=new Date(y,b.month-1,b.day,12,0,0),start=new Date(bd.getTime()-before*86400000),end=new Date(bd.getTime()+after*86400000);
         if(now>=start&&now<=end){found={year:y,date:bd};break}
       }
-      if(found&&user.cumpleanos_canjes?.[String(found.year)]!==true){
+      if(found&&claims?.[String(found.year)]!==true){
         birthdayBenefit={regalo:String(cfg.regalo||'Regalo especial de cumpleaños'),year:found.year};
         $('birthdayTitle').textContent=birthdayBenefit.regalo;
         $('birthdayText').textContent=`Disponible dentro de tu periodo de cumpleaños ${found.year}. Muéstralo al personal para canjearlo.`;
@@ -256,19 +274,19 @@ function buildQr(){
   }
 }
 async function shareQr(){
-  const text=`Mi tarjeta Uai Sô Fidelidad: ${uid}`;
+  const brand=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad',text=`Mi tarjeta ${brand} Fidelidad: ${uid}`;
   if(navigator.share){
-    try{await navigator.share({title:'Uai Sô Fidelidad',text});return}
+    try{await navigator.share({title:brand+' Fidelidad',text});return}
     catch(e){if(e?.name==='AbortError')return}
   }
   try{await navigator.clipboard.writeText(text);alert('ID copiado.')}
   catch{alert(text)}
 }
-async function shareInvite(){const url=`${location.origin}/?ref=${encodeURIComponent(uid)}`,text='Te invito a Uai Sô Fidelidad. Regístrate con mi enlace y disfruta los beneficios.';if(navigator.share){try{return await navigator.share({title:'Uai Sô Fidelidad',text,url})}catch{}}try{await navigator.clipboard.writeText(url);alert('Enlace de invitación copiado.')}catch{alert(url)}}
+async function shareInvite(){const brand=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad',url=`${location.origin}/?ref=${encodeURIComponent(uid)}`,text='Te invito a '+brand+' Fidelidad. Regístrate con mi enlace y disfruta los beneficios.';if(navigator.share){try{return await navigator.share({title:brand+' Fidelidad',text,url})}catch{}}try{await navigator.clipboard.writeText(url);alert('Enlace de invitación copiado.')}catch{alert(url)}}
 function openVideoMenu(event){event?.preventDefault();const url=`/menu-videos.html?uid=${encodeURIComponent(uid)}`;if(window.top!==window.self)window.top.location.href=url;else location.href=url}
 
-async function init(){try{await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
+async function init(){try{const appData=await loadAppData();applyRestaurantBrand(appData.restaurant||{});await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
 init();
 </script>
-</body>
+<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
 </html>

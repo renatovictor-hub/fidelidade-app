@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { tenantFromRequest, tenantRef } from "./_tenant.js";
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -12,6 +13,7 @@ if (!admin.apps.length) {
 }
 
 export default async function handler(req, res) {
+    const tenant = tenantFromRequest(req);
     res.setHeader("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=60");
 
     if (req.method !== "GET") {
@@ -19,7 +21,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const snapshot = await admin.database().ref("recompensas").once("value");
+        const snapshot = await tenantRef(admin.database(), tenant, "recompensas").once("value");
         const data = snapshot.val() || {};
 
         const recompensas = Object.entries(data)
