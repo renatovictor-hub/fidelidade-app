@@ -2,7 +2,6 @@ import { requireAdmin } from "../lib/server/admin-auth.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 const CFG=getRestaurantConfig();
 export default async function handler(req, res) {
-    const tenant = tenantFromRequest(req);
     if (!requireAdmin(req,res)) return;
 
     try {
