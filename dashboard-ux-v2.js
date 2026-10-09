@@ -38,8 +38,8 @@
   const sidebar = document.createElement('aside');
   sidebar.id = 'uxSidebar';
   sidebar.innerHTML = `
-    <div class="ux-brand"><img src="/logo.png" alt="Uai Sô"><div><strong>Uai Sô</strong><small>Gestión del negocio</small></div></div>
-    <div class="ux-company"><div class="ux-company-top"><div><b>Uai Sô · Cancún</b><small>Empresa activa</small></div><span class="ux-plan">SaaS</span></div><div class="ux-modules"><span class="ux-module loyalty">★ Fidelidad</span><span class="ux-module delivery">🛵 Delivery</span></div></div>
+    <div class="ux-brand"><img src="/logo.png" alt="Restaurante"><div><strong>Restaurante</strong><small>Gestión del negocio</small></div></div>
+    <div class="ux-company"><div class="ux-company-top"><div><b>Restaurante</b><small>Empresa activa</small></div><span class="ux-plan">SaaS</span></div><div class="ux-modules"><span class="ux-module loyalty">★ Fidelidad</span><span class="ux-module delivery">🛵 Delivery</span></div></div>
     <nav class="ux-nav">
       <button data-go="top" class="active"><span>▦</span>Resumen</button>
       <button data-find="Base de Clientes"><span>👥</span>Clientes</button>
@@ -56,6 +56,31 @@
     </nav>
     <div class="ux-side-foot"><b>Plataforma modular</b><small>Fidelidad como base · Delivery como módulo adicional. Preparado para futuras empresas e personalizaciones por tenant.</small></div>`;
   document.body.appendChild(sidebar);
+
+  async function applyRestaurantIdentity(){
+    let cfg=window.__restaurantConfig||null;
+    if(!cfg){
+      try{
+        const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
+        if(r.ok)cfg=await r.json();
+      }catch(_){}
+    }
+    if(!cfg)return;
+    window.__restaurantConfig=cfg;
+    const name=cfg.short_name||cfg.name||'Restaurante';
+    document.documentElement.style.setProperty('--ux-purple',cfg.primary_color||'#6a0dad');
+    document.documentElement.style.setProperty('--ux-purple2',cfg.primary_color||'#8b2bd1');
+    document.documentElement.style.setProperty('--ux-yellow',cfg.accent_color||'#ffcc00');
+    const img=document.querySelector('#uxSidebar .ux-brand img');
+    if(img&&cfg.logo){img.src=cfg.logo;img.alt=name}
+    const brand=document.querySelector('#uxSidebar .ux-brand strong');if(brand)brand.textContent=name;
+    const company=document.querySelector('#uxSidebar .ux-company-top b');if(company)company.textContent=cfg.name||name;
+    const welcome=document.querySelector('#uxOverview .ux-welcome h2');if(welcome)welcome.textContent='Visión general de '+name;
+    document.querySelectorAll('#uxSidebar .ux-module.delivery').forEach(el=>el.style.display=cfg.modules?.delivery===true?'':'none');
+    document.querySelectorAll('#uxSidebar button[data-id="ordersAdmin"],#uxSidebar button[data-find="envío"]').forEach(el=>el.style.display=cfg.modules?.delivery===true?'':'none');
+    const badge=document.querySelector('#uxTopbar .ux-top-badge');
+    if(badge)badge.textContent=cfg.modules?.delivery===true?'Fidelidad + Delivery':'Fidelidad';
+  }
 
   const topbar = document.createElement('div');
   topbar.id = 'uxTopbar';
@@ -74,7 +99,7 @@
       <div class="ux-kpi"><div class="ux-kpi-icon">🎁</div><div><small>Recompensas</small><b id="uxRewards">—</b><em>Catálogo disponible</em></div></div>
     </div>
     <div class="ux-overview-row">
-      <div class="ux-welcome"><h2>Visión general de Uai Sô</h2><p>Este dashboard ya está siendo organizado como una plataforma SaaS modular. Cada empresa podrá tener su propia marca, módulos contratados, reglas de fidelidad, catálogo y operación.</p><div class="ux-pill-row"><span>✓ Fidelidad activo</span><span>✓ Delivery activo</span><span>Personalización por empresa</span><span>Multiempresa preparado</span></div></div>
+      <div class="ux-welcome"><h2>Visión general del restaurante</h2><p>Este dashboard ya está siendo organizado como una plataforma SaaS modular. Cada empresa podrá tener su propia marca, módulos contratados, reglas de fidelidad, catálogo y operación.</p><div class="ux-pill-row"><span>✓ Fidelidad activo</span><span>✓ Delivery activo</span><span>Personalización por empresa</span><span>Multiempresa preparado</span></div></div>
       <div class="ux-quick"><strong>Acciones rápidas</strong><div class="ux-quick-actions"><button class="primary" data-find="Niveles VIP">Fidelidad</button><button data-find="Recompensas">+ Recompensa</button><button data-find="Promoción">+ Oferta</button><button data-id="ordersAdmin">Ver pedidos</button></div></div>
     </div>`;
   const main = document.querySelector('.main-container');
@@ -111,4 +136,5 @@
     if(anchor && overview.compareDocumentPosition(anchor)&Node.DOCUMENT_POSITION_PRECEDING)document.body.insertBefore(overview,anchor);
   }
   setInterval(keepOverviewFirst,1200);
+  applyRestaurantIdentity();
 })();
