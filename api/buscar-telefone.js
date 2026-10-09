@@ -12,7 +12,8 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const tenant = await requireTenant(admin,req,res);\n    if(!tenant)return;
+    const tenant = await requireTenant(admin,req,res);
+    if(!tenant)return;
     const preview = process.env.VERCEL_ENV === "preview";
     if (!preview && !requireAdmin(req, res)) return;
 
