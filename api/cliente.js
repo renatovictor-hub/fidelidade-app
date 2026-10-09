@@ -5,7 +5,7 @@ import { requireClient, setClientSession } from "../lib/server/client-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 import { getPublicCompanyConfig } from "../lib/server/tenant-config.js";
-import { tenantDatabase, tenantFromRequest } from "../lib/server/tenant-data.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
@@ -724,6 +724,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
+    const activeTenant=await requireTenant(admin,req,res);
+    if(!activeTenant)return;
+
     if (req.method === "POST" && req.body?.action === "auth_register") {
         try {
             const nome=cleanOrderText(req.body?.nome,100);
@@ -826,8 +829,9 @@ export default async function handler(req, res) {
             .filter(p=>promoEligibleForUser(p,user,rewards,uid))
             .sort((a,b)=>Number(b.exp||0)-Number(a.exp||0));
         const contact=contactSnap.val()||{};
+        const tenantCfg=await getPublicCompanyConfig(admin,req,RESTAURANT_CONFIG);
         return res.status(200).json({
-            restaurant:(await getPublicCompanyConfig(admin,req,RESTAURANT_CONFIG))||{
+            restaurant:tenantCfg||{
                 restaurant_id:"uai-so",
                 name:RESTAURANT_CONFIG.name,
                 short_name:RESTAURANT_CONFIG.shortName,
@@ -843,7 +847,7 @@ export default async function handler(req, res) {
             birthday_claims:user.cumpleanos_canjes||{},
             reviews:reviewsSnap.val()||{},
             promos,
-            whatsapp:String(contact.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
+            whatsapp:String(contact.whatsapp||tenantCfg?.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
         });
     }
 
