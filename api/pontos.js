@@ -2,7 +2,7 @@ import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
-import { tenantDatabase, tenantFromRequest } from "../lib/server/tenant-data.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
@@ -11,7 +11,7 @@ const VALOR_MAXIMO_COMPRA = 100000;
 
 export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
-    const tenant=tenantFromRequest(req);
+    const tenant=await requireTenant(admin,req,res);\n    if(!tenant)return;
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     if (!requireAdmin(req, res)) return;
 
