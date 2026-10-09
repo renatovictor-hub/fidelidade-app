@@ -11,44 +11,36 @@ html,body{margin:0;width:100%;height:100%;background:#f5f2f7}
 #previewLoader span{display:block;width:28px;height:28px;border:3px solid #dccbe7;border-top-color:#6a0dad;border-radius:50%;margin:0 auto 10px;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 iframe{display:block;width:100%;height:100%;border:0;background:#f5f2f7;opacity:0;transition:opacity .12s ease}
-body.ready iframe{opacity:1}
-body.ready #previewLoader{display:none}
+body.ready iframe{opacity:1}body.ready #previewLoader{display:none}
 </style>
-<script src="/admin-module-loader.js?v=20261005-1"></script>\n</head>
+<script src="/admin-module-loader.js?v=20261005-1"></script>
+</head>
 <body>
 <div id="previewLoader"><div><span></span>Cargando panel…</div></div>
-<iframe id="dashboardFrame" src="/dashboard.html?v=20260927-crm1" title="Dashboard Restaurante"></iframe>
+<iframe id="dashboardFrame" title="Dashboard Restaurante"></iframe>
 <script>
-fetch('/api/cliente?action=public_config&company='+encodeURIComponent(tenantCompany)+'&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
-  if(!cfg)return;
-  const name=cfg.short_name||cfg.name||'Restaurante';
-  document.title=name+' Admin Preview';
-  document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
-  const f=document.getElementById('dashboardFrame');if(f)f.title='Dashboard '+name;
-}).catch(()=>{});
+const tenantCompany=new URLSearchParams(location.search).get('company')||'uai-so';
 const frame=document.getElementById('dashboardFrame');
 function waitForNewDashboard(d,attempt=0){
-  const ok=d.getElementById('uxOverviewV4') &&
-           d.getElementById('uxSidebar') &&
-           d.body.classList.contains('ux3');
-  if(ok) return Promise.resolve();
-  if(attempt>40) return Promise.reject(new Error('La interfaz nueva no terminó de iniciar.'));
-  return new Promise(r=>setTimeout(r,75)).then(()=>waitForNewDashboard(d,attempt+1));
+  const ok=d.getElementById('uxOverviewV4')&&d.getElementById('uxSidebar')&&d.body.classList.contains('ux3');
+  if(ok)return Promise.resolve();
+  if(attempt>80)return Promise.reject(new Error('La interfaz nueva no terminó de iniciar.'));
+  return new Promise(r=>setTimeout(r,100)).then(()=>waitForNewDashboard(d,attempt+1));
 }
-
-frame.addEventListener('load',async()=>{
-  const d=frame.contentDocument;
-  if(!d)return;
+async function boot(){
   try{
-    await window.loadRestaurantAdminModules(d);
-    await waitForNewDashboard(d);
-    document.body.classList.add('ready');
-  }catch(e){
-    console.error(e);
-    const loader=document.getElementById('previewLoader');
-    if(loader)loader.innerHTML='<div>No se pudo cargar el panel.<br><small>Recarga la página.</small></div>';
-  }
+    await fetch('/api/admin-auth',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({action:'preview_login',company:tenantCompany})}).then(async r=>{if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||'No se pudo iniciar sesión de Preview')});
+    const cfg=await fetch('/api/cliente?action=public_config&company='+encodeURIComponent(tenantCompany)+'&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null);
+    if(cfg){const name=cfg.short_name||cfg.name||'Restaurante';document.title=name+' Admin Preview';frame.title='Dashboard '+name;document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad')}
+    const u=new URL('/dashboard.html',location.origin);u.searchParams.set('v','20261009-advanced3');u.searchParams.set('company',tenantCompany);frame.src=u.toString();
+  }catch(e){const loader=document.getElementById('previewLoader');if(loader)loader.innerHTML='<div>'+String(e.message||e)+'</div>'}
+}
+frame.addEventListener('load',async()=>{
+  const d=frame.contentDocument;if(!d)return;
+  try{await window.loadRestaurantAdminModules(d);await waitForNewDashboard(d);document.body.classList.add('ready')}
+  catch(e){console.error(e);const loader=document.getElementById('previewLoader');if(loader)loader.innerHTML='<div>No se pudo cargar el panel.<br><small>'+String(e.message||'Recarga la página.')+'</small></div>'}
 });
+boot();
 </script>
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+</body>
 </html>
