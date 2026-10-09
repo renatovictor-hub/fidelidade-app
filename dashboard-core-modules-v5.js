@@ -10,11 +10,11 @@
     .ux-core-tabs button.active{background:linear-gradient(135deg,#6a0dad,#8a35cf)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px rgba(106,13,173,.18)}
     .ux-core-tabs button::after{content:'›';float:right;font-size:16px;line-height:10px;opacity:.65}.ux-core-tabs button.active::after{content:'⌄'}
     .ux-core-summary{display:none!important}
-    body.ux3[data-ux-view="clientes"] #uxCoreToolbar,body.ux3[data-ux-view="fidelidad"] #uxCoreToolbar{display:block}
-    body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{max-width:1180px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start!important;gap:12px!important}
-    body.ux3[data-ux-view="clientes"] .main-container .card.ux-show,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-show{display:none!important;max-width:none!important;margin:0!important;min-height:100%}
-    body.ux3[data-ux-view="clientes"] .main-container .card.ux-show.ux-mobile-active,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-show.ux-mobile-active{display:block!important}
-    body.ux3[data-ux-view="clientes"] .main-container .card.ux-featured,body.ux3[data-ux-view="fidelidad"] .main-container .card.ux-featured{grid-column:1/-1}
+    body.ux3[data-ux-view="clientes"] #uxCoreToolbar{display:block}
+    body.ux3[data-ux-view="clientes"] .main-container{max-width:1180px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start!important;gap:12px!important}
+    body.ux3[data-ux-view="clientes"] .main-container .card.ux-show{display:none!important;max-width:none!important;margin:0!important;min-height:100%}
+    body.ux3[data-ux-view="clientes"] .main-container .card.ux-show.ux-mobile-active{display:block!important}
+    body.ux3[data-ux-view="clientes"] .main-container .card.ux-featured{grid-column:1/-1}
     body.ux3 .card .ux-card-kicker{display:block;color:#8d8093;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;margin:-4px 0 10px}
     body.ux3 .card.ux-hide-subsection{display:none!important}
     .ux-client-hero{display:none;max-width:1180px;margin:0 auto 12px;grid-template-columns:1fr;gap:12px}
@@ -45,6 +45,8 @@
     .ux-crm-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ux-crm-stat{padding:9px;background:#fff;border:1px solid #eee7f1;border-radius:10px}.ux-crm-stat small{display:block;font-size:11px;color:#655b69;font-weight:700}.ux-crm-stat b{display:block;font-size:19px;color:#5f178f;margin-top:2px}
     .ux-crm-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}.ux-crm-actions button{min-height:42px;font-size:12px!important;padding:10px 11px!important}.ux-crm-actions .wide{grid-column:1/-1}
     .ux-crm-insight{margin-top:11px;padding:11px;border-radius:10px;background:#f4ecf9;color:#51365a;font-size:12px;line-height:1.55}
+    .ux-push-health{display:flex;align-items:center;gap:7px;margin:8px 0 11px;padding:9px 10px;border-radius:10px;font-size:12px;font-weight:800}
+    .ux-push-health.ok{background:#e9f8ef;color:#187849}.ux-push-health.warn{background:#fff6df;color:#8a6200}.ux-push-health.off{background:#f3eef5;color:#7a6d80}
     .ux-client-result{display:none;grid-column:1/-1;background:#fff;border:1px solid #ebe3ef;border-radius:16px;padding:16px;box-shadow:0 7px 20px rgba(55,24,70,.045)}
     .ux-client-result.show{display:block}.ux-client-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ux-client-result h3{margin:0!important;color:#35273c!important;font-size:17px!important}
     .ux-client-result-meta{font-size:13px;color:#655b69;margin-top:4px}.ux-client-result-points{background:#f2e8f7;color:#6a0dad;font-weight:900;border-radius:12px;padding:9px 11px;white-space:nowrap}
@@ -61,7 +63,7 @@
     .ux-reward-choice b{display:block;color:#3c2f43}.ux-reward-choice small{color:#706574}.ux-reward-choice button{width:auto!important;min-width:100px!important}
     .ux-opinion-item{padding:11px 0;border-bottom:1px solid #eee7f1}.ux-opinion-item:last-child{border-bottom:0}.ux-opinion-item small{color:#766b7a}
     @media(max-width:900px){
-      body.ux3[data-ux-view="clientes"] .main-container,body.ux3[data-ux-view="fidelidad"] .main-container{grid-template-columns:1fr!important}
+      body.ux3[data-ux-view="clientes"] .main-container{grid-template-columns:1fr!important}
       .ux-client-hero{grid-template-columns:1fr}.ux-crm-layout{grid-template-columns:1fr}.ux-crm-detail{position:static}.ux-crm-head,.ux-crm-row{grid-template-columns:minmax(130px,1.4fr) .6fr .7fr .8fr}.ux-crm-head span:nth-child(5),.ux-crm-row>div:nth-child(5){display:none}
     }
     @media(max-width:780px){
@@ -140,7 +142,7 @@
     }
   }
   function renderToolbar(view){
-    if (!['clientes','fidelidad'].includes(view)) return;
+    if (view !== 'clientes') { toolbar.querySelector('.ux-core-tabs').innerHTML=''; return; }
     addKickers();
     const tabs=toolbar.querySelector('.ux-core-tabs');
     let sections=sectionLabels(view);
@@ -297,9 +299,14 @@ let crmData={customers:[],summary:{}};
 
     box.classList.add('show');
     const bday=x.aniversario_em_dias==null?'—':x.aniversario_em_dias===0?'Hoy':x.aniversario_em_dias+' días';
+    const ps=x.push_status||{},pushOk=ps.permission==='granted'&&ps.opted_in===true&&ps.token_present===true;
+    const pushClass=pushOk?'ok':ps.permission==='denied'?'off':'warn';
+    const pushLabel=pushOk?'🔔 Push activo':ps.permission==='denied'?'🚫 Notificaciones bloqueadas':'⚠ Sin suscripción activa';
+    const lastPush=ps.last_sync?new Date(ps.last_sync).toLocaleString('es-MX'):'Sin sincronización registrada';
     box.innerHTML=
       '<h4>'+esc(x.nome||'Sin nombre')+'</h4>'+
       '<div class="meta">'+esc(x.telefone||'Sin teléfono')+' · '+esc(x.uid)+'</div>'+
+      '<div class="ux-push-health '+pushClass+'"><span>'+pushLabel+'</span><small style="margin-left:auto;font-weight:600">'+esc(lastPush)+'</small></div>'+
       '<div class="ux-crm-stats">'+
         '<div class="ux-crm-stat"><small>Puntos</small><b>'+Number(x.pontos||0)+'</b></div>'+
         '<div class="ux-crm-stat"><small>Compras</small><b>'+Number(x.compras||0)+'</b></div>'+
@@ -423,7 +430,7 @@ let crmData={customers:[],summary:{}};
       try{
         btn.disabled=true;btn.textContent='ENVIANDO...';
         const res=await fetch('/api/sendpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-          titulo:title,desc:msg,link:'https://fidelidad-uai-so.vercel.app/',imagem:'',segmento:'cliente',valorSegmento:x.telefone||x.uid
+          titulo:title,desc:msg,link:location.origin+'/',imagem:'',segmento:'cliente',valorSegmento:x.telefone||x.uid
         })});
         const data=await res.json();
         if(!res.ok||!data.success)throw new Error(data.error||'Error');
