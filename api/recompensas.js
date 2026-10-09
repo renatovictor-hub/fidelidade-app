@@ -2,7 +2,7 @@ import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
-import { tenantDatabase, tenantFromRequest } from "../lib/server/tenant-data.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
