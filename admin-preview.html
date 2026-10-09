@@ -19,7 +19,7 @@ body.ready #previewLoader{display:none}
 <div id="previewLoader"><div><span></span>Cargando panel…</div></div>
 <iframe id="dashboardFrame" src="/dashboard.html?v=20260927-crm1" title="Dashboard Restaurante"></iframe>
 <script>
-fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+fetch('/api/cliente?action=public_config&company='+encodeURIComponent(tenantCompany)+'&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
   if(!cfg)return;
   const name=cfg.short_name||cfg.name||'Restaurante';
   document.title=name+' Admin Preview';
