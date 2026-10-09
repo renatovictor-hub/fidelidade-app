@@ -8,7 +8,8 @@ const CFG=getRestaurantConfig();
 const admin=getFirebaseAdmin();
 
 async function resgatarRecompensa(req, res) {
-    const tenant=tenantFromRequest(req);
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
     const uid = String(req.body?.uid || "").trim();
     const recompensaId = String(req.body?.recompensaId || "").trim();
     if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error: "UID inválido" });
@@ -82,7 +83,8 @@ async function resgatarRecompensa(req, res) {
 
 export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
-    const tenant=tenantFromRequest(req);
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
     const db=tenantDatabase(admin.database(),tenant);
 
     if (req.method === "OPTIONS") return res.status(200).end();
