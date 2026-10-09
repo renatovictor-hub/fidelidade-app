@@ -1,6 +1,7 @@
 import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { setClientSession } from "../lib/server/client-auth.js";
+import { tenantDatabase, tenantFromRequest } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
@@ -11,6 +12,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
+    const tenant = tenantFromRequest(req);
     const preview = process.env.VERCEL_ENV === "preview";
     if (!preview && !requireAdmin(req, res)) return;
 
@@ -21,8 +23,8 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: "Teléfono inválido" });
         }
 
-        const snapshot = await admin
-            .database()
+        const db = tenantDatabase(admin.database(), tenant);
+        const snapshot = await db
             .ref("users")
             .orderByChild("telefone")
             .equalTo(telefone)
@@ -33,7 +35,7 @@ export default async function handler(req, res) {
         }
 
         const [uid, cliente] = Object.entries(snapshot.val())[0];
-        if (preview) setClientSession(res, uid);
+        if (preview) setClientSession(res, uid, tenant);
 
         return res.status(200).json({
             uid,
