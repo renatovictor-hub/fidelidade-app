@@ -1,5 +1,5 @@
 import { getFirebaseAdmin } from "../lib/server/firebase.js";
-import { tenantDatabase, tenantFromRequest } from "../lib/server/tenant-data.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
