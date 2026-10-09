@@ -11,7 +11,9 @@ export default async function handler(req, res) {
     }
 
     try {
-        const db=tenantDatabase(admin.database(),tenantFromRequest(req));
+        const tenant=await requireTenant(admin,req,res);
+        if(!tenant)return;
+        const db=tenantDatabase(admin.database(),tenant);
         const snapshot = await db.ref("recompensas").once("value");
         const data = snapshot.val() || {};
 
