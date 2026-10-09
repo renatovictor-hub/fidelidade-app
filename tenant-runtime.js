@@ -1,10 +1,14 @@
 (() => {
   async function apply(){
     try{
-      const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
+      const params=new URLSearchParams(location.search);
+      const company=String(params.get('company')||'').trim();
+      const companyQuery=company?'&company='+encodeURIComponent(company):'';
+      const r=await fetch('/api/cliente?action=public_config&t='+Date.now()+companyQuery,{cache:'no-store'});
       if(!r.ok)return;
       const cfg=await r.json();
       window.RESTAURANT_CONFIG=cfg;
+      window.RESTAURANT_COMPANY_ID=cfg.restaurant_id||company||'uai-so';
       const primary=String(cfg.primary_color||'#6a0dad'),accent=String(cfg.accent_color||'#ffcc00');
       document.documentElement.style.setProperty('--roxo',primary);
       document.documentElement.style.setProperty('--primary',primary);
