@@ -5,9 +5,15 @@ import {
     passwordMatches,
     setSessionCookie
 } from "../lib/server/admin-auth.js";
+import { handleSuperadmin } from "../lib/server/superadmin.js";
 
 export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
+
+    const scope = String(req.query?.scope || req.body?.scope || "").trim().toLowerCase();
+    if (scope === "superadmin") {
+        return handleSuperadmin(req, res);
+    }
 
     if (req.method === "GET") {
         return res.status(200).json({
