@@ -14,6 +14,8 @@
             .reward-points{white-space:nowrap;background:#fff4bf;color:#6b5700;border-radius:999px;padding:5px 9px;font-weight:800;font-size:12px;}
             .reward-desc{color:#666;font-size:13px;margin-top:6px;line-height:1.4;}
             .reward-status{font-size:12px;margin-top:7px;color:#777;}
+            .reward-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+            .reward-meta span{font-size:11px;padding:5px 7px;border-radius:999px;background:#f6f2f8;color:#66556f;font-weight:800}
             .reward-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
             .reward-actions button{padding:9px 10px;font-size:12px;width:auto;flex:1;min-width:90px;}
             .reward-redeem{background:#25d366;color:#fff;}
@@ -59,6 +61,7 @@
             itens.forEach(item => {
                 const div = document.createElement('div');
                 div.className = `reward-item${item.ativa === false ? ' inactive' : ''}`;
+                div.dataset.canjes = String(Number(item.canjes || 0));
 
                 const nome = String(item.nome || 'Sin nombre');
                 const descricao = String(item.descricao || '');
@@ -72,8 +75,13 @@
                     </div>
                     <div class="reward-desc"></div>
                     <div class="reward-status">${ativa ? '🟢 Activa' : '⚪ Inactiva'}</div>
+                    <div class="reward-meta">
+                        <span>${Number(item.canjes||0)} canje${Number(item.canjes||0)===1?'':'s'}</span>
+                        ${item.ultimo_canje?'<span>Último: '+new Date(item.ultimo_canje).toLocaleDateString('es-MX')+'</span>':''}
+                    </div>
                     <div class="reward-actions">
                         ${ativa ? '<button class="reward-redeem">🎁 CANJEAR</button>' : ''}
+                        <button class="btn-secondary reward-edit">EDITAR</button>
                         <button class="btn-secondary reward-toggle">${ativa ? 'DESACTIVAR' : 'ACTIVAR'}</button>
                         <button class="btn-danger reward-delete">ELIMINAR</button>
                     </div>
@@ -84,6 +92,7 @@
 
                 const redeem = div.querySelector('.reward-redeem');
                 if (redeem) redeem.addEventListener('click', () => window.resgatarRecompensa(item.id, nome, pontos, redeem));
+                div.querySelector('.reward-edit').addEventListener('click', () => window.editarRecompensa(item));
                 div.querySelector('.reward-toggle').addEventListener('click', () => window.alternarRecompensa(item.id, !ativa));
                 div.querySelector('.reward-delete').addEventListener('click', () => window.eliminarRecompensa(item.id, nome));
                 lista.appendChild(div);
@@ -101,6 +110,8 @@
         const pontos = Math.floor(Number(pontosInput?.value));
         const descricao = String(descInput?.value || '').trim();
         if (!nome) return alert('Ingresa el nombre de la recompensa.');
+        if (nome.length > 80) return alert('El nombre puede tener máximo 80 caracteres.');
+        if (descricao.length > 240) return alert('La descripción puede tener máximo 240 caracteres.');
         if (!Number.isFinite(pontos) || pontos <= 0) return alert('Ingresa una cantidad válida de puntos.');
         const botao = document.querySelector('button[onclick="salvarRecompensa()"]');
         const textoOriginal = botao?.textContent || 'CREAR RECOMPENSA';
@@ -114,6 +125,36 @@
             alert('✅ Recompensa creada.');
         } catch (e) { alert(`No se pudo crear la recompensa.\n\n${e.message}`); }
         finally { if (botao) { botao.disabled = false; botao.textContent = textoOriginal; } }
+    };
+
+    window.editarRecompensa = async function editarRecompensa(item) {
+        const nome = prompt('Nombre de la recompensa:', String(item?.nome || ''));
+        if (nome === null) return;
+        const limpio = nome.trim();
+        if (!limpio) return alert('El nombre no puede quedar vacío.');
+        if (limpio.length > 80) return alert('El nombre puede tener máximo 80 caracteres.');
+
+        const puntosRaw = prompt('Puntos necesarios:', String(Number(item?.pontos || 0)));
+        if (puntosRaw === null) return;
+        const puntos = Math.floor(Number(puntosRaw));
+        if (!Number.isFinite(puntos) || puntos <= 0) return alert('Ingresa una cantidad válida de puntos.');
+
+        const descripcion = prompt('Descripción:', String(item?.descricao || ''));
+        if (descripcion === null) return;
+        const desc = descripcion.trim();
+        if (desc.length > 240) return alert('La descripción puede tener máximo 240 caracteres.');
+
+        try {
+            await api(API, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: item.id, nome: limpio, pontos, descricao: desc })
+            });
+            await window.carregarRecompensas();
+            alert('✅ Recompensa actualizada.');
+        } catch (e) {
+            alert(`No se pudo editar la recompensa.\n\n${e.message}`);
+        }
     };
 
     window.resgatarRecompensa = async function resgatarRecompensa(id, nome, pontos, botao) {
@@ -140,6 +181,8 @@
     };
 
     window.alternarRecompensa = async function alternarRecompensa(id, ativa) {
+        const accion = ativa ? 'activar' : 'desactivar';
+        if (!confirm(`¿Seguro que quieres ${accion} esta recompensa?`)) return;
         try {
             await api(API, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ativa }) });
             await window.carregarRecompensas();
