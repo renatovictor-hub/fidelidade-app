@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { tenantFromRequest, tenantRef } from "./_tenant.js";
 import { requireAdmin } from "./_admin-auth.js";
 
 if (!admin.apps.length) {
@@ -13,6 +14,7 @@ if (!admin.apps.length) {
 }
 
 export default async function handler(req, res) {
+    const tenant = tenantFromRequest(req);
     res.setHeader("Cache-Control", "no-store");
 
     if (req.method !== "GET") {
