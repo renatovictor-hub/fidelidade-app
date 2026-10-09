@@ -1,7 +1,7 @@
 import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { setClientSession } from "../lib/server/client-auth.js";
-import { tenantDatabase, tenantFromRequest } from "../lib/server/tenant-data.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const tenant = tenantFromRequest(req);
+    const tenant = await requireTenant(admin,req,res);\n    if(!tenant)return;
     const preview = process.env.VERCEL_ENV === "preview";
     if (!preview && !requireAdmin(req, res)) return;
 
