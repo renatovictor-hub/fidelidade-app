@@ -1,20 +1,11 @@
-import admin from "firebase-admin";
-import { requireAdmin } from "./_admin-auth.js";
-import { enviarNotificacao } from "./_onesignal.js";
-import { tenantFromRequest, tenantPath, tenantRef } from "./_tenant.js";
+import { getFirebaseAdmin } from "../lib/server/firebase.js";
+import { requireAdmin } from "../lib/server/admin-auth.js";
+import { enviarNotificacao } from "../lib/server/onesignal.js";
+import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
+const CFG=getRestaurantConfig();
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-        }),
-        databaseURL: "https://fidelidade-app-9671c-default-rtdb.firebaseio.com"
-    });
-}
+const admin=getFirebaseAdmin();
 
-const PESOS_POR_PONTO = 10;
 const VALOR_MAXIMO_COMPRA = 100000;
 
 export default async function handler(req, res) {
@@ -31,17 +22,21 @@ export default async function handler(req, res) {
         if (!Number.isFinite(valor) || valor <= 0 || valor > VALOR_MAXIMO_COMPRA) return res.status(400).json({ error: "Valor de compra inválido" });
 
         const valorNormalizado = Math.round(valor * 100) / 100;
-        const pontosBase = Math.floor(valorNormalizado / PESOS_POR_PONTO);
-        if (pontosBase <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
-
         const db = admin.database();
 
-        // Regra de bônus configurável por dia/horário, usando horário local de Cancún.
-        const bonusSnap = await tenantRef(db, tenant, "config/bonus_pontos").once("value");
+        // Regra-base e bônus configuráveis por restaurante.
+        const [baseSnap, bonusSnap] = await Promise.all([
+            tenantRef(db, tenant, "config/loyalty_base").once("value"),
+            tenantRef(db, tenant, "config/bonus_pontos").once("value")
+        ]);
+        const baseCfg = baseSnap.val() || {};
+        const pesosPorPunto = Math.max(1, Math.min(1000, Number(baseCfg.pesos_por_punto || 10)));
+        const pontosBase = Math.floor(valorNormalizado / pesosPorPunto);
+        if (pontosBase <= 0) return res.status(400).json({ error: "El valor no genera puntos" });
         const bonus = bonusSnap.val() || {};
-        const agoraCancun = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Cancun" }));
-        const dia = agoraCancun.getDay(); // 0 domingo ... 6 sábado
-        const hhmm = `${String(agoraCancun.getHours()).padStart(2,"0")}:${String(agoraCancun.getMinutes()).padStart(2,"0")}`;
+        const agoraLocal = new Date(new Date().toLocaleString("en-US", { timeZone: CFG.timezone }));
+        const dia = agoraLocal.getDay(); // 0 domingo ... 6 sábado
+        const hhmm = `${String(agoraLocal.getHours()).padStart(2,"0")}:${String(agoraLocal.getMinutes()).padStart(2,"0")}`;
         const dias = Array.isArray(bonus.dias) ? bonus.dias.map(Number) : [];
         const inicio = String(bonus.inicio || "00:00");
         const fim = String(bonus.fim || "23:59");
@@ -158,7 +153,7 @@ export default async function handler(req, res) {
             mensagem: bonusAtivo
                 ? `¡Bonus x${multiplicadorAplicado}! Sumaste ${pontosGanhos} puntos. Tu saldo ahora es ${saldoFinalCliente}.`
                 : `Sumaste ${pontosGanhos} punto${pontosGanhos === 1 ? "" : "s"}. Tu saldo ahora es ${saldoFinalCliente}.`,
-            url: "https://fidelidad-uai-so.vercel.app/"
+            url: CFG.domain+"/"
         }).catch(error => ({ error: true, details: error.message }));
 
         if (indicacao.aplicada) {
@@ -168,14 +163,14 @@ export default async function handler(req, res) {
                     telefone: cliente.telefone || "",
                     titulo: "🎁 ¡Bonus por invitación!",
                     mensagem: `Ganaste ${indicacao.pontos_amigo} puntos extra por tu primera compra con invitación.`,
-                    url: "https://fidelidad-uai-so.vercel.app/"
+                    url: CFG.domain+"/"
                 }),
                 enviarNotificacao({
                     uid: indicacao.indicador_uid,
                     telefone: indicadorCliente?.telefone || "",
                     titulo: "🤝 ¡Tu amigo compró!",
                     mensagem: `Ganaste ${indicacao.pontos_indicador} puntos porque tu amigo hizo su primera compra válida.`,
-                    url: "https://fidelidad-uai-so.vercel.app/"
+                    url: CFG.domain+"/"
                 })
             ]);
         }
@@ -192,7 +187,7 @@ export default async function handler(req, res) {
             saldo_novo: saldoFinalCliente,
             push,
             indicacao,
-            regra: { pesos_por_ponto: PESOS_POR_PONTO }
+            regra: { pesos_por_ponto: pesosPorPunto }
         });
     } catch (error) {
         console.error("Erro API pontos:", error);
