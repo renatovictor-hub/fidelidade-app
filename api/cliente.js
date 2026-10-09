@@ -457,6 +457,17 @@ export default async function handler(req, res) {
         }
     }
 
+    if (req.method === "POST" && req.body?.action === "preview_client_login") {
+        if (process.env.VERCEL_ENV !== "preview") return res.status(403).json({error:"Disponible solo en Preview"});
+        const telefone=String(req.body?.telefone||"").replace(/\D/g,"");
+        if(telefone.length!==10)return res.status(400).json({error:"Teléfono inválido"});
+        const snap=await tenantRef(admin.database(), tenant, "users").orderByChild("telefone").equalTo(telefone).once("value");
+        if(!snap.exists())return res.status(404).json({error:"Cliente no encontrado"});
+        const [uid,cliente]=Object.entries(snap.val())[0];
+        setClientSession(res,uid,tenant);
+        return res.status(200).json({uid,nome:cliente?.nome||cliente?.nombre||"",telefone});
+    }
+
     if (req.method === "POST" && req.body?.action === "auth_register") {
         try {
             const nome=cleanOrderText(req.body?.nome,100);
