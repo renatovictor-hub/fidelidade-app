@@ -4,6 +4,7 @@ import { requireAdmin, isValidSession as isAdminSession } from "../lib/server/ad
 import { requireClient, setClientSession } from "../lib/server/client-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
+import { getPublicCompanyConfig } from "../lib/server/tenant-config.js";
 
 const admin=getFirebaseAdmin();
 
@@ -892,24 +893,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "public_config") {
-        const snap = await admin.database().ref("config/restaurant_contact").once("value");
-        const cfg = snap.val() || {};
-        const whatsapp = String(cfg.whatsapp || RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15);
-        return res.status(200).json({
-            restaurant_id:RESTAURANT_CONFIG.id,
-            name:RESTAURANT_CONFIG.name,
-            short_name:RESTAURANT_CONFIG.shortName,
-            whatsapp: whatsapp || RESTAURANT_CONFIG.whatsapp,
-            primary_color:RESTAURANT_CONFIG.primaryColor,
-            accent_color:RESTAURANT_CONFIG.accentColor,
-            logo:RESTAURANT_CONFIG.logo,
-            instagram_url:RESTAURANT_CONFIG.instagramUrl,
-            timezone:RESTAURANT_CONFIG.timezone,
-            currency:RESTAURANT_CONFIG.currency,
-            locale:RESTAURANT_CONFIG.locale,
-            modules:RESTAURANT_CONFIG.modules,
-            onesignal_app_id:RESTAURANT_CONFIG.oneSignalAppId
-        });
+        const cfg = await getPublicCompanyConfig(admin, req, RESTAURANT_CONFIG);
+        if (!cfg) return res.status(404).json({ error:"Empresa no encontrada" });
+        return res.status(200).json(cfg);
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "orders") {
