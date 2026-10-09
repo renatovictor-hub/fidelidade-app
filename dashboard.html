@@ -10,7 +10,7 @@
     >
 
     <title>
-        Dashboard Uai Sô - Gestión
+        Dashboard - Gestión
     </title>
 
     <!-- =====================================================
@@ -246,6 +246,16 @@
     </style>
 
 <link rel="stylesheet" href="/dashboard-readability.css?v=20260927-1">
+<script>
+fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+  if(!cfg)return;
+  const name=cfg.short_name||cfg.name||'Restaurante';
+  document.title='Dashboard '+name+' - Gestión';
+  document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
+  document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+  const h=document.querySelector('header h1');if(h)h.textContent=name+' - Gestión';
+}).catch(()=>{});
+</script>
 </head>
 
 
@@ -259,7 +269,7 @@
 <header>
 
     <h1>
-        Uai Sô - Gestión
+        Restaurante - Gestión
     </h1>
 
 </header>
@@ -860,7 +870,7 @@ let clienteSelecionado = null;
 
 let promoReativarId = null;
 
-const PESOS_POR_PONTO = 10;
+let PESOS_POR_PONTO = 10;
 
 
 
@@ -908,7 +918,7 @@ async function carregarClientes() {
 
         const res =
             await fetch(
-                `/api/stats?t=${Date.now()}`,
+                `/api/cliente?action=customers&t=${Date.now()}`,
                 {
                     cache: "no-store"
                 }
@@ -931,7 +941,7 @@ async function carregarClientes() {
         document
             .getElementById("totalClientes")
             .innerText =
-            `${Number(data.total || 0)} clientes`;
+            `${Number(data.summary?.total || 0)} clientes`;
 
     }
 
@@ -1851,7 +1861,7 @@ async function enviarPush() {
 
     const link =
 
-        `https://fidelidad-uai-so.vercel.app/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
+        `${location.origin}/?promo=${encodeURIComponent(titulo)}&desc=${encodeURIComponent(desc)}&exp=${exp}`;
 
 
     log(
@@ -1962,90 +1972,7 @@ async function enviarPush() {
    11. SALVAR PROMOÇÃO NO FIREBASE
 ===================================================== */
 
-async function salvarPromoNoFirebase(
-    titulo,
-    desc,
-    exp,
-    imagem
-) {
-
-    try {
-
-        log(
-            "Guardando en Firebase..."
-        );
-
-
-        const res =
-            await fetch(
-
-                "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json",
-
-                {
-                    method:
-                        "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            titulo,
-
-                            desc,
-
-                            exp:
-                                Number(exp),
-
-                            imagem:
-                                imagem || ""
-
-                        })
-                }
-
-            );
-
-
-        const resposta =
-            await res.json();
-
-
-        if (!res.ok) {
-
-            throw new Error(
-                JSON.stringify(
-                    resposta
-                )
-            );
-
-        }
-
-
-        log(
-            "✅ Éxito en Firebase."
-        );
-
-
-        await carregarPromos();
-
-    }
-
-    catch (e) {
-
-        log(
-            "Error Firebase: " +
-            e.message
-        );
-
-
-        throw e;
-
-    }
-
-}
+async function salvarPromoNoFirebase(){ return true; }
 
 
 
@@ -2054,271 +1981,30 @@ async function salvarPromoNoFirebase(
 ===================================================== */
 
 async function carregarPromos() {
-
     try {
-
-        const res =
-            await fetch(
-
-                "https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos.json"
-
-            );
-
-
-        const data =
-            await res.json();
-
-
-        const lista =
-            document.getElementById(
-                "listaPromos"
-            );
-
-
-        const expiradas =
-            document.getElementById(
-                "listaExpiradas"
-            );
-
-
-        Object
-            .values(
-                timersAtivos
-            )
-            .forEach(
-                clearInterval
-            );
-
-
-        timersAtivos = {};
-
-
-        lista.innerHTML =
-            "";
-
-
-        expiradas.innerHTML =
-            "";
-
-
-        if (!res.ok) {
-
-            return log(
-
-                "Error promos: " +
-
-                JSON.stringify(data)
-
-            );
-
-        }
-
-
-        if (!data) {
-
-            lista.innerHTML =
-                "<i>No hay promociones activas.</i>";
-
-
-            expiradas.innerHTML =
-                "<i>No hay promociones expiradas.</i>";
-
-
-            return;
-
-        }
-
-
-        let ativasCount =
-            0;
-
-
-        let expiradasCount =
-            0;
-
-
-        Object.entries(data)
-            .sort((a,b)=>Number(b[1]?.exp||0)-Number(a[1]?.exp||0))
-            .forEach(
-                ([id, promo]) => {
-
-
-                    if (
-                        !promo ||
-                        !promo.exp
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    const expiraEm =
-                        Number(
-                            promo.exp
-                        );
-
-
-                    const expirou =
-                        expiraEm <=
-                        Date.now();
-
-
-                    const div =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    div.className =
-
-                        expirou
-
-                            ? "promo-item expired-dashboard"
-
-                            : "promo-item";
-
-
-                    div.innerHTML = `
-
-                        <strong>
-                            ${promo.titulo || ""}
-                        </strong>
-
-                        <br>
-
-                        <small>
-                            ${promo.desc || ""}
-                        </small>
-
-                        <br><br>
-
-                        ${
-                            expirou
-
-                            ? `
-                                <span
-                                    style="
-                                        color:#999;
-                                        font-weight:bold;
-                                    "
-                                >
-                                    ⚠️ Expirada
-                                </span>
-                            `
-
-                            : `
-                                ⏳
-                                <span
-                                    class="timer"
-                                    id="timer_${id}"
-                                >
-                                    --:--:--
-                                </span>
-                            `
-                        }
-
-
-                        <div
-                            style="
-                                display:flex;
-                                gap:10px;
-                                margin-top:10px;
-                            "
-                        >
-
-                            ${
-                                expirou
-
-                                ? `
-                                    <button
-                                        class="btn-success"
-                                        onclick="reativarPromo('${id}')"
-                                    >
-                                        Reativar
-                                    </button>
-                                `
-
-                                : ""
-                            }
-
-
-                            <button
-                                class="btn-danger"
-                                onclick="eliminarPromo('${id}')"
-                            >
-                                Eliminar
-                            </button>
-
-                        </div>
-
-                    `;
-
-
-                    if (expirou) {
-
-                        expiradas
-                            .appendChild(
-                                div
-                            );
-
-
-                        expiradasCount++;
-
-                    }
-
-                    else {
-
-                        lista
-                            .appendChild(
-                                div
-                            );
-
-
-                        ativasCount++;
-
-
-                        iniciarTimer(
-                            id,
-                            expiraEm
-                        );
-
-                    }
-
-                }
-            );
-
-
-        if (
-            ativasCount === 0
-        ) {
-
-            lista.innerHTML =
-                "<i>No hay promociones activas.</i>";
-
-        }
-
-
-        if (
-            expiradasCount === 0
-        ) {
-
-            expiradas.innerHTML =
-                "<i>No hay promociones expiradas.</i>";
-
-        }
-
-    }
-
-    catch (e) {
-
-        log(
-            "Error promos: " +
-            e.message
-        );
-
-    }
-
+        const res=await fetch("/api/sendpush?promos=1&t="+Date.now(),{cache:"no-store"});
+        const data=await res.json();
+        if(!res.ok)throw new Error(data.error||"Error al cargar promociones");
+        const lista=document.getElementById("listaPromos"),expiradas=document.getElementById("listaExpiradas");
+        Object.values(timersAtivos).forEach(clearInterval);timersAtivos={};
+        lista.innerHTML="";expiradas.innerHTML="";
+        const promos=Array.isArray(data.promos)?data.promos:[];
+        let ativasCount=0,expiradasCount=0;
+        promos.forEach(promo=>{
+            if(!promo||!promo.id||!promo.exp)return;
+            const expiraEm=Number(promo.exp),expirou=promo.ativa===false||expiraEm<=Date.now();
+            const div=document.createElement("div");
+            div.className=expirou?"promo-item expired-dashboard":"promo-item";
+            const publico=String(promo.publico||"Todos los clientes");
+            div.innerHTML="<strong>"+String(promo.titulo||"")+"</strong><br><small>"+String(promo.desc||"")+"</small><br><small style='color:#765b7c'>🎯 "+publico+"</small><br><br>"+
+              (expirou?"<span style='color:#999;font-weight:bold'>⚠️ Expirada</span>":"⏳ <span class='timer' id='timer_"+promo.id+"'>--:--:--</span>")+
+              "<div style='display:flex;gap:10px;margin-top:10px'>"+(expirou?"<button class='btn-success' onclick=\"reativarPromo('"+promo.id+"')\">Reativar</button>":"")+
+              "<button class='btn-danger' onclick=\"eliminarPromo('"+promo.id+"')\">Eliminar</button></div>";
+            if(expirou){expiradas.appendChild(div);expiradasCount++}else{lista.appendChild(div);ativasCount++;iniciarTimer(promo.id,expiraEm)}
+        });
+        if(!ativasCount)lista.innerHTML="<i>No hay promociones activas.</i>";
+        if(!expiradasCount)expiradas.innerHTML="<i>No hay promociones expiradas.</i>";
+    } catch(e) { log("Error promos: "+e.message); }
 }
 
 
@@ -2431,50 +2117,11 @@ function iniciarTimer(
 ===================================================== */
 
 async function eliminarPromo(id) {
-
-    if (
-        !confirm(
-            "¿Eliminar promoción?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    const res =
-        await fetch(
-
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${id}.json`,
-
-            {
-                method:
-                    "DELETE"
-            }
-
-        );
-
-
-    if (!res.ok) {
-
-        const erro =
-            await res.text();
-
-
-        return alert(
-
-            "Error al eliminar:\n" +
-
-            erro
-
-        );
-
-    }
-
-
+    if(!confirm("¿Eliminar promoción?"))return;
+    const res=await fetch("/api/sendpush",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete_promo",id})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)return alert("Error al eliminar:\n"+(data.error||"Error"));
     carregarPromos();
-
 }
 
 
@@ -2512,130 +2159,17 @@ function fecharModal() {
 
 
 async function confirmarReativacao() {
-
-    const valor =
-        Number(
-            document
-                .getElementById("tempoValor")
-                .value
-        );
-
-
-    const tipo =
-        document
-            .getElementById("tempoTipo")
-            .value;
-
-
-    if (
-        !valor ||
-        valor <= 0
-    ) {
-
-        return alert(
-            "Valor inválido"
-        );
-
-    }
-
-
-    let ms =
-        0;
-
-
-    if (
-        tipo === "min"
-    ) {
-
-        ms =
-            valor *
-            60 *
-            1000;
-
-    }
-
-
-    if (
-        tipo === "hora"
-    ) {
-
-        ms =
-            valor *
-            60 *
-            60 *
-            1000;
-
-    }
-
-
-    if (
-        tipo === "dia"
-    ) {
-
-        ms =
-            valor *
-            24 *
-            60 *
-            60 *
-            1000;
-
-    }
-
-
-    const novaExp =
-        Date.now() +
-        ms;
-
-
-    const res =
-        await fetch(
-
-            `https://fidelidade-app-9671c-default-rtdb.firebaseio.com/promos/${promoReativarId}.json`,
-
-            {
-                method:
-                    "PATCH",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify({
-                        exp:
-                            novaExp
-                    })
-            }
-
-        );
-
-
-    if (!res.ok) {
-
-        const erro =
-            await res.text();
-
-
-        return alert(
-
-            "Error al reactivar:\n" +
-
-            erro
-
-        );
-
-    }
-
-
-    fecharModal();
-
-
-    carregarPromos();
-
+    const valor=Number(document.getElementById("tempoValor").value);
+    const tipo=document.getElementById("tempoTipo").value;
+    if(!valor||valor<=0)return alert("Valor inválido");
+    let seconds=valor*60;
+    if(tipo==="hora")seconds=valor*3600;
+    if(tipo==="dia")seconds=valor*86400;
+    const res=await fetch("/api/sendpush",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"reactivate_promo",id:promoReativarId,seconds})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)return alert("Error al reactivar:\n"+(data.error||"Error"));
+    fecharModal();carregarPromos();
 }
-
-
 
 /* =====================================================
    16. INICIALIZAÇÃO DO DASHBOARD
