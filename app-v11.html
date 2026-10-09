@@ -288,5 +288,6 @@ function openVideoMenu(event){event?.preventDefault();const url=`/menu-videos.ht
 async function init(){try{const appData=await loadAppData();applyRestaurantBrand(appData.restaurant||{});await loadClient();buildQr();await Promise.allSettled([loadVip(),loadMoves(),loadRewards(),loadPromos(),loadBonus(),loadBirthday()]);updateReviewCards();const hash=location.hash.replace('#','');if(['home','rewards','qr','offers','profile'].includes(hash))go(hash)}catch(e){document.querySelector('.app').insertAdjacentHTML('afterbegin',`<div class="error">${esc(e.message)}</div>`)}}
 init();
 </script>
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+<script src="/tenant-runtime.js?v=20261005-1"></script>
+</body>
 </html>
