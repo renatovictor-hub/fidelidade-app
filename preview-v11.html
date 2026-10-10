@@ -26,15 +26,16 @@ body{min-height:100vh;display:grid;place-items:center;padding:18px}.card{width:m
   <div class="note">Não instala nada e não altera a produção. Serve apenas para testar a branch v1.1 com os dados reais do cliente selecionado.</div>
 </main>
 <script>
+const companyParam=String(new URLSearchParams(location.search).get('company')||'').trim();
 const form=document.getElementById('form'),phone=document.getElementById('phone'),btn=document.getElementById('btn'),msg=document.getElementById('msg');
 form.addEventListener('submit',async e=>{
   e.preventDefault();msg.textContent='';const digits=phone.value.replace(/\D/g,'');if(digits.length!==10){msg.textContent='Digite os 10 dígitos do telefone.';return}
   btn.disabled=true;btn.textContent='BUSCANDO...';
   try{
-    const r=await fetch('/api/buscar-telefone?telefone='+encodeURIComponent(digits)+'&t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
+    const r=await fetch('/api/buscar-telefone?telefone='+encodeURIComponent(digits)+'&t='+Date.now()+(companyParam?'&company='+encodeURIComponent(companyParam):''),{cache:'no-store'}),d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(d.error||'Não foi possível localizar o cliente.');
     if(!/^user_\d+$/.test(String(d.uid||'')))throw new Error('Cliente não encontrado.');
-    location.href='/app-v11-next.html?uid='+encodeURIComponent(d.uid)+'#home';
+    location.href='/app-v11-next.html?uid='+encodeURIComponent(d.uid)+(companyParam?'&company='+encodeURIComponent(companyParam):'')+'#home';
   }catch(err){msg.textContent=err.message||'Erro ao abrir o preview.';btn.disabled=false;btn.textContent='ABRIR PREVIEW';}
 });
 </script>

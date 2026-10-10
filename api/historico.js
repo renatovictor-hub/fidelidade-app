@@ -1,6 +1,7 @@
 import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { requireClient } from "../lib/server/client-auth.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
@@ -12,6 +13,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
+    const db=tenantDatabase(admin.database(),tenant);
     const publicMode = String(req.query.public || "") === "1";
     if (!publicMode && !requireAdmin(req, res)) return;
 
@@ -25,14 +29,13 @@ export default async function handler(req, res) {
 
         if (publicMode) {
             if (!requireClient(req,res,uid)) return;
-            const userSnap = await admin.database().ref(`users/${uid}`).once("value");
+            const userSnap = await db.ref(`users/${uid}`).once("value");
             if (!userSnap.exists()) {
                 return res.status(404).json({ error: "Cliente no encontrado" });
             }
         }
 
-        const snapshot = await admin
-            .database()
+        const snapshot = await db
             .ref("transacoes")
             .orderByChild("user_id")
             .equalTo(uid)

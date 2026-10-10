@@ -5,11 +5,13 @@ import { requireClient, setClientSession } from "../lib/server/client-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 import { getPublicCompanyConfig } from "../lib/server/tenant-config.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
 const RESTAURANT_CONFIG=getRestaurantConfig();
 const RESTAURANT = RESTAURANT_CONFIG.location;
+function requestDb(req){return tenantDatabase(admin.database(),tenantFromRequest(req));}
 const ORDER_STATUS = {
     received: { label:"Pedido enviado", push:"Recibimos tu pedido. En breve lo confirmaremos." },
     accepted: { label:"Pedido aceptado", push:"✅ Tu pedido fue aceptado." },
@@ -374,7 +376,7 @@ async function handleOrderCreate(req, res) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
-    const db = admin.database();
+    const db = requestDb(req);
     const catalog=await loadMenuCatalog(db);
     const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
@@ -441,7 +443,7 @@ async function handleOrderCreate(req, res) {
 async function handleCustomersGet(req, res) {
     if (!requireAdmin(req, res)) return;
 
-    const db = admin.database();
+    const db = requestDb(req);
     const [usersSnap, txSnap] = await Promise.all([
         db.ref("users").once("value"),
         db.ref("transacoes").once("value")
@@ -542,7 +544,7 @@ async function handleCustomersGet(req, res) {
 }
 
 async function handleOrdersGet(req, res) {
-    const db = admin.database();
+    const db = requestDb(req);
     if (String(req.query.admin || "") === "1") {
         if (!requireAdmin(req, res)) return;
         const snap = await db.ref("pedidos").orderByChild("createdAt").limitToLast(100).once("value");
@@ -566,7 +568,7 @@ async function handleOrderStatus(req, res) {
     const status = cleanOrderText(req.body?.status, 40);
     if (!id || !ORDER_STATUS[status]) return res.status(400).json({ error:"Pedido o estado inválido" });
 
-    const db = admin.database();
+    const db = requestDb(req);
     const ref = db.ref(`pedidos/${id}`);
     const snap = await ref.once("value");
     if (!snap.exists()) return res.status(404).json({ error:"Pedido no encontrado" });
@@ -722,6 +724,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
+    const activeTenant=await requireTenant(admin,req,res);
+    if(!activeTenant)return;
+
     if (req.method === "POST" && req.body?.action === "auth_register") {
         try {
             const nome=cleanOrderText(req.body?.nome,100);
@@ -729,7 +734,7 @@ export default async function handler(req, res) {
             const nascimento=String(req.body?.nascimento||"").trim();
             const referidoPor=cleanOrderText(req.body?.referido_por,80);
             if(nome.length<2||telefone.length!==10||!/^\d{4}-\d{2}-\d{2}$/.test(nascimento))return res.status(400).json({error:"Datos de registro inválidos"});
-            const db=admin.database();
+            const db=requestDb(req);
             const rate=await authRateLimit(db,req,telefone);
             if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
             const existingSnap=await db.ref("users").orderByChild("telefone").equalTo(telefone).once("value");
@@ -752,7 +757,7 @@ export default async function handler(req, res) {
                     updated_at:new Date().toISOString()
                 });
             }
-            setClientSession(res,uid);
+            setClientSession(res,uid,tenantFromRequest(req));
             await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user?.nome||user?.nombre||nome,telefone,nascimento,recovered});
         } catch(error) {
@@ -766,7 +771,7 @@ export default async function handler(req, res) {
             const telefone=String(req.body?.telefone||"").replace(/\D/g,"");
             const nascimento=String(req.body?.nascimento||"").trim();
             if(!/^user_\d+$/.test(uid)||telefone.length!==10)return res.status(400).json({error:"Datos de sesión inválidos"});
-            const db=admin.database();
+            const db=requestDb(req);
             const rate=await authRateLimit(db,req,telefone);
             if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
             const snap=await db.ref(`users/${uid}`).once("value");
@@ -775,7 +780,7 @@ export default async function handler(req, res) {
             if(String(user.telefone||"").replace(/\D/g,"")!==telefone)return res.status(403).json({error:"No pudimos validar esta sesión"});
             const savedBirth=String(user.nascimento||user.cumpleanos||"").trim();
             if(savedBirth&&(!nascimento||savedBirth!==nascimento))return res.status(403).json({error:"No pudimos validar esta sesión"});
-            setClientSession(res,uid);
+            setClientSession(res,uid,tenantFromRequest(req));
             await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",nascimento:savedBirth});
         }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
@@ -806,7 +811,7 @@ export default async function handler(req, res) {
         const uid=cleanOrderText(req.query.uid,80);
         if(!/^user_\d+$/.test(uid))return res.status(400).json({error:"Cliente inválido"});
         if(!requireClient(req,res,uid))return;
-        const db=admin.database();
+        const db=requestDb(req);
         const [userSnap,vipSnap,bonusSnap,birthdaySnap,reviewsSnap,promosSnap,rewardsSnap,contactSnap]=await Promise.all([
             db.ref("users/"+uid).once("value"),
             db.ref("config/niveles_vip").once("value"),
@@ -824,9 +829,10 @@ export default async function handler(req, res) {
             .filter(p=>promoEligibleForUser(p,user,rewards,uid))
             .sort((a,b)=>Number(b.exp||0)-Number(a.exp||0));
         const contact=contactSnap.val()||{};
+        const tenantCfg=await getPublicCompanyConfig(admin,req,RESTAURANT_CONFIG);
         return res.status(200).json({
-            restaurant:{
-                id:RESTAURANT_CONFIG.id,
+            restaurant:tenantCfg||{
+                restaurant_id:"uai-so",
                 name:RESTAURANT_CONFIG.name,
                 short_name:RESTAURANT_CONFIG.shortName,
                 logo:RESTAURANT_CONFIG.logo,
@@ -841,18 +847,18 @@ export default async function handler(req, res) {
             birthday_claims:user.cumpleanos_canjes||{},
             reviews:reviewsSnap.val()||{},
             promos,
-            whatsapp:String(contact.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
+            whatsapp:String(contact.whatsapp||tenantCfg?.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
         });
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
-        const snap=await admin.database().ref("config/menu_catalog").once("value");
+        const snap=await requestDb(req).ref("config/menu_catalog").once("value");
         return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),false)});
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
         if(!requireAdmin(req,res))return;
-        const snap=await admin.database().ref("config/menu_catalog").once("value");
+        const snap=await requestDb(req).ref("config/menu_catalog").once("value");
         return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),true)});
     }
 
@@ -874,7 +880,7 @@ export default async function handler(req, res) {
             clean[pid]={name,category:cleanOrderText(p?.category||"OTROS",80),price,active:p?.active!==false,image:cleanOrderText(p?.image,800),description:cleanOrderText(p?.description,240),modifiers};
         }
         if(!Object.keys(clean).length)return res.status(400).json({error:"El catálogo no puede quedar vacío"});
-        await admin.database().ref("config/menu_catalog").set(clean);
+        await requestDb(req).ref("config/menu_catalog").set(clean);
         return res.status(200).json({success:true,catalog:clean});
     }
 
@@ -916,7 +922,7 @@ export default async function handler(req, res) {
 
             if (action === "push_sync") {
                 const agora = new Date().toISOString();
-                const userRef = admin.database().ref(`users/${uid}`);
+                const userRef = requestDb(req).ref(`users/${uid}`);
                 const userSnap = await userRef.once("value");
                 if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
@@ -943,7 +949,7 @@ export default async function handler(req, res) {
 
             if (action === "google_review_clicked") {
                 const agora = new Date().toISOString();
-                const userRef = admin.database().ref(`users/${uid}`);
+                const userRef = requestDb(req).ref(`users/${uid}`);
                 const userSnap = await userRef.once("value");
                 if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
@@ -961,14 +967,14 @@ export default async function handler(req, res) {
 
             if (estrelas < 1 || estrelas > 5) return res.status(400).json({ error:"Calificación inválida" });
 
-            const userRef = admin.database().ref(`users/${uid}`);
+            const userRef = requestDb(req).ref(`users/${uid}`);
             const userSnap = await userRef.once("value");
             if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
             const user = userSnap.val() || {};
             const agora = new Date().toISOString();
-            const feedbackRef = admin.database().ref("feedback").push();
-            await admin.database().ref().update({
+            const feedbackRef = requestDb(req).ref("feedback").push();
+            await requestDb(req).ref().update({
                 [`feedback/${feedbackRef.key}`]: {
                     user_id: uid,
                     nome: user.nome || user.nombre || "",
@@ -993,14 +999,14 @@ export default async function handler(req, res) {
         if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
         if (!requireClientOrAdmin(req,res,uid)) return;
 
-        const snapshot = await admin.database().ref(`users/${uid}`).once("value");
+        const snapshot = await requestDb(req).ref(`users/${uid}`).once("value");
 
         if (!snapshot.exists()) {
             return res.status(404).json({ error: "Cliente no encontrado" });
         }
 
         const cliente = snapshot.val();
-        const reviewsSnap = await admin.database().ref("config/reviews").once("value");
+        const reviewsSnap = await requestDb(req).ref("config/reviews").once("value");
         const reviewsCfg = reviewsSnap.val() || {};
 
         return res.status(200).json({

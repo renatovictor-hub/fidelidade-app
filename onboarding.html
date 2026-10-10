@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+<script src="/tenant-request-context.js?v=20261009-tenant1"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#6a0dad">
@@ -69,9 +70,11 @@ const ios=document.getElementById('iosGuide');
 const installed=document.getElementById('installedMsg');
 const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-const refParam=String(new URLSearchParams(location.search).get('ref')||'').trim();
+const urlParams=new URLSearchParams(location.search);
+const refParam=String(urlParams.get('ref')||'').trim();
+const companyParam=String(urlParams.get('company')||'').trim();
 if(/^user_\d+$/.test(refParam)) localStorage.setItem('referral_uid',refParam);
-function abrirApp(){installed.style.display='block';btn.style.display='none';setTimeout(()=>location.replace('/index.html?installed=1'),350)}
+function abrirApp(){installed.style.display='block';btn.style.display='none';const u=new URL('/index.html',location.origin);u.searchParams.set('installed','1');if(companyParam)u.searchParams.set('company',companyParam);setTimeout(()=>location.replace(u.toString()),350)}
 if(standalone()) abrirApp();
 
 window.addEventListener('beforeinstallprompt',e=>{
