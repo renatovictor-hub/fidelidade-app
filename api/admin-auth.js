@@ -33,48 +33,6 @@ export default async function handler(req, res) {
 
     const tenant=tenantFromRequest(req);
 
-    if(req.method==="GET" && req.query?.action==="preview_tenant_diagnostics" && process.env.VERCEL_ENV==="preview"){
-        const testId="teste-isolamento";
-        const db=admin.database();
-        const companyRef=db.ref("saas/companies/"+testId);
-        const companySnap=await companyRef.once("value");
-        if(!companySnap.exists()){
-            const now=new Date().toISOString();
-            await db.ref().update({
-              [`saas/companies/${testId}`]:{
-                id:testId,slug:testId,name:"Teste Isolamento",city:"Cancún",country:"MX",
-                status:"draft",active:true,createdAt:now,updatedAt:now,
-                modules:{fidelity:true,notifications:true,delivery:false,orders:true},
-                branding:{primary:"#123456",secondary:"#abcdef"}
-              },
-              [`saas/tenantData/${testId}/config/company`]:{
-                id:testId,name:"Teste Isolamento",city:"Cancún",country:"MX"
-              }
-            });
-        }
-        async function counts(id){
-            const base=id==="uai-so"?"":`saas/tenantData/${id}/`;
-            const [users,orders,rewards,tx]=await Promise.all([
-              db.ref(base+"users").once("value"),
-              db.ref(base+"pedidos").once("value"),
-              db.ref(base+"recompensas").once("value"),
-              db.ref(base+"transacoes").once("value")
-            ]);
-            const usersVal=users.val()||{};
-            return {
-              users:Object.keys(usersVal).length,
-              points:Object.values(usersVal).reduce((s,u)=>s+Number(u?.pontos||0),0),
-              orders:Object.keys(orders.val()||{}).length,
-              rewards:Object.keys(rewards.val()||{}).length,
-              transactions:Object.keys(tx.val()||{}).length
-            };
-        }
-        return res.status(200).json({
-          uaiSo:await counts("uai-so"),
-          testeIsolamento:await counts(testId)
-        });
-    }
-
     if (req.method === "GET") {
         return res.status(200).json({
             authenticated: isValidSession(req,tenant),
