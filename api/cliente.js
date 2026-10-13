@@ -378,7 +378,7 @@ async function handleOrderCreate(req, res) {
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
     const db = requestDb(req);
     const catalog=await loadMenuCatalog(db,tenantFromRequest(req));
-    const secure = secureOrderItems(body.items,catalog);
+    const secure = secureOrderItems(body.items,catalog,tenantFromRequest(req));
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
