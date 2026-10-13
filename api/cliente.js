@@ -102,9 +102,9 @@ function normalizedCatalog(raw,includeInactive=false,tenant="uai-so"){
     }
     return out;
 }
-function secureOrderItems(items,catalogRaw) {
+function secureOrderItems(items,catalogRaw,tenant="uai-so") {
     if (!Array.isArray(items)) return { items:[], invalid:true };
-    const catalog=normalizedCatalog(catalogRaw,false,"uai-so");
+    const catalog=normalizedCatalog(catalogRaw,false,tenant);
     const byName=Object.fromEntries(Object.entries(catalog).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
     const priced=[];
     let invalid=false;
