@@ -45,11 +45,11 @@
       <button data-find="Base de Clientes"><span>👥</span>Clientes</button>
       <button data-find="Niveles VIP"><span>★</span>Fidelidad</button>
       <button data-find="Recompensas"><span>🎁</span>Recompensas</button>
-      <button data-soft="Menú"><span>🍽️</span>Menú</button>
       <button data-find="Promoción"><span>🔔</span>Ofertas / Push</button>
       <div class="ux-divider"></div>
       <button data-id="ordersAdmin"><span>🧾</span>Pedidos</button>
       <button data-id="ordersAdmin"><span>🛵</span>Entregas</button>
+      <button data-soft="Menú"><span>🍽️</span>Menú</button>
       <button data-find="envío"><span>⚙</span>Configurar envío</button>
       <div class="ux-divider"></div>
       <button data-soft="Reportes"><span>▤</span>Reportes</button>
