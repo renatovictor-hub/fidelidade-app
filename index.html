@@ -45,15 +45,23 @@ let OneSignalInstance = null;
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 OneSignalDeferred.push(async function(OS) {
-    OneSignalInstance = OS;
-
     const cfg=await (window.__restaurantConfigPromise||Promise.resolve(window.__restaurantConfig||null));
     const appId=String(cfg?.onesignal_app_id||"").trim();
-    if(!appId)return;
-    await OS.init({
-        appId,
-        notifyButton: { enable: false }
-    });
+    if(!appId){
+        OneSignalInstance=null;
+        return;
+    }
+    try{
+        await OS.init({
+            appId,
+            notifyButton: { enable: false }
+        });
+        OneSignalInstance = OS;
+    }catch(e){
+        OneSignalInstance=null;
+        console.warn("OneSignal init:",e);
+        return;
+    }
 
     async function syncPush(reason) {
         const currentUid = String(localStorage.getItem("uid") || "").trim();
@@ -1590,9 +1598,15 @@ async function salvarNome() {
         localStorage.removeItem("referral_uid");
 
         if(OneSignalInstance){
-            await OneSignalInstance.login(uid);
-            await OneSignalInstance.User.addTag("user_name",d.nome||nome);
-            await OneSignalInstance.User.addTag("telefone",telefoneLimpo);
+            try{
+                if(typeof OneSignalInstance.login==="function")await OneSignalInstance.login(uid);
+                if(OneSignalInstance.User?.addTag){
+                    await OneSignalInstance.User.addTag("user_name",d.nome||nome);
+                    await OneSignalInstance.User.addTag("telefone",telefoneLimpo);
+                }
+            }catch(pushError){
+                console.warn("OneSignal pós-cadastro:",pushError);
+            }
         }
         if(d.recovered)alert("✅ Encontramos tu cuenta existente. Tus puntos y datos fueron recuperados.");
         abrirApp();
