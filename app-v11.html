@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="es" class="tenant-loading">
 <head>
+<script>
+(()=>{const c=String(new URLSearchParams(location.search).get('company')||'').trim();if(c&&c!=='uai-so')document.documentElement.classList.add('tenant-nonlegacy')})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#6b7280">
@@ -60,13 +63,14 @@ button{font:inherit}
 .bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,480px);height:76px;padding:7px 7px calc(7px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid #e8e1ec;display:grid;grid-template-columns:repeat(5,1fr);z-index:90;box-shadow:0 -8px 20px rgba(53,24,69,.05)}.nav{border:0;background:transparent;color:#776f7c;font-size:9px;font-weight:750;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}.nav .ico{font-size:19px}.nav.active{color:var(--p)}.nav.qr .bubble{width:48px;height:48px;margin-top:-25px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;border:5px solid var(--bg);box-shadow:0 6px 14px color-mix(in srgb,var(--p) 25%,transparent);font-size:20px}
 .modal{display:none;position:fixed;inset:0;background:rgba(23,11,29,.62);z-index:120;align-items:flex-end;justify-content:center}.modal.open{display:flex}.sheet{width:min(100%,480px);max-height:82vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}.sheetbar{width:42px;height:4px;border-radius:999px;background:#d8d1dc;margin:0 auto 13px}.modal-title{font-size:18px;color:var(--p);font-weight:900;margin:0 0 5px}.modal-copy{font-size:11px;color:var(--muted);line-height:1.4;margin:0 0 12px}.stars{display:flex;justify-content:center;gap:7px;margin:12px 0}.star{border:0;background:transparent;color:#ccc;font-size:31px;padding:0;cursor:pointer}.star.on{color:#ffbf00}.feedback-text{width:100%;min-height:78px;border:1px solid #ddd;border-radius:12px;padding:10px;font:inherit;font-size:12px;resize:vertical}.primary{width:100%;border:0;border-radius:12px;background:var(--p);color:#fff;padding:12px;font-weight:900;margin-top:10px}.secondary{width:100%;border:0;background:transparent;color:#888;padding:10px;font-size:11px}.error{background:#fff1f2;color:#a31521;border:1px solid #f2c7cb;border-radius:14px;padding:12px;font-size:11px;margin:10px 0}.loading{height:70px;display:grid;place-items:center;color:#8f8296;font-size:11px}
 @media(max-width:370px){.app{padding-left:11px;padding-right:11px}.qr-box{width:200px;height:200px}.quick a{font-size:10px}.points .num{font-size:25px}.mini-title{font-size:13px}.system-action{padding:7px 8px}}
+.tenant-nonlegacy .legacy-uai{display:none!important}
 </style>
 <link rel="stylesheet" href="/client-readability.css?v=20260927-1">
 <script src="/tenant-request-context.js?v=20261009-tenant1"></script>
 </head>
 <body>
 <div class="app">
-  <header class="top"><img src="/logo.png" alt="Restaurante"><span class="version">v1.1</span></header>
+  <header class="top"><img src="/logo.png" class="legacy-uai" alt="Restaurante"><span class="version">v1.1</span></header>
 
   <section id="screen-home" class="screen active">
     <div class="quick">
@@ -95,7 +99,7 @@ button{font:inherit}
     <div id="feedbackCard" class="system-card feedback"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">TU OPINIÓN</div><div class="system-title">Califica tu compra reciente</div><div class="system-text">Tu opinión nos ayuda a mejorar.</div></div><button class="system-action" onclick="openFeedback()">OPINAR</button></div></div>
     <div id="googleCard" class="system-card google"><div class="system-row"><div class="system-icon">⭐</div><div class="system-main"><div class="system-kicker">GOOGLE</div><div class="system-title">¿Te gusta este restaurante?</div><div class="system-text">Tu reseña ayuda a que más personas nos encuentren.</div></div><button class="system-action" onclick="openGoogle()">EVALUAR</button></div></div>
 
-    <img src="/banner.jpg" class="banner" alt="Restaurante">
+    <img src="/banner.jpg" class="banner legacy-uai" alt="Restaurante">
     <div class="section-title">🔥 Promociones Activas</div>
     <div id="homeOffers" class="list"><div class="loading">Cargando promociones…</div></div>
     <div id="previousBlock" style="display:none"><div class="previous-title">↶ Anteriores</div><div id="homePrevious" class="list"></div></div>
@@ -108,7 +112,7 @@ button{font:inherit}
 
   <section id="screen-qr" class="screen">
     <div class="subhead"><div><h1>Mi QR</h1><p>Muéstralo al momento de tu compra.</p></div></div>
-    <div class="qr-card"><img class="logo" src="/logo.png" alt="Restaurante"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
+    <div class="qr-card"><img class="logo legacy-uai" src="/logo.png" alt="Restaurante"><div id="qrBig" class="qr-box" role="img" aria-label="Código QR de tu cuenta"></div><h2 id="qrName">Cliente</h2><div id="qrId" style="font-size:11px;opacity:.82"></div><p>Muestra este código al momento de tu compra para identificar tu cuenta y acumular puntos.</p><button class="share" type="button" onclick="shareQr()">↗ COMPARTIR MI QR</button></div>
   </section>
 
   <section id="screen-offers" class="screen">
@@ -161,7 +165,8 @@ function applyRestaurantBrand(cfg){
   document.title=shortName+' Fidelidad';
   document.documentElement.style.setProperty('--p',restaurantCfg.primary_color||'#6a0dad');
   document.documentElement.style.setProperty('--p2',restaurantCfg.accent_color||restaurantCfg.primary_color||'#ffcc00');
-  const legacy=(restaurantCfg.restaurant_id||restaurantCfg.id||'uai-so')==='uai-so';
+  const urlCompany=String(qs.get('company')||'').trim();
+  const legacy=urlCompany?urlCompany==='uai-so':(restaurantCfg.restaurant_id||restaurantCfg.id||'uai-so')==='uai-so';
   document.querySelectorAll('img[src="/logo.png"],img.logo').forEach(img=>{if(restaurantCfg.logo){img.src=restaurantCfg.logo;img.style.removeProperty('display')}else if(!legacy){img.removeAttribute('src');img.style.display='none'}img.alt=shortName});
   const top=document.querySelector('.top img');if(top){if(restaurantCfg.logo){top.src=restaurantCfg.logo;top.style.removeProperty('display')}else if(!legacy){top.removeAttribute('src');top.style.display='none'}};
   const googleTitle=document.querySelector('#googleCard .system-title');if(googleTitle)googleTitle.textContent='¿Te gusta '+shortName+'?';
