@@ -159,11 +159,12 @@ function applyRestaurantBrand(cfg){
   const shortName=restaurantCfg.short_name||restaurantCfg.name||'Fidelidad';
   document.title=shortName+' Fidelidad';
   document.documentElement.style.setProperty('--p',restaurantCfg.primary_color||'#6a0dad');
-  document.documentElement.style.setProperty('--p2',restaurantCfg.primary_color||'#6a0dad');
-  document.querySelectorAll('img[src="/logo.png"],img.logo').forEach(img=>{if(restaurantCfg.logo)img.src=restaurantCfg.logo;img.alt=shortName});
-  const top=document.querySelector('.top img');if(top&&restaurantCfg.logo)top.src=restaurantCfg.logo;
+  document.documentElement.style.setProperty('--p2',restaurantCfg.accent_color||restaurantCfg.primary_color||'#ffcc00');
+  const legacy=(restaurantCfg.restaurant_id||restaurantCfg.id||'uai-so')==='uai-so';
+  document.querySelectorAll('img[src="/logo.png"],img.logo').forEach(img=>{if(restaurantCfg.logo){img.src=restaurantCfg.logo;img.style.removeProperty('display')}else if(!legacy){img.removeAttribute('src');img.style.display='none'}img.alt=shortName});
+  const top=document.querySelector('.top img');if(top){if(restaurantCfg.logo){top.src=restaurantCfg.logo;top.style.removeProperty('display')}else if(!legacy){top.removeAttribute('src');top.style.display='none'}};
   const googleTitle=document.querySelector('#googleCard .system-title');if(googleTitle)googleTitle.textContent='¿Te gusta '+shortName+'?';
-  const banner=document.querySelector('#screen-home img.banner');if(banner)banner.alt=restaurantCfg.name||shortName;
+  const banner=document.querySelector('#screen-home img.banner');if(banner){banner.alt=restaurantCfg.name||shortName;if(!legacy)banner.style.display='none'}
   const feedbackCopy=document.querySelector('#feedbackModal .modal-copy');if(feedbackCopy)feedbackCopy.textContent='Califica tu experiencia. El comentario es opcional y queda como opinión privada para '+shortName+'.';
   const googleCopy=document.querySelector('#googleModal .modal-copy');if(googleCopy)googleCopy.textContent='Tu reseña pública ayuda a otras personas a descubrir '+shortName+'. Este acceso se mostrará una sola vez en el app.';
   const insta=document.getElementById('restaurantInstagram');
