@@ -7,10 +7,12 @@
     .ux-virtual-view{display:none;max-width:1280px;margin:0 auto}
     body[data-ux-view="fidelidad"] #uxQrView,
     body[data-ux-view="envio"] #uxDeliverySettingsView,
+    body[data-ux-view="menu"] #uxMenuView,
     body[data-ux-view="reportes"] #uxReportsView,
     body[data-ux-view="ajustes"] #uxSettingsView{display:block}
     body[data-ux-view="fidelidad"] #uxEmptyView,
     body[data-ux-view="envio"] #uxEmptyView,
+    body[data-ux-view="menu"] #uxEmptyView,
     body[data-ux-view="reportes"] #uxEmptyView,
     body[data-ux-view="ajustes"] #uxEmptyView{display:none!important}
 
@@ -19,6 +21,8 @@
     body[data-ux-view="fidelidad"] #uxCoreToolbar,
     body[data-ux-view="envio"] .main-container,
     body[data-ux-view="envio"] #ordersAdmin,
+    body[data-ux-view="menu"] .main-container,
+    body[data-ux-view="menu"] #ordersAdmin,
     body[data-ux-view="reportes"] .main-container,
     body[data-ux-view="reportes"] #ordersAdmin,
     body[data-ux-view="ajustes"] .main-container,
@@ -85,7 +89,7 @@
   const nav=sidebar?.querySelector('.ux-nav');
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-  const TITLES={fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
+  const TITLES={fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],menu:['Menú','Productos, categorías, precios y disponibilidad.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
 
   function setTitle(view){
     const t=TITLES[view];if(!t)return;
@@ -94,7 +98,7 @@
   }
   function setActive(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={fidelidad:'Fidelidad',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
+    const map={fidelidad:'Fidelidad',menu:'Menú',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
   }
   function showVirtual(view){
@@ -128,6 +132,11 @@
       <div class="ux-panel ux-span-4"><h2>Módulos</h2><p>Indicadores separados según los módulos contratados por cada empresa.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Fidelidad</b><small>Clientes, puntos, recompensas</small></div><span class="ux-toggle" id="uxModuleLoyalty">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Pedidos, rutas y entrega</small></div><span class="ux-toggle" id="uxModuleDelivery">Activo</span></div></div></div>
     </div>`;
   anchor.parentNode.insertBefore(reports,anchor);
+
+  const menuView=document.createElement('section');menuView.id='uxMenuView';menuView.className='ux-virtual-view';menuView.innerHTML=`
+    <div class="ux-section-grid">
+    </div>`;
+  anchor.parentNode.insertBefore(menuView,anchor);
 
   const settings=document.createElement('section');settings.id='uxSettingsView';settings.className='ux-virtual-view';settings.innerHTML=`
     <div class="ux-section-grid">
@@ -324,9 +333,12 @@
   function syncAll(){
     moveSettingsCards();loadDeploymentConfig();
     if(document.body.dataset.uxView==='ajustes'){
-      loadRestaurantContact();loadCatalog();loadInstallationStatus();
+      loadRestaurantContact();loadInstallationStatus();
       const btn=document.getElementById('uxSaveRestaurantWhatsApp');
       if(btn&&!btn.dataset.bound){btn.dataset.bound='1';btn.onclick=saveRestaurantContact}
+    }
+    if(document.body.dataset.uxView==='menu'){
+      loadCatalog();
       const save=document.getElementById('uxCatalogSave'),reload=document.getElementById('uxCatalogReload'),add=document.getElementById('uxCatalogAdd');
       if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=saveCatalog}
       if(reload&&!reload.dataset.bound){reload.dataset.bound='1';reload.onclick=()=>{catalogLoaded=false;loadCatalog(true)}}
@@ -558,6 +570,7 @@
     const txt=norm(b.textContent);
     let view=null;
     if(txt==='fidelidad'||txt==='programa de fidelidad')view='fidelidad';
+    else if(txt==='menu'||txt==='menú')view='menu';
     else if(txt==='configurar envio')view='envio';
     else if(txt==='reportes')view='reportes';
     else if(txt==='ajustes')view='ajustes';
@@ -576,5 +589,5 @@
   setTimeout(syncAll,250);
   setTimeout(loadFidelityBaseRule,320);
   setTimeout(mountFidelityConfig,260);
-  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
+  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','menu','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
 })();
