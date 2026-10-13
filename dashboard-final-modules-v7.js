@@ -135,6 +135,19 @@
 
   const menuView=document.createElement('section');menuView.id='uxMenuView';menuView.className='ux-virtual-view';menuView.innerHTML=`
     <div class="ux-section-grid">
+      <div class="ux-panel ux-span-12">
+        <h2>Menú / Productos</h2>
+        <p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p>
+        <div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin:10px 0">Cargando catálogo…</div>
+        <div id="uxCatalogEditor"></div>
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn-secondary" id="uxCatalogAdd" style="width:auto!important">+ PRODUCTO</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button>
+            <button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button>
+          </div>
+        </div>
+      </div>
     </div>`;
   anchor.parentNode.insertBefore(menuView,anchor);
 
@@ -227,9 +240,9 @@
       });
       document.querySelectorAll('#uxSidebar .ux-nav button').forEach(btn=>{
         const t=norm(btn.textContent);
-        if(!delivery&&(t.includes('pedido')||t.includes('entrega')||t.includes('envio')))btn.style.display='none';
+        if(!delivery&&(t.includes('pedido')||t.includes('entrega')||t.includes('menu')||t.includes('menú')||t.includes('envio')))btn.style.display='none';
       });
-      if(!delivery&&['pedidos','entregas','envio'].includes(document.body.dataset.uxView||''))showVirtual('fidelidad');
+      if(!delivery&&['pedidos','entregas','menu','envio'].includes(document.body.dataset.uxView||''))showVirtual('fidelidad');
       return d;
     }catch(_){return null}
   }
@@ -579,6 +592,7 @@
 
   const attr=new MutationObserver(()=>{
     const v=document.body.dataset.uxView;
+    if(v==='menu')setTimeout(syncAll,0);
     if(v==='pedidos'||v==='entregas'){
       lastOrderView='';
       setTimeout(()=>configureOrdersView(true),30);
