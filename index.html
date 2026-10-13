@@ -1078,6 +1078,18 @@ let deferredPrompt;
 
 let somJaTocouInstalacao = false;
 
+const pageParamsGlobal=new URLSearchParams(location.search);
+const companyParamGlobal=String(pageParamsGlobal.get("company")||"uai-so").trim()||"uai-so";
+const previewInstalled=
+    location.hostname.includes("renatovictor-1384s-projects.vercel.app") &&
+    pageParamsGlobal.get("installed")==="1";
+
+const previousCompany=String(localStorage.getItem("loyalty_company")||"").trim();
+if(previousCompany && previousCompany!==companyParamGlobal){
+    ["uid","nome","telefone","nascimento","push","referral_uid"].forEach(k=>localStorage.removeItem(k));
+}
+localStorage.setItem("loyalty_company",companyParamGlobal);
+
 let uid =
     localStorage.getItem("uid") ||
     "user_" + Math.floor(Math.random() * 1e9);
@@ -1336,6 +1348,20 @@ window.onload = async () => {
         location.hostname.includes("renatovictor-1384s-projects.vercel.app") &&
         params.get("preview") === "1";
 
+    if (previewInstalled) {
+        if (nome) {
+            const ok=await restaurarSessaoCliente();
+            if(ok)return abrirApp();
+            localStorage.removeItem("nome");
+            localStorage.removeItem("uid");
+            localStorage.removeItem("telefone");
+            localStorage.removeItem("nascimento");
+            uid="user_"+Math.floor(Math.random()*1e9);
+            localStorage.setItem("uid",uid);
+        }
+        return show("stepNome");
+    }
+
     if (previewMode) {
         const previewUid = String(params.get("uid") || "").trim();
 
@@ -1450,7 +1476,9 @@ window.onload = async () => {
 
 
 async function abrirAppPreview() {
-    const target='/app-v11-next.html?uid='+encodeURIComponent(uid)+'#home';
+    const q=new URLSearchParams({uid:String(uid)});
+    if(companyParamGlobal&&companyParamGlobal!=="uai-so")q.set("company",companyParamGlobal);
+    const target='/app-v11-next.html?'+q.toString()+'#home';
     location.replace(target);
 }
 
@@ -1599,11 +1627,14 @@ async function restaurarSessaoCliente(){
 ========================== */
 
 function abrirApp() {
-    const target='/app-v11-next.html?uid='+encodeURIComponent(uid)+'#home';
+    const q=new URLSearchParams({uid:String(uid)});
+    if(companyParamGlobal&&companyParamGlobal!=="uai-so")q.set("company",companyParamGlobal);
+    const target='/app-v11-next.html?'+q.toString()+'#home';
     if(location.pathname+location.search+location.hash!==target)location.replace(target);
 }
 
 </script>
 
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+<script src="/tenant-runtime.js?v=20261005-1"></script>
+</body>
 </html>
