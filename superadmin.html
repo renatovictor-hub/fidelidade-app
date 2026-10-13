@@ -20,7 +20,7 @@ input,textarea,select{width:100%;min-height:44px;border:1px solid #dcd1e2;border
 <div class="field"><label>Nome comercial</label><input id="name" placeholder="Ex: Restaurante Mineiro"></div><div class="row2"><div class="field"><label>Identificador (slug)</label><input id="slug" placeholder="restaurante-mineiro"></div><div class="field"><label>WhatsApp</label><input id="wa" placeholder="+52..."></div></div>
 <div class="row2"><div class="field"><label>Cidade</label><input id="city" placeholder="Cancún"></div><div class="field"><label>País</label><input id="country" value="MX"></div></div><div class="field"><label>Razão social (opcional)</label><input id="legalName"></div>
 <div class="field"><label>Módulos contratados</label><div class="modules"><label class="module"><input id="fid" type="checkbox" checked> Fidelidade</label><label class="module"><input id="notif" type="checkbox" checked> Notificações</label><label class="module"><input id="del" type="checkbox"> Delivery</label><label class="module"><input id="ord" type="checkbox"> Pedidos</label></div></div>
-<div class="field"><label>Identidade visual</label><div class="colors"><div class="color-wrap"><input id="pcPicker" class="swatch" type="color" value="#6a0dad"><input id="pc" value="#6a0dad"></div><div class="color-wrap"><input id="scPicker" class="swatch" type="color" value="#ffcc00"><input id="sc" value="#ffcc00"></div></div></div>
+<div class="field"><label>Identidade visual</label><div class="logo-box" style="margin-bottom:10px"><div id="newLogoPreview" class="logo-preview">Sem logo</div><div><input id="newLogoFile" type="file" accept="image/*"><div class="tiny">Opcional. Pode trocar depois em Editar empresa.</div></div></div><div class="colors"><div class="color-wrap"><input id="pcPicker" class="swatch" type="color" value="#6a0dad"><input id="pc" value="#6a0dad"></div><div class="color-wrap"><input id="scPicker" class="swatch" type="color" value="#ffcc00"><input id="sc" value="#ffcc00"></div></div></div>
 <div class="field"><label>Observações</label><textarea id="notes"></textarea></div><button id="createBtn" class="primary create" onclick="createCompany()">CRIAR EMPRESA</button><div id="createMsg" class="feedback"></div></section>
 <section class="card"><div class="list-head"><div><h3>Empresas cadastradas</h3><p>Uai Sô continua nos dados legados; empresas novas usam armazenamento isolado.</p></div><button class="soft" onclick="load()">Atualizar</button></div><div id="companies"></div></section></div></section></main>
 <div id="editModal" class="modal hidden">
@@ -51,7 +51,7 @@ input,textarea,select{width:100%;min-height:44px;border:1px solid #dcd1e2;border
 </div>
 <script>
 const $=x=>document.getElementById(x),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let companiesCache=[],editingId="",editingLogo="";
+let companiesCache=[],editingId="",editingLogo="",newLogo="";
 async function api(o={}){const r=await fetch("/api/admin-auth?scope=superadmin",{cache:"no-store",credentials:"same-origin",...o}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error((d.error||"Erro")+(d.details?" · "+d.details:""));return d}
 function bindColors(){[["pc","pcPicker"],["sc","scPicker"]].forEach(([t,p])=>{$(p).oninput=()=>$(t).value=$(p).value;$(t).oninput=()=>{if(/^#[0-9a-f]{6}$/i.test($(t).value))$(p).value=$(t).value}})}
 async function login(){try{$("loginMsg").textContent="";await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"login",password:$("pwd").value})});$("pwd").value="";await load()}catch(e){$("loginMsg").textContent=e.message}}
@@ -76,6 +76,7 @@ function syncEditColors(){
     $(t).oninput=()=>{if(/^#[0-9a-f]{6}$/i.test($(t).value))$(p).value=$(t).value}
   });
 }
+function showNewLogoPreview(src){$("newLogoPreview").innerHTML=src?'<img src="'+src+'" alt="Logo">':'Sem logo'}
 function showLogoPreview(src){
   $("editLogoPreview").innerHTML=src?'<img src="'+src+'" alt="Logo">':'Sem logo';
 }
@@ -114,6 +115,7 @@ function editCompany(encoded){
   showLogoPreview(editingLogo);$("editModal").classList.remove("hidden");
 }
 function closeEditor(){$("editModal").classList.add("hidden");editingId="";editingLogo=""}
+$("newLogoFile").addEventListener("change",async e=>{try{newLogo=await optimizeLogo(e.target.files?.[0]);showNewLogoPreview(newLogo);$("createMsg").textContent=""}catch(err){$("createMsg").className="feedback err";$("createMsg").textContent=err.message}});
 $("editLogoFile").addEventListener("change",async e=>{
   try{editingLogo=await optimizeLogo(e.target.files?.[0]);showLogoPreview(editingLogo);$("editMsg").textContent=""}
   catch(err){$("editMsg").className="feedback err";$("editMsg").textContent=err.message}
@@ -141,6 +143,6 @@ async function resetAccess(encoded){
   }catch(e){box.className="feedback err";box.textContent=e.message}
 }
 async function load(){const d=await api();$("login").classList.add("hidden");$("app").classList.remove("hidden");render(d)}
-async function createCompany(){const b=$("createBtn"),m=$("createMsg");b.disabled=true;m.textContent="";try{const d=await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create_company",name:$("name").value,slug:$("slug").value,whatsapp:$("wa").value,city:$("city").value,country:$("country").value,legalName:$("legalName").value,modules:{fidelity:$("fid").checked,notifications:$("notif").checked,delivery:$("del").checked,orders:$("ord").checked},branding:{primary:$("pc").value,secondary:$("sc").value},notes:$("notes").value})});m.className="feedback ok";m.innerHTML='Empresa criada.<br><b>Senha inicial do dashboard:</b> <code>'+esc(d.temporaryPassword||"")+'</code><br><a target="_blank" href="/admin-preview.html?company='+encodeURIComponent(d.company.id)+'">Abrir dashboard</a> · <a target="_blank" href="/onboarding.html?company='+encodeURIComponent(d.company.id)+'">Abrir app cliente</a>';await load()}catch(e){m.className="feedback err";m.textContent=e.message}finally{b.disabled=false}}
+async function createCompany(){const b=$("createBtn"),m=$("createMsg");b.disabled=true;m.textContent="";try{const d=await api({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create_company",name:$("name").value,slug:$("slug").value,whatsapp:$("wa").value,city:$("city").value,country:$("country").value,legalName:$("legalName").value,logo:newLogo,modules:{fidelity:$("fid").checked,notifications:$("notif").checked,delivery:$("del").checked,orders:$("ord").checked},branding:{primary:$("pc").value,secondary:$("sc").value},notes:$("notes").value})});m.className="feedback ok";m.innerHTML='Empresa criada.<br><b>Senha inicial do dashboard:</b> <code>'+esc(d.temporaryPassword||"")+'</code><br><a target="_blank" href="/admin-preview.html?company='+encodeURIComponent(d.company.id)+'">Abrir dashboard</a> · <a target="_blank" href="/onboarding.html?company='+encodeURIComponent(d.company.id)+'">Abrir app cliente</a>';await load()}catch(e){m.className="feedback err";m.textContent=e.message}finally{b.disabled=false}}
 bindColors();syncEditColors();load().catch(()=>{});
 </script></body></html>
