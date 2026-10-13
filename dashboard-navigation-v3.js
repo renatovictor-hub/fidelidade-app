@@ -21,7 +21,7 @@
       #uxMobileNav{position:fixed;z-index:9985;left:8px;right:8px;bottom:8px;height:64px;border:1px solid #e9e0ed;border-radius:19px;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);box-shadow:0 10px 35px rgba(46,18,58,.16);display:grid;grid-template-columns:repeat(4,1fr);padding:5px}
       #uxMobileNav button{border:0!important;background:transparent!important;color:#817789!important;padding:3px!important;font-size:9px!important;font-weight:800!important;display:grid;place-items:center;gap:1px;border-radius:13px!important}
       #uxMobileNav button span{display:block;font-size:19px;line-height:1}
-      #uxMobileNav button.active{background:#f1e6f7!important;color:var(--tenant-primary,#6a0dad)!important}
+      #uxMobileNav button.active{background:color-mix(in srgb,var(--tenant-primary,#6b7280) 10%,white)!important;color:var(--tenant-primary,#6a0dad)!important}
       #uxOverview{margin-bottom:6px!important}.ux-overview-row{margin-top:8px!important}
     }
   `;
