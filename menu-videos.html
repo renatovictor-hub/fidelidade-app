@@ -20,6 +20,7 @@
 @media(min-width:521px){body{background:#ede7f0}.app{box-shadow:0 0 45px rgba(45,8,62,.26)}}
 @media(prefers-reduced-motion:reduce){.feed{scroll-behavior:auto}.dot,.toast{transition:none}}
 </style>
+<script src="/tenant-request-context.js?v=20261013-tenant-menu"></script>
 </head>
 <body>
 <main class="app">
@@ -98,7 +99,7 @@
 </main>
 
 <script>
-const PRODUCTS=[
+let PRODUCTS=[
   {id:'carne',name:'Carne',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/e27f976b-c141-433b-8ddc-91099f347b56.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/e27f976b-c141-433b-8ddc-91099f347b56.webp',description:'Carne sazonada al estilo brasileño con cebolla y jitomate sobre masa artesanal.',ingredients:['Carne sazonada','Cebolla','Jitomate','Masa artesanal']},
   {id:'carne-queso',name:'Carne con Queso',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/a52d6896-c43c-4038-9a0b-3c8ef21f3aa1.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/a52d6896-c43c-4038-9a0b-3c8ef21f3aa1.webp',description:'Carne sazonada con queso cremoso sobre nuestra masa artesanal.',ingredients:['Carne sazonada','Queso','Masa artesanal']},
   {id:'queso-cremoso',name:'Queso Cremoso',category:'ESFIHAS SALADAS',price:45,image:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F6aa9e610-1ac0-45b6-ab2a-edbd7e3298b1.png&w=700&h=700&fit=cover&output=webp&q=76',thumb:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F6aa9e610-1ac0-45b6-ab2a-edbd7e3298b1.png&w=320&h=320&fit=cover&output=webp&q=68',description:'Queso cremoso gratinado sobre masa artesanal recién horneada.',ingredients:['Queso cremoso','Masa artesanal']},
@@ -232,11 +233,49 @@ function formatScheduled(value){const date=new Date(value);return Number.isNaN(d
 function checkoutError(message){$('checkoutError').textContent=message;$('checkoutError').classList.add('show')}
 function submitOrder(){const form=$('checkoutForm');$('checkoutError').classList.remove('show');if(!form.reportValidity())return;const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),digits=phone.replace(/\D/g,'');if(digits.length<10)return checkoutError('Revisa el número de teléfono.');const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),subtotal=cartSubtotal(),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number($('cashChange').value)||0);if(fulfillment==='delivery'&&!fee)return checkoutError('Calcula el envío o selecciona una tarifa provisional.');if(payment==='cash'&&change>0&&change<total)return checkoutError(`El cambio debe ser para una cantidad igual o mayor a ${MXN.format(total)}.`);localStorage.setItem('restaurant_checkout_profile',JSON.stringify({name,phone}));const items=cartItems(),lines=items.map(x=>{const details=lineDetails(x.line);return`• ${x.qty}x ${x.p.name} — ${MXN.format(x.line.unitPrice*x.qty)}${details?`\n  ${details}`:''}`});const address=$('deliveryAddress').value.trim(),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km · aprox. ${deliveryQuote.durationMinutes} min${quoteExtrasText(deliveryQuote)}`:`\nTarifa provisional: ${$('deliveryZone').selectedOptions[0]?.text||MXN.format(fee)}`,deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}\nReferencias: ${$('deliveryReference').value.trim()||'Sin referencias'}`:'RECOGER EN RESTAURANTE',paymentText=payment==='cash'?`Efectivo${change?` · Cambio para ${MXN.format(change)}`:' · Sin cambio'}`:'Transferencia',when=scheduled?formatScheduled($('scheduledAt').value):'Lo antes posible',client=/^user_\d+$/.test(uid)?`\nCliente fidelidad: #${uid.replace('user_','')}`:'';const text=`Hola! Quiero hacer este pedido:\n\n${lines.join('\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${paymentText}\n\nCliente: ${name}\nTeléfono: ${phone}${client}`;window.open('https://api.whatsapp.com/send?phone='+(window.__restaurantWhatsApp||'')+'&text='+encodeURIComponent(text),'_blank','noopener')}
 function showToast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').classList.add('show');toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1700)}
-function backToApp(){location.href=`/app-v11-next.html${/^user_\d+$/.test(uid)?'?uid='+encodeURIComponent(uid):''}#home`}
+function backToApp(){
+  const q=new URLSearchParams();
+  if(/^user_\d+$/.test(uid))q.set('uid',uid);
+  const company=String(new URLSearchParams(location.search).get('company')||'').trim();
+  if(company)q.set('company',company);
+  location.href='/app-v11-next.html'+(q.toString()?'?'+q.toString():'')+'#home';
+}
 document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if($('videoWrap').classList.contains('open'))closeVideo();else if($('detailsWrap').classList.contains('open'))closeDetails();else if($('checkoutWrap').classList.contains('open'))closeCheckout();else if($('cartWrap').classList.contains('open'))closeCart()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return document.querySelectorAll('video').forEach(v=>v.pause());if(videoProductId)$('popupVideo').play().catch(()=>{});else if(menuView==='explore')document.querySelector(`.dish[data-index="${activeIndex}"] video`)?.play().catch(()=>{})});
-renderFeed();renderCartBadge();setView(menuView);hydrateCheckoutProfile(false);
+
+async function initTenantMenu(){
+  const company=String(new URLSearchParams(location.search).get('company')||'').trim();
+  if(company&&company!=='uai-so'){
+    try{
+      const r=await fetch('/api/cliente?action=menu_catalog&company='+encodeURIComponent(company)+'&t='+Date.now(),{cache:'no-store'});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok){
+        PRODUCTS=Object.entries(d.catalog||{}).map(([id,p])=>({
+          id,
+          name:String(p?.name||id),
+          category:String(p?.category||'OTROS'),
+          price:Number(p?.price||0),
+          image:String(p?.image||''),
+          thumb:String(p?.image||''),
+          description:String(p?.description||''),
+          ingredients:[],
+          modifiers:Array.isArray(p?.modifiers)?p.modifiers:[]
+        }));
+      }else PRODUCTS=[];
+    }catch(_){PRODUCTS=[]}
+  }
+  renderFeed();
+  renderCartBadge();
+  setView(menuView);
+  hydrateCheckoutProfile(false);
+  if(!PRODUCTS.length){
+    const list=$('productList');
+    if(list)list.innerHTML='<div class="empty-search">Este restaurante todavía no publicó productos.</div>';
+  }
+}
+initTenantMenu();
 </script>
 <script src="/menu-order-tracker.js?v=20261004-multiclient1"></script>
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+<script src="/tenant-runtime.js?v=20261005-1"></script>
+</body>
 </html>
