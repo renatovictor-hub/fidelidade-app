@@ -73,9 +73,16 @@ const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
 const urlParams=new URLSearchParams(location.search);
 const refParam=String(urlParams.get('ref')||'').trim();
 const companyParam=String(urlParams.get('company')||'').trim();
+const host=location.hostname;
+const esPreviewProtegida=host.includes('renatovictor-1384s-projects.vercel.app');
+
 if(/^user_\d+$/.test(refParam)) localStorage.setItem('referral_uid',refParam);
 function abrirApp(){installed.style.display='block';btn.style.display='none';const u=new URL('/index.html',location.origin);u.searchParams.set('installed','1');if(companyParam)u.searchParams.set('company',companyParam);setTimeout(()=>location.replace(u.toString()),350)}
 if(standalone()) abrirApp();
+if(esPreviewProtegida&&!standalone()){
+  btn.disabled=false;
+  btn.textContent='ABRIR APP DE TESTE';
+}
 
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
@@ -98,6 +105,12 @@ async function esperarPrompt(maxMs=3000){
 }
 
 btn.addEventListener('click',async()=>{
+  if(esPreviewProtegida){
+    btn.disabled=true;
+    btn.textContent='ABRINDO APP DE TESTE…';
+    return abrirApp();
+  }
+
   if(isiOS){
     ios.style.display='block';
     btn.textContent='VER CÓMO INSTALAR';
@@ -114,16 +127,7 @@ btn.addEventListener('click',async()=>{
   if(!promptDisponible){
     btn.disabled=false;
     btn.textContent='INSTALAR APP';
-
-    // Se o navegador ainda não expôs o prompt, não culpamos o usuário.
-    // Em Android/Chrome isso costuma acontecer quando a página ainda
-    // não terminou de registrar o service worker ou quando é um domínio
-    // de Preview protegido. Mostramos uma orientação específica.
-    const host = location.hostname;
-    const esPreview = host.includes('renatovictor-1384s-projects.vercel.app');
-    alert(esPreview
-      ? 'Esta Preview protegida de Vercel puede bloquear la instalación nativa. Para probar la instalación real usa el dominio de producción. La función de cumpleaños sigue disponible en esta Preview.'
-      : 'Chrome todavía no habilitó la instalación. Recarga la página una vez y vuelve a tocar INSTALAR APP.');
+    alert('Chrome todavía no habilitó la instalación. Recarga la página una vez y vuelve a tocar INSTALAR APP.');
     return;
   }
 
@@ -137,7 +141,7 @@ btn.addEventListener('click',async()=>{
   }
 });
 
-if(isiOS&&!standalone()){
+if(isiOS&&!standalone()&&!esPreviewProtegida){
   ios.style.display='block';
   btn.disabled=false;
   btn.textContent='VER CÓMO INSTALAR';
@@ -145,5 +149,6 @@ if(isiOS&&!standalone()){
 
 // O botão nunca fica preso em "preparando". O prompt nativo é usado assim que o Chrome o disponibiliza.
 </script>
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+<script src="/tenant-runtime.js?v=20261005-1"></script>
+</body>
 </html>
