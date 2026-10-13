@@ -10,7 +10,7 @@
             .reward-item{border:1px solid #ece7f2;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff;}
             .reward-item.inactive{opacity:.58;background:#f5f5f5;}
             .reward-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
-            .reward-name{font-weight:800;color:#6a0dad;font-size:15px;}
+            .reward-name{font-weight:800;color:var(--tenant-primary,#6b7280);font-size:15px;}
             .reward-points{white-space:nowrap;background:#fff4bf;color:#6b5700;border-radius:999px;padding:5px 9px;font-weight:800;font-size:12px;}
             .reward-desc{color:#666;font-size:13px;margin-top:6px;line-height:1.4;}
             .reward-status{font-size:12px;margin-top:7px;color:#777;}
