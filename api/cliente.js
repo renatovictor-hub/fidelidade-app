@@ -87,11 +87,11 @@ function normalizeOrderName(value){
 }
 const ORDER_CATALOG_BY_NAME = Object.fromEntries(Object.entries(ORDER_CATALOG).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
 
-function catalogFallback(){
-    return RESTAURANT_CONFIG.legacyCatalogFallback ? ORDER_CATALOG : {};
+function catalogFallback(tenant="uai-so"){
+    return tenant==="uai-so" && RESTAURANT_CONFIG.legacyCatalogFallback ? ORDER_CATALOG : {};
 }
-function normalizedCatalog(raw,includeInactive=false){
-    const fallback=catalogFallback();
+function normalizedCatalog(raw,includeInactive=false,tenant="uai-so"){
+    const fallback=catalogFallback(tenant);
     const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:fallback;
     const out={};
     for(const [id,p] of Object.entries(source)){
@@ -104,7 +104,7 @@ function normalizedCatalog(raw,includeInactive=false){
 }
 function secureOrderItems(items,catalogRaw) {
     if (!Array.isArray(items)) return { items:[], invalid:true };
-    const catalog=normalizedCatalog(catalogRaw);
+    const catalog=normalizedCatalog(catalogRaw,false,"uai-so");
     const byName=Object.fromEntries(Object.entries(catalog).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
     const priced=[];
     let invalid=false;
@@ -259,9 +259,9 @@ async function secureDeliveryQuote(body){
     };
 }
 
-async function loadMenuCatalog(db){
+async function loadMenuCatalog(db,tenant="uai-so"){
     const snap=await db.ref("config/menu_catalog").once("value");
-    return normalizedCatalog(snap.val()||catalogFallback());
+    return normalizedCatalog(snap.val(),false,tenant);
 }
 function promoEligibleForUser(p,user,rewards,uid){
     const segmento=String(p?.segmento||"todos"),value=String(p?.valor_segmento??"").trim();
@@ -377,7 +377,7 @@ async function handleOrderCreate(req, res) {
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
     const db = requestDb(req);
-    const catalog=await loadMenuCatalog(db);
+    const catalog=await loadMenuCatalog(db,tenantFromRequest(req));
     const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
@@ -853,13 +853,13 @@ export default async function handler(req, res) {
 
     if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
         const snap=await requestDb(req).ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),false)});
+        return res.status(200).json({catalog:normalizedCatalog(snap.val(),false,tenantFromRequest(req))});
     }
 
     if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
         if(!requireAdmin(req,res))return;
         const snap=await requestDb(req).ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),true)});
+        return res.status(200).json({catalog:normalizedCatalog(snap.val(),true,tenantFromRequest(req))});
     }
 
     if (req.method === "POST" && req.body?.action === "catalog_save") {
