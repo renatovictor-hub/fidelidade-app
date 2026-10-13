@@ -2,6 +2,7 @@ import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
+import { tenantDatabase, requireTenant } from "../lib/server/tenant-data.js";
 const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
@@ -57,7 +58,9 @@ async function resolverPublico(db, segmento, valorSegmento) {
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (!["GET","POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
-  const db = admin.database();
+  const tenant=await requireTenant(admin,req,res);
+  if(!tenant)return;
+  const db = tenantDatabase(admin.database(),tenant);
 
   // Job diário idempotente de aniversários. Pode ser chamado pelo Cron da Vercel.
   if (req.method === "GET" && String(req.query?.job || "") === "birthdays") {

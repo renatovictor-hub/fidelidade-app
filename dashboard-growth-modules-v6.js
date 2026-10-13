@@ -8,7 +8,7 @@
     #uxGrowthToolbar .tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
     #uxGrowthToolbar button{width:100%!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#56465d!important;padding:13px 14px!important;border-radius:13px!important;font-size:14px!important;font-weight:850!important;text-align:left!important;box-shadow:0 4px 12px rgba(55,24,70,.035);transition:.18s ease}
     #uxGrowthToolbar button:hover{transform:translateY(-1px);border-color:#d8c1e8!important}
-    #uxGrowthToolbar button.active{background:linear-gradient(135deg,#6a0dad,#8a35cf)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px rgba(106,13,173,.18)}
+    #uxGrowthToolbar button.active{background:linear-gradient(135deg,var(--tenant-primary,#6b7280),var(--tenant-accent,#9ca3af))!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 18px color-mix(in srgb,var(--tenant-primary,#6b7280) 18%,transparent)}
     #uxGrowthToolbar button::after{content:'›';float:right;font-size:16px;line-height:10px;opacity:.65}
     #uxGrowthToolbar button.active::after{content:'⌄'}
     .ux-list-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:8px 9px;background:#faf8fb;border:1px solid #eee7f1;border-radius:10px}
@@ -43,8 +43,8 @@
     .ux-offer-panel h2{margin:0 0 5px;color:#322438;font-size:19px}.ux-offer-panel p{margin:0;color:#625768;font-size:13px;line-height:1.55}
     .ux-offer-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
     .ux-offer-kpi{background:#faf8fb;border:1px solid #eee7f1;border-radius:11px;padding:10px;text-align:center}
-    .ux-offer-kpi b{display:block;font-size:18px;color:#6a0dad}.ux-offer-kpi small{font-size:11px;color:#625768;font-weight:700}
-    .ux-offer-tip{background:linear-gradient(135deg,#6b11bd,#8d33d6);color:#fff}
+    .ux-offer-kpi b{display:block;font-size:18px;color:var(--tenant-primary,#6b7280)}.ux-offer-kpi small{font-size:11px;color:#625768;font-weight:700}
+    .ux-offer-tip{background:linear-gradient(135deg,var(--tenant-primary,#6b7280),var(--tenant-accent,#9ca3af));color:#fff}
     .ux-offer-tip h2,.ux-offer-tip p{color:#fff}.ux-offer-tip p{opacity:.85}.ux-offer-tip .tip{margin-top:12px;background:rgba(255,255,255,.13);border-radius:11px;padding:11px;font-size:13px;line-height:1.55}
 
     body.ux3[data-ux-view="ofertas"] .promo-item{border-left:0!important;border:1px solid #eee5d7!important;border-radius:12px!important;background:#fffdf5!important}

@@ -7,10 +7,12 @@
     .ux-virtual-view{display:none;max-width:1280px;margin:0 auto}
     body[data-ux-view="fidelidad"] #uxQrView,
     body[data-ux-view="envio"] #uxDeliverySettingsView,
+    body[data-ux-view="menu"] #uxMenuView,
     body[data-ux-view="reportes"] #uxReportsView,
     body[data-ux-view="ajustes"] #uxSettingsView{display:block}
     body[data-ux-view="fidelidad"] #uxEmptyView,
     body[data-ux-view="envio"] #uxEmptyView,
+    body[data-ux-view="menu"] #uxEmptyView,
     body[data-ux-view="reportes"] #uxEmptyView,
     body[data-ux-view="ajustes"] #uxEmptyView{display:none!important}
 
@@ -19,6 +21,8 @@
     body[data-ux-view="fidelidad"] #uxCoreToolbar,
     body[data-ux-view="envio"] .main-container,
     body[data-ux-view="envio"] #ordersAdmin,
+    body[data-ux-view="menu"] .main-container,
+    body[data-ux-view="menu"] #ordersAdmin,
     body[data-ux-view="reportes"] .main-container,
     body[data-ux-view="reportes"] #ordersAdmin,
     body[data-ux-view="ajustes"] .main-container,
@@ -30,18 +34,18 @@
     .ux-span-12{grid-column:span 12}.ux-span-8{grid-column:span 8}.ux-span-7{grid-column:span 7}.ux-span-6{grid-column:span 6}.ux-span-5{grid-column:span 5}.ux-span-4{grid-column:span 4}
     .ux-mini-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
     .ux-mini-kpi{background:#faf8fb;border:1px solid #eee7f1;border-radius:11px;padding:10px}
-    .ux-mini-kpi small{display:block;font-size:11px;color:#625768;font-weight:700}.ux-mini-kpi b{display:block;font-size:19px;color:#6a0dad;margin-top:3px}
+    .ux-mini-kpi small{display:block;font-size:11px;color:#625768;font-weight:700}.ux-mini-kpi b{display:block;font-size:19px;color:var(--tenant-primary,#6a0dad);margin-top:3px}
     .ux-table{display:grid;gap:7px;margin-top:12px}.ux-tr{display:grid;grid-template-columns:1.3fr 1fr .8fr;gap:8px;padding:11px 12px;border:1px solid #eee7f1;border-radius:10px;background:#faf8fb;font-size:13px;align-items:center}.ux-tr b{font-size:13px}
-    .ux-chip{display:inline-flex;padding:5px 8px;border-radius:999px;background:#f1e7f8;color:#6a0dad;font-size:11px;font-weight:900}
+    .ux-chip{display:inline-flex;padding:5px 8px;border-radius:999px;background:color-mix(in srgb,var(--tenant-primary,#6b7280) 10%,white);color:var(--tenant-primary,#6a0dad);font-size:11px;font-weight:900}
     .ux-actions-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.ux-actions-row button{width:auto!important;min-height:42px;padding:10px 12px!important;font-size:13px!important}
     .ux-kanban{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
     .ux-kanban-col{background:#f8f5fa;border:1px solid #eee7f1;border-radius:14px;min-height:240px;padding:9px}
-    .ux-kanban-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:13px;font-weight:900;color:#49364f}.ux-kanban-count{background:#fff;border:1px solid #e8dfec;border-radius:999px;padding:3px 6px;color:#6a0dad}
+    .ux-kanban-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:13px;font-weight:900;color:#49364f}.ux-kanban-count{background:#fff;border:1px solid #e8dfec;border-radius:999px;padding:3px 6px;color:var(--tenant-primary,#6a0dad)}
     .ux-kanban-list{display:grid;gap:8px}.ux-kanban-list .order-admin{margin:0!important;padding:10px!important;border-left-width:4px!important}.ux-kanban-list .order-items,.ux-kanban-list .order-delivery{display:none}.ux-kanban-list .order-meta{font-size:12px}.ux-kanban-list .order-actions button{min-width:0!important;font-size:12px!important;padding:9px!important}
     .ux-order-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:0 0 12px}
     .ux-order-summary div{background:#fff;border:1px solid #ebe4ee;border-radius:12px;padding:10px}.ux-order-summary small{display:block;font-size:11px;color:#625768;font-weight:700}.ux-order-summary b{font-size:18px;color:#5d148f}
     .ux-delivery-note{background:#fff8e5;border:1px solid #f0dfaa;border-radius:11px;padding:11px;font-size:13px;color:#66520a;margin-top:10px}
-    .ux-report-bars{height:190px;display:flex;align-items:flex-end;gap:10px;padding:15px 8px 6px;border-bottom:1px solid #eee7f1;margin-top:8px}.ux-report-bars i{flex:1;background:linear-gradient(#c69aef,#7a2bd2);border-radius:8px 8px 2px 2px;min-width:18px}.ux-report-days{display:grid;grid-template-columns:repeat(7,1fr);font-size:10px;text-align:center;color:#625768;margin-top:5px}
+    .ux-report-bars{height:190px;display:flex;align-items:flex-end;gap:10px;padding:15px 8px 6px;border-bottom:1px solid #eee7f1;margin-top:8px}.ux-report-bars i{flex:1;background:linear-gradient(var(--tenant-accent,#9ca3af),var(--tenant-primary,#6b7280));border-radius:8px 8px 2px 2px;min-width:18px}.ux-report-days{display:grid;grid-template-columns:repeat(7,1fr);font-size:10px;text-align:center;color:#625768;margin-top:5px}
     .ux-settings-list{display:grid;gap:8px;margin-top:12px}
     #uxSettingsReviewsHost{margin-top:12px}
     #uxSettingsReviewsHost>.card{display:block!important;max-width:none!important;margin:0!important;box-shadow:none!important;padding:0!important;border:0!important}
@@ -51,7 +55,7 @@
     .ux-qr-box{display:grid;place-items:center;min-height:180px;background:linear-gradient(135deg,#faf7fc,#f0e7f7);border:1px dashed #d9c6e5;border-radius:14px;margin-top:12px}.ux-qr-box .icon{font-size:54px}.ux-qr-box b{display:block;text-align:center;font-size:15px}.ux-qr-box small{display:block;text-align:center;color:#625768;font-size:12px;margin-top:5px}
     .ux-caja-search{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:12px}.ux-caja-search input{min-width:0}.ux-caja-search button{width:auto!important}
     .ux-caja-client{display:none;margin-top:12px;padding:14px;border:1px solid #e9ddeb;border-radius:14px;background:#fbf8fd}.ux-caja-client.show{display:block}
-    .ux-caja-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ux-caja-client-head h3{margin:0;font-size:20px;color:#34253c}.ux-caja-client-head p{margin:3px 0 0;font-size:12px;color:#685d6c}.ux-caja-points{font-size:24px;font-weight:900;color:#6a0dad}
+    .ux-caja-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ux-caja-client-head h3{margin:0;font-size:20px;color:#34253c}.ux-caja-client-head p{margin:3px 0 0;font-size:12px;color:#685d6c}.ux-caja-points{font-size:24px;font-weight:900;color:var(--tenant-primary,#6a0dad)}
     .ux-caja-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.ux-caja-actions button{font-size:13px!important;min-height:44px!important}
     .ux-caja-purchase{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end;margin-top:14px}.ux-caja-purchase label{display:block;font-weight:800;font-size:13px;margin-bottom:5px}.ux-caja-purchase input{min-height:44px}.ux-caja-preview{margin-top:8px;padding:10px 12px;background:#fff7d6;border-radius:10px;color:#6b5700;font-weight:800;font-size:13px}
     .ux-caja-rewards{margin-top:12px}.ux-caja-reward{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee7f1}.ux-caja-reward:last-child{border-bottom:0}.ux-caja-reward button{width:auto!important;min-width:100px!important}
@@ -67,7 +71,7 @@
 
     .ux-fid-tabs{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:12px;background:#fff;border:1px solid #ebe4ee;border-radius:16px;padding:9px}
     .ux-fid-tabs button{min-height:44px!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#5c4d62!important;font-size:13px!important;font-weight:850!important}
-    .ux-fid-tabs button.active{background:linear-gradient(135deg,#8c2bd2,#6a0dad)!important;color:#fff!important;border-color:transparent!important}
+    .ux-fid-tabs button.active{background:linear-gradient(135deg,var(--tenant-primary,#6b7280),var(--tenant-accent,#9ca3af))!important;color:#fff!important;border-color:transparent!important}
     .ux-fid-pane{display:none}.ux-fid-pane.active{display:block}
     .ux-fid-config-host{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
     #uxFidelityVipHost{display:block!important;margin-top:12px}
@@ -85,7 +89,7 @@
   const nav=sidebar?.querySelector('.ux-nav');
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-  const TITLES={fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
+  const TITLES={fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],menu:['Menú','Productos, categorías, precios y disponibilidad.'],envio:['Configurar envío','Tarifas, recargos y reglas de entrega.'],reportes:['Reportes','Indicadores de clientes, fidelidad y pedidos.'],ajustes:['Ajustes','Empresa, módulos y configuración general.']};
 
   function setTitle(view){
     const t=TITLES[view];if(!t)return;
@@ -94,7 +98,7 @@
   }
   function setActive(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={fidelidad:'Fidelidad',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
+    const map={fidelidad:'Fidelidad',menu:'Menú',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
   }
   function showVirtual(view){
@@ -129,11 +133,29 @@
     </div>`;
   anchor.parentNode.insertBefore(reports,anchor);
 
+  const menuView=document.createElement('section');menuView.id='uxMenuView';menuView.className='ux-virtual-view';menuView.innerHTML=`
+    <div class="ux-section-grid">
+      <div class="ux-panel ux-span-12">
+        <h2>Menú / Productos</h2>
+        <p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p>
+        <div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin:10px 0">Cargando catálogo…</div>
+        <div id="uxCatalogEditor"></div>
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn-secondary" id="uxCatalogAdd" style="width:auto!important">+ PRODUCTO</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button>
+            <button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  anchor.parentNode.insertBefore(menuView,anchor);
+
   const settings=document.createElement('section');settings.id='uxSettingsView';settings.className='ux-virtual-view';settings.innerHTML=`
     <div class="ux-section-grid">
       <div class="ux-panel ux-span-7"><h2>Empresa</h2><p>Base para personalización por empresa en el modelo SaaS.</p><div class="ux-settings-list"><div class="ux-setting"><div><b id="uxRestaurantIdentity">Restaurante</b><small>Empresa activa</small></div><span class="ux-chip">Tenant</span></div><div class="ux-setting"><div><b>Identidad visual</b><small>Logo, colores y nombre por empresa</small></div><span class="ux-toggle">Preparado</span></div><div class="ux-setting"><div><b>Reglas de fidelidad</b><small>Puntos, níveis e recompensas</small></div><span class="ux-toggle">Activo</span></div><div class="ux-setting"><div><b>Delivery</b><small>Módulo adicional contratado</small></div><span class="ux-toggle" id="uxSettingsModuleDelivery">Activo</span></div></div></div>
       <div class="ux-panel ux-span-5"><h2>Contacto del restaurante</h2><p>Número utilizado por promociones, pedidos y beneficios VIP por WhatsApp.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;align-items:end"><div><label style="display:block;font-size:12px;font-weight:800;margin-bottom:5px">WhatsApp con código de país</label><input id="uxRestaurantWhatsApp" inputmode="tel" placeholder="Ej. 5210000000000"></div><button class="btn-primary" id="uxSaveRestaurantWhatsApp" style="width:auto!important">GUARDAR</button></div><div id="uxRestaurantWhatsAppState" style="font-size:11px;color:#6b6170;margin-top:7px"></div></div>
-      <div class="ux-panel ux-span-12"><h2>Menú / Productos</h2><p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p><div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin-bottom:10px">Cargando catálogo…</div><div id="uxCatalogEditor"></div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn-secondary" id="uxCatalogAdd" style="width:auto!important">+ PRODUCTO</button><div style="display:flex;gap:8px"><button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button><button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button></div></div></div>
+
       <div class="ux-panel ux-span-12"><h2>Diagnóstico de instalación</h2><p>Verifica que esta instalación tenga su infraestructura propia antes de entregar el sistema al restaurante.</p><div id="uxInstallStatus" class="ux-settings-list"><div class="ux-setting"><div><b>Comprobando configuración…</b><small>Firebase, OneSignal, Google y sesiones</small></div><span class="ux-toggle">...</span></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Seguridad y operación</h2><p>Elementos que deben activarse antes del lanzamiento comercial.</p><div class="ux-settings-list"><div class="ux-setting"><div><b>Contraseña del dashboard</b><small>Protegida por sesión administrativa</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Producción</b><small>No modificada por estos cambios</small></div><span class="ux-toggle">Protegida</span></div><div class="ux-setting"><div><b>Logs</b><small>Diagnóstico disponible</small></div><span class="ux-toggle">Activo</span></div></div></div>
       <div class="ux-panel ux-span-12"><h2>Opiniones y Google Reviews</h2><p>Configuración de solicitudes de reseña.</p><div id="uxSettingsReviewsHost"></div></div>
@@ -218,9 +240,9 @@
       });
       document.querySelectorAll('#uxSidebar .ux-nav button').forEach(btn=>{
         const t=norm(btn.textContent);
-        if(!delivery&&(t.includes('pedido')||t.includes('entrega')||t.includes('envio')))btn.style.display='none';
+        if(!delivery&&(t.includes('pedido')||t.includes('entrega')||t.includes('menu')||t.includes('menú')||t.includes('envio')))btn.style.display='none';
       });
-      if(!delivery&&['pedidos','entregas','envio'].includes(document.body.dataset.uxView||''))showVirtual('fidelidad');
+      if(!delivery&&['pedidos','entregas','menu','envio'].includes(document.body.dataset.uxView||''))showVirtual('fidelidad');
       return d;
     }catch(_){return null}
   }
@@ -324,9 +346,12 @@
   function syncAll(){
     moveSettingsCards();loadDeploymentConfig();
     if(document.body.dataset.uxView==='ajustes'){
-      loadRestaurantContact();loadCatalog();loadInstallationStatus();
+      loadRestaurantContact();loadInstallationStatus();
       const btn=document.getElementById('uxSaveRestaurantWhatsApp');
       if(btn&&!btn.dataset.bound){btn.dataset.bound='1';btn.onclick=saveRestaurantContact}
+    }
+    if(document.body.dataset.uxView==='menu'){
+      loadCatalog();
       const save=document.getElementById('uxCatalogSave'),reload=document.getElementById('uxCatalogReload'),add=document.getElementById('uxCatalogAdd');
       if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=saveCatalog}
       if(reload&&!reload.dataset.bound){reload.dataset.bound='1';reload.onclick=()=>{catalogLoaded=false;loadCatalog(true)}}
@@ -558,6 +583,7 @@
     const txt=norm(b.textContent);
     let view=null;
     if(txt==='fidelidad'||txt==='programa de fidelidad')view='fidelidad';
+    else if(txt==='menu'||txt==='menú')view='menu';
     else if(txt==='configurar envio')view='envio';
     else if(txt==='reportes')view='reportes';
     else if(txt==='ajustes')view='ajustes';
@@ -566,6 +592,7 @@
 
   const attr=new MutationObserver(()=>{
     const v=document.body.dataset.uxView;
+    if(v==='menu')setTimeout(syncAll,0);
     if(v==='pedidos'||v==='entregas'){
       lastOrderView='';
       setTimeout(()=>configureOrdersView(true),30);
@@ -576,5 +603,5 @@
   setTimeout(syncAll,250);
   setTimeout(loadFidelityBaseRule,320);
   setTimeout(mountFidelityConfig,260);
-  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
+  setTimeout(()=>{let saved='';try{saved=sessionStorage.getItem('uai_admin_view')||''}catch(_){ }if(['fidelidad','menu','envio','reportes','ajustes'].includes(saved)){showVirtual(saved);if(saved==='fidelidad'){let tab='register';try{tab=sessionStorage.getItem('uai_fidelity_tab')||'register'}catch(_){}showFidTab(tab)}}},180);
 })();

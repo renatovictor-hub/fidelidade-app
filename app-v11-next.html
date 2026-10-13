@@ -4,12 +4,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#6a0dad">
+<meta name="theme-color" content="#6b7280">
 <title>Fidelidad</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f7f5f9}iframe{display:block;width:100%;height:100%;border:0;background:#f7f5f9}</style>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f7f5f9}iframe{display:block;width:100%;height:100%;border:0;background:#f7f5f9;opacity:0;transition:opacity .08s ease}iframe.tenant-ready{opacity:1}</style>
 <link rel="stylesheet" href="/client-readability.css?v=20260927-1">
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script src="/client-push-sync.js?v=20261006-multirest3" defer></script>
+<script src="/tenant-request-context.js?v=20261009-tenant1"></script>
 </head>
 <body>
 <iframe id="app" title="Fidelidad"></iframe>
@@ -23,10 +24,10 @@ async function bootstrapRestaurant(){
     const r=await fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'});
     if(r.ok)publicConfig=await r.json();
   }catch(_){}
-  publicConfig=publicConfig||{name:'Restaurante',short_name:'Restaurante',primary_color:'#6a0dad',accent_color:'#ffcc00',modules:{loyalty:true,delivery:false}};
+  publicConfig=publicConfig||{name:'Restaurante',short_name:'Restaurante',primary_color:'#6b7280',accent_color:'#9ca3af',modules:{loyalty:true,delivery:false}};
   hasDelivery=publicConfig?.modules?.delivery===true;
   document.title=(publicConfig.short_name||publicConfig.name||'Fidelidad')+' Fidelidad';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',publicConfig.primary_color||'#6a0dad');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',publicConfig.primary_color||'#6b7280');
   frame.title=(publicConfig.short_name||publicConfig.name||'Restaurante')+' Fidelidad';
   const src=new URL('/app-v11.html',location.origin);
   for(const[k,v]of params)if(k!=='plan')src.searchParams.set(k,v);
@@ -39,10 +40,11 @@ bootstrapRestaurant();
 frame.addEventListener('load',()=>{
   const w=frame.contentWindow,d=frame.contentDocument;
   if(!w||!d)return;
+  frame.classList.remove('tenant-ready');
   w.__restaurantConfig=publicConfig||{};
   d.documentElement.dataset.plan=hasDelivery?'fidelity_delivery':'fidelity';
   if(publicConfig){
-    const primary=publicConfig.primary_color||'#6a0dad',accent=publicConfig.accent_color||'#ffcc00';
+    const primary=publicConfig.primary_color||'#6b7280',accent=publicConfig.accent_color||'#9ca3af';
     d.documentElement.style.setProperty('--roxo',primary);
     d.documentElement.style.setProperty('--amarelo',accent);
     d.documentElement.style.setProperty('--p',primary);
@@ -79,6 +81,7 @@ frame.addEventListener('load',()=>{
   .client-banner-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 3px rgba(0,0,0,.2)}
   .client-banner-dot.active{background:#fff;transform:scale(1.25)}`;
   d.head.appendChild(style);
+  const reveal=()=>{if(d.documentElement.classList.contains('tenant-ready'))frame.classList.add('tenant-ready');else setTimeout(reveal,20)};reveal();
   const menuLink=d.querySelector('.quick a[href="/menu-videos.html"]');
   if(menuLink)menuLink.setAttribute('data-delivery-only','1');
   if(!hasDelivery){

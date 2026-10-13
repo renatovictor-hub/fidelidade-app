@@ -37,14 +37,14 @@
   style.id='uaiHelpStyles';
   style.textContent=`
     .uai-help-ready{position:relative}
-    .uai-help-btn{position:absolute!important;right:12px;top:12px;width:30px!important;height:30px!important;min-height:30px!important;padding:0!important;border-radius:50%!important;border:1px solid #dfd3e5!important;background:#f7f1fa!important;color:#6a0dad!important;font-size:14px!important;font-weight:900!important;display:grid!important;place-items:center!important;z-index:5;cursor:pointer}
+    .uai-help-btn{position:absolute!important;right:12px;top:12px;width:30px!important;height:30px!important;min-height:30px!important;padding:0!important;border-radius:50%!important;border:1px solid #dfd3e5!important;background:#f7f1fa!important;color:var(--tenant-primary,#6b7280)!important;font-size:14px!important;font-weight:900!important;display:grid!important;place-items:center!important;z-index:5;cursor:pointer}
     .uai-help-ready>h2:first-child,.uai-help-ready>h3:first-child{padding-right:38px}
     .uai-help-legend{font-size:12px!important;color:#665b6b!important;line-height:1.5!important;margin:4px 42px 12px 0!important}
     #uaiHelpPopover{display:none;position:fixed;z-index:12000;width:min(360px,calc(100vw - 24px));background:#fff;border:1px solid #dfd3e5;border-radius:14px;padding:14px;box-shadow:0 18px 50px rgba(44,20,54,.22)}
     #uaiHelpPopover.show{display:block}
     #uaiHelpPopover h4{margin:0 28px 9px 0;font-size:16px;color:#4a3155}
     #uaiHelpPopover .close{position:absolute;right:9px;top:8px;border:0!important;background:transparent!important;width:30px!important;min-height:30px!important;padding:0!important;color:#725e79!important;font-size:18px!important}
-    .uai-help-line{margin:7px 0;font-size:12px;line-height:1.45;color:#55495a}.uai-help-line b{color:#6a0dad}
+    .uai-help-line{margin:7px 0;font-size:12px;line-height:1.45;color:#55495a}.uai-help-line b{color:var(--tenant-primary,#6b7280)}
     @media(max-width:780px){.uai-help-btn{right:9px;top:9px}.uai-help-legend{margin-right:34px!important}}
   `;
   document.head.appendChild(style);

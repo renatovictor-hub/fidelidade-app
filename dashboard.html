@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="tenant-loading">
 
 <head>
     <meta charset="UTF-8">
@@ -27,8 +27,8 @@
     <style>
 
         :root {
-            --roxo: #6a0dad;
-            --amarelo: #ffcc00;
+            --roxo: #6b7280;
+            --amarelo: #9ca3af;
             --branco: #ffffff;
             --cinza-fundo: #f0f2f5;
             --perigo: #ff4444;
@@ -38,6 +38,7 @@
         * {
             box-sizing: border-box;
         }
+        html.tenant-loading body{visibility:hidden}
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -246,15 +247,27 @@
     </style>
 
 <link rel="stylesheet" href="/dashboard-readability.css?v=20260927-1">
+<script src="/tenant-request-context.js?v=20261013-tenant2"></script>
 <script>
-fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+const __dashboardCompany=String(new URLSearchParams(location.search).get('company')||'').trim();
+window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Date.now()+(__dashboardCompany?'&company='+encodeURIComponent(__dashboardCompany):''),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
   if(!cfg)return;
   const name=cfg.short_name||cfg.name||'Restaurante';
   document.title='Dashboard '+name+' - Gestión';
-  document.documentElement.style.setProperty('--roxo',cfg.primary_color||'#6a0dad');
-  document.documentElement.style.setProperty('--amarelo',cfg.accent_color||'#ffcc00');
+  const primary=cfg.primary_color||'#6b7280',accent=cfg.accent_color||primary;
+  window.__restaurantConfig=cfg;
+  document.documentElement.style.setProperty('--roxo',primary);
+  document.documentElement.style.setProperty('--amarelo',accent);
+  document.documentElement.style.setProperty('--tenant-primary',primary);
+  document.documentElement.style.setProperty('--tenant-accent',accent);
+  document.documentElement.style.setProperty('--ux-purple',primary);
+  document.documentElement.style.setProperty('--ux-purple2',accent);
+  document.documentElement.style.setProperty('--ux-yellow',accent);
   const h=document.querySelector('header h1');if(h)h.textContent=name+' - Gestión';
-}).catch(()=>{});
+  document.documentElement.classList.remove('tenant-loading');
+  document.documentElement.classList.add('tenant-ready');
+  return cfg;
+}).catch(()=>{document.documentElement.classList.remove('tenant-loading');document.documentElement.classList.add('tenant-ready');return null});
 </script>
 </head>
 
@@ -421,7 +434,7 @@ fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then
                     style="
                         font-size:20px;
                         font-weight:bold;
-                        color:#6a0dad;
+                        color:var(--roxo);
                         margin:4px 0 8px;
                     "
                 ></div>
@@ -473,7 +486,7 @@ fetch('/api/cliente?action=public_config&t='+Date.now(),{cache:'no-store'}).then
                         style="
                             font-size:14px;
                             font-weight:bold;
-                            color:#6a0dad;
+                            color:var(--roxo);
                             margin-bottom:10px;
                         "
                     >

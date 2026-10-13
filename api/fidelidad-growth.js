@@ -3,11 +3,11 @@ import { requireAdmin, isValidSession as isAdminSession } from "../lib/server/ad
 import { requireClient } from "../lib/server/client-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
+import { tenantDatabase, requireTenant } from "../lib/server/tenant-data.js";
 const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
 
-const db=admin.database();
 const validUid=uid=>/^user_\d+$/.test(String(uid||""));
 const daysSince=v=>{const t=Date.parse(String(v||""));return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/86400000)):null};
 const money=n=>Math.round((Number(n)||0)*100)/100;
@@ -55,7 +55,7 @@ function benefitDescription(b){
   return String(b?.title||"Beneficio VIP");
 }
 
-async function loadAll(){
+async function loadAll(db){
   const [usersSnap,txSnap,rewardsSnap,missionsSnap,autosSnap,vipSnap,baseSnap]=await Promise.all([
     db.ref("users").once("value"),db.ref("transacoes").once("value"),db.ref("recompensas").once("value"),
     db.ref("fidelity_missions").once("value"),db.ref("fidelity_automations").once("value"),
@@ -103,11 +103,14 @@ export default async function handler(req,res){
   res.setHeader("Cache-Control","no-store");
   if(req.method==="OPTIONS")return res.status(200).end();
   try{
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
+    const db=tenantDatabase(admin.database(),tenant);
     if(req.method==="GET"&&req.query.uid){
       const uid=String(req.query.uid||"").trim();
       if(!validUid(uid))return res.status(400).json({error:"Cliente inválido"});
       if(!isAdminSession(req)&&!requireClient(req,res,uid))return;
-      const all=await loadAll(),user=all.users[uid];
+      const all=await loadAll(db),user=all.users[uid];
       if(!user)return res.status(404).json({error:"Cliente no encontrado"});
       const stats=customerStats(uid,user,all.byUser.get(uid)||[]);
       const points=Number(user.pontos||0),acc=Number(user.pontos_acumulados??points);
@@ -143,7 +146,7 @@ export default async function handler(req,res){
       if(channel==="counter"){
         if(!requireAdmin(req,res))return;
       }else if(!requireClient(req,res,uid))return;
-      const all=await loadAll(),user=all.users[uid];
+      const all=await loadAll(db),user=all.users[uid];
       if(!user)return res.status(404).json({error:"Cliente no encontrado"});
       if(all.vip.ativo===false)return res.status(400).json({error:"Los niveles VIP están desactivados"});
       const points=Number(user.pontos||0),acc=Number(user.pontos_acumulados??points);
@@ -181,7 +184,7 @@ export default async function handler(req,res){
       const uid=String(req.body?.uid||"").trim(),id=String(req.body?.id||"").trim();
       if(!validUid(uid)||!id)return res.status(400).json({error:"Datos inválidos"});
       if(!requireClient(req,res,uid))return;
-      const all=await loadAll(),user=all.users[uid],mission=all.missions.find(m=>m.id===id&&m.ativa!==false);
+      const all=await loadAll(db),user=all.users[uid],mission=all.missions.find(m=>m.id===id&&m.ativa!==false);
       if(!user||!mission)return res.status(404).json({error:"Misión no encontrada"});
       if(user.mission_claims?.[id]===true)return res.status(409).json({error:"Premio ya reclamado"});
       const stats=customerStats(uid,user,all.byUser.get(uid)||[]),progress=missionProgress(mission,stats);
@@ -201,7 +204,7 @@ export default async function handler(req,res){
 
     if(!requireAdmin(req,res))return;
     if(req.method==="GET"){
-      const all=await loadAll();
+      const all=await loadAll(db);
       const stats=Object.entries(all.users).filter(([uid])=>validUid(uid)).map(([uid,u])=>customerStats(uid,u,all.byUser.get(uid)||[]));
       const segments=segmentCounts(stats);
       const revenue=money(stats.reduce((s,x)=>s+x.gasto,0));
@@ -262,7 +265,7 @@ export default async function handler(req,res){
       }
       if(action==="delete_automation"){await db.ref("fidelity_automations/"+String(req.body?.id||"")).remove();return res.status(200).json({success:true})}
       if(action==="run_automation"){
-        const id=String(req.body?.id||""),all=await loadAll(),a=all.automations.find(x=>x.id===id);
+        const id=String(req.body?.id||""),all=await loadAll(db),a=all.automations.find(x=>x.id===id);
         if(!a)return res.status(404).json({error:"Automatización no encontrada"});
         const stats=Object.entries(all.users).filter(([uid])=>validUid(uid)).map(([uid,u])=>customerStats(uid,u,all.byUser.get(uid)||[]));
         const targets=stats.filter(s=>automationMatch(a,s,all.rewards)).slice(0,100);

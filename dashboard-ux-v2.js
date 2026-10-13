@@ -4,19 +4,19 @@
   const style = document.createElement('style');
   style.id = 'ux2Styles';
   style.textContent = `
-    :root{--ux-purple:#6a0dad;--ux-purple2:#8b2bd1;--ux-yellow:#ffcc00;--ux-bg:#f7f5f9;--ux-card:#fff;--ux-text:#2c2430;--ux-muted:#817789;--ux-border:#ebe3ef;--ux-green:#1fa968;--ux-blue:#377dff}
+    :root{--ux-purple:var(--tenant-primary,#6b7280);--ux-purple2:var(--tenant-accent,#9ca3af);--ux-yellow:var(--tenant-accent,#9ca3af);--ux-bg:#f7f5f9;--ux-card:#fff;--ux-text:#2c2430;--ux-muted:#817789;--ux-border:#ebe3ef;--ux-green:#1fa968;--ux-blue:#377dff}
     html{scroll-behavior:smooth} body.ux2{background:var(--ux-bg)!important;color:var(--ux-text)!important;padding:96px 22px 30px 258px;min-height:100vh}
     body.ux2>header{display:none!important}
     #uxSidebar{position:fixed;z-index:9990;inset:0 auto 0 0;width:236px;background:#fff;border-right:1px solid var(--ux-border);padding:18px 14px;display:flex;flex-direction:column;box-shadow:8px 0 30px rgba(54,20,72,.04)}
     .ux-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}.ux-brand img{width:48px;height:48px;object-fit:contain}.ux-brand strong{display:block;color:var(--ux-purple);font-size:18px}.ux-brand small{display:block;color:var(--ux-muted);font-size:10px;margin-top:2px}
-    .ux-company{margin:0 4px 16px;padding:12px;border:1px solid var(--ux-border);border-radius:14px;background:#faf7fc}.ux-company-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.ux-company b{font-size:13px}.ux-company small{display:block;color:var(--ux-muted);margin-top:3px;font-size:10px}.ux-plan{font-size:9px;font-weight:900;color:var(--ux-purple);background:#efe3f7;padding:5px 7px;border-radius:999px;white-space:nowrap}
-    .ux-modules{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.ux-module{font-size:9px;font-weight:900;padding:5px 7px;border-radius:999px}.ux-module.loyalty{background:#f0e3f9;color:var(--ux-purple)}.ux-module.delivery{background:#e6f1ff;color:#2563c7}
-    .ux-nav{display:grid;gap:3px}.ux-nav button{width:100%;border:0;background:transparent;color:#5f5364;padding:10px 11px;border-radius:11px;display:flex;align-items:center;gap:10px;text-align:left;font-size:12px;font-weight:750;cursor:pointer}.ux-nav button:hover,.ux-nav button.active{background:#f2e8f7;color:var(--ux-purple)}.ux-nav span{width:21px;text-align:center;font-size:15px}.ux-nav .ux-divider{height:1px;background:var(--ux-border);margin:7px 4px}
+    .ux-company{margin:0 4px 16px;padding:12px;border:1px solid var(--ux-border);border-radius:14px;background:color-mix(in srgb,var(--ux-purple) 4%,white)}.ux-company-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.ux-company b{font-size:13px}.ux-company small{display:block;color:var(--ux-muted);margin-top:3px;font-size:10px}.ux-plan{font-size:9px;font-weight:900;color:var(--ux-purple);background:color-mix(in srgb,var(--ux-purple) 10%,white);padding:5px 7px;border-radius:999px;white-space:nowrap}
+    .ux-modules{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.ux-module{font-size:9px;font-weight:900;padding:5px 7px;border-radius:999px}.ux-module.loyalty{background:color-mix(in srgb,var(--ux-purple) 11%,white);color:var(--ux-purple)}.ux-module.delivery{background:#e6f1ff;color:#2563c7}
+    .ux-nav{display:grid;gap:3px}.ux-nav button{width:100%;border:0;background:transparent;color:#5f5364;padding:10px 11px;border-radius:11px;display:flex;align-items:center;gap:10px;text-align:left;font-size:12px;font-weight:750;cursor:pointer}.ux-nav button:hover,.ux-nav button.active{background:color-mix(in srgb,var(--ux-purple) 10%,white);color:var(--ux-purple)}.ux-nav span{width:21px;text-align:center;font-size:15px}.ux-nav .ux-divider{height:1px;background:var(--ux-border);margin:7px 4px}
     .ux-side-foot{margin-top:auto;padding:12px 8px 2px}.ux-side-foot small{display:block;color:var(--ux-muted);font-size:9px;line-height:1.45}.ux-side-foot b{display:block;color:var(--ux-purple);font-size:11px;margin-bottom:3px}
     #uxTopbar{position:fixed;z-index:9980;left:236px;right:0;top:0;height:76px;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--ux-border);display:flex;align-items:center;justify-content:space-between;padding:0 24px}.ux-title h1{margin:0;font-size:22px;color:#35243e}.ux-title p{margin:4px 0 0;color:var(--ux-muted);font-size:11px}.ux-top-actions{display:flex;align-items:center;gap:8px}.ux-top-badge{padding:7px 10px;border-radius:999px;background:#f3edf6;color:#72597d;font-size:10px;font-weight:850}.ux-top-actions button{width:auto!important;padding:9px 11px!important;border-radius:10px!important;font-size:11px!important}.ux-menu-btn{display:none!important}
     #uxOverview{max-width:1440px;margin:0 auto 18px}.ux-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.ux-kpi{background:#fff;border:1px solid var(--ux-border);border-radius:16px;padding:15px;box-shadow:0 8px 24px rgba(55,24,70,.05);display:flex;align-items:center;gap:12px}.ux-kpi-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#f2e7f8;font-size:19px}.ux-kpi:nth-child(2) .ux-kpi-icon{background:#e8f1ff}.ux-kpi:nth-child(3) .ux-kpi-icon{background:#fff5cf}.ux-kpi:nth-child(4) .ux-kpi-icon{background:#e7f7ef}.ux-kpi small{display:block;color:var(--ux-muted);font-size:10px;font-weight:750}.ux-kpi b{display:block;font-size:23px;margin-top:2px;color:#302538}.ux-kpi em{display:block;font-style:normal;color:#45a06a;font-size:9px;margin-top:2px;font-weight:800}
-    .ux-overview-row{display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-top:12px}.ux-welcome,.ux-quick{background:#fff;border:1px solid var(--ux-border);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(55,24,70,.04)}.ux-welcome h2{margin:0;color:var(--ux-purple);font-size:17px}.ux-welcome p{margin:5px 0 0;color:var(--ux-muted);font-size:11px;line-height:1.45}.ux-pill-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.ux-pill-row span{padding:6px 8px;border-radius:999px;background:#f4eff7;color:#68566f;font-size:9px;font-weight:800}.ux-quick strong{font-size:12px}.ux-quick-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.ux-quick-actions button{width:auto!important;padding:9px 11px!important;border-radius:10px!important;font-size:10px!important;background:#f3e8f8!important;color:var(--ux-purple)!important}.ux-quick-actions button.primary{background:var(--ux-purple)!important;color:#fff!important}
-    body.ux2 .main-container{max-width:1440px!important;margin:0 auto!important;padding:0!important;grid-template-columns:minmax(300px,.8fr) minmax(0,1.65fr)!important;gap:14px!important}body.ux2 .card{border:1px solid var(--ux-border)!important;border-radius:16px!important;box-shadow:0 8px 24px rgba(55,24,70,.05)!important;padding:18px!important;margin-bottom:14px!important}body.ux2 .card h3{border-left:0!important;padding-left:0!important;font-size:15px!important;color:#40264b!important;display:flex;align-items:center;gap:7px}body.ux2 input,body.ux2 textarea,body.ux2 select{border-color:#e5dce9!important;border-radius:11px!important;background:#fff!important;font-size:14px!important}body.ux2 button{border-radius:11px!important}body.ux2 .btn-primary{background:linear-gradient(135deg,#8c2bd2,#6a0dad)!important}body.ux2 .stats{font-size:28px!important}
+    .ux-overview-row{display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-top:12px}.ux-welcome,.ux-quick{background:#fff;border:1px solid var(--ux-border);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(55,24,70,.04)}.ux-welcome h2{margin:0;color:var(--ux-purple);font-size:17px}.ux-welcome p{margin:5px 0 0;color:var(--ux-muted);font-size:11px;line-height:1.45}.ux-pill-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.ux-pill-row span{padding:6px 8px;border-radius:999px;background:color-mix(in srgb,var(--ux-purple) 8%,white);color:#68566f;font-size:9px;font-weight:800}.ux-quick strong{font-size:12px}.ux-quick-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.ux-quick-actions button{width:auto!important;padding:9px 11px!important;border-radius:10px!important;font-size:10px!important;background:color-mix(in srgb,var(--ux-purple) 10%,white)!important;color:var(--ux-purple)!important}.ux-quick-actions button.primary{background:var(--ux-purple)!important;color:#fff!important}
+    body.ux2 .main-container{max-width:1440px!important;margin:0 auto!important;padding:0!important;grid-template-columns:minmax(300px,.8fr) minmax(0,1.65fr)!important;gap:14px!important}body.ux2 .card{border:1px solid var(--ux-border)!important;border-radius:16px!important;box-shadow:0 8px 24px rgba(55,24,70,.05)!important;padding:18px!important;margin-bottom:14px!important}body.ux2 .card h3{border-left:0!important;padding-left:0!important;font-size:15px!important;color:#40264b!important;display:flex;align-items:center;gap:7px}body.ux2 input,body.ux2 textarea,body.ux2 select{border-color:#e5dce9!important;border-radius:11px!important;background:#fff!important;font-size:14px!important}body.ux2 button{border-radius:11px!important}body.ux2 .btn-primary{background:linear-gradient(135deg,var(--ux-purple),var(--ux-purple2))!important}body.ux2 .stats{font-size:28px!important}
     body.ux2 #ordersAdmin{max-width:1440px!important;margin:0 auto 14px!important;padding:0!important}body.ux2 #ordersAdmin .orders-card{border:1px solid var(--ux-border)!important;border-radius:16px!important;box-shadow:0 8px 24px rgba(55,24,70,.05)!important}body.ux2 #ordersAdmin .order-admin{border-radius:14px!important}
     #uxDrawerShade{display:none}
     @media(max-width:1050px){body.ux2{padding-left:22px}.ux-kpis{grid-template-columns:repeat(2,1fr)}#uxSidebar{transform:translateX(-102%);transition:.22s}body.ux-drawer #uxSidebar{transform:translateX(0)}#uxTopbar{left:0}.ux-menu-btn{display:inline-flex!important}#uxDrawerShade{display:none;position:fixed;z-index:9970;inset:0;background:rgba(23,10,29,.42)}body.ux-drawer #uxDrawerShade{display:block}}
@@ -38,7 +38,7 @@
   const sidebar = document.createElement('aside');
   sidebar.id = 'uxSidebar';
   sidebar.innerHTML = `
-    <div class="ux-brand"><img src="/logo.png" alt="Restaurante"><div><strong>Restaurante</strong><small>Gestión del negocio</small></div></div>
+    <div class="ux-brand"><img data-brand-logo alt="Restaurante" style="display:none"><div><strong>Restaurante</strong><small>Gestión del negocio</small></div></div>
     <div class="ux-company"><div class="ux-company-top"><div><b>Restaurante</b><small>Empresa activa</small></div><span class="ux-plan">SaaS</span></div><div class="ux-modules"><span class="ux-module loyalty">★ Fidelidad</span><span class="ux-module delivery">🛵 Delivery</span></div></div>
     <nav class="ux-nav">
       <button data-go="top" class="active"><span>▦</span>Resumen</button>
@@ -49,6 +49,7 @@
       <div class="ux-divider"></div>
       <button data-id="ordersAdmin"><span>🧾</span>Pedidos</button>
       <button data-id="ordersAdmin"><span>🛵</span>Entregas</button>
+      <button data-soft="Menú"><span>🍽️</span>Menú</button>
       <button data-find="envío"><span>⚙</span>Configurar envío</button>
       <div class="ux-divider"></div>
       <button data-soft="Reportes"><span>▤</span>Reportes</button>
@@ -68,11 +69,18 @@
     if(!cfg)return;
     window.__restaurantConfig=cfg;
     const name=cfg.short_name||cfg.name||'Restaurante';
-    document.documentElement.style.setProperty('--ux-purple',cfg.primary_color||'#6a0dad');
-    document.documentElement.style.setProperty('--ux-purple2',cfg.primary_color||'#8b2bd1');
-    document.documentElement.style.setProperty('--ux-yellow',cfg.accent_color||'#ffcc00');
+    const primary=cfg.primary_color||'#6b7280',accent=cfg.accent_color||primary;
+    document.documentElement.style.setProperty('--tenant-primary',primary);
+    document.documentElement.style.setProperty('--tenant-accent',accent);
+    document.documentElement.style.setProperty('--ux-purple',primary);
+    document.documentElement.style.setProperty('--ux-purple2',accent);
+    document.documentElement.style.setProperty('--ux-yellow',accent);
     const img=document.querySelector('#uxSidebar .ux-brand img');
-    if(img&&cfg.logo){img.src=cfg.logo;img.alt=name}
+    if(img){
+      if(cfg.logo){img.src=cfg.logo;img.style.removeProperty('display')}
+      else{img.removeAttribute('src');img.style.display='none'}
+      img.alt=name;
+    }
     const brand=document.querySelector('#uxSidebar .ux-brand strong');if(brand)brand.textContent=name;
     const company=document.querySelector('#uxSidebar .ux-company-top b');if(company)company.textContent=cfg.name||name;
     const welcome=document.querySelector('#uxOverview .ux-welcome h2');if(welcome)welcome.textContent='Visión general de '+name;

@@ -13,7 +13,7 @@
     #uxMobileNav{display:none}
     #uxEmptyView{display:none;max-width:760px;margin:30px auto;background:#fff;border:1px solid #ebe3ef;border-radius:18px;padding:28px;text-align:center;box-shadow:0 8px 24px rgba(55,24,70,.05)}
     #uxEmptyView.show{display:block}
-    #uxEmptyView h2{margin:0 0 8px;color:#6a0dad;font-size:20px}#uxEmptyView p{margin:0;color:#817789;font-size:13px;line-height:1.5}
+    #uxEmptyView h2{margin:0 0 8px;color:var(--tenant-primary,#6a0dad);font-size:20px}#uxEmptyView p{margin:0;color:#817789;font-size:13px;line-height:1.5}
     @media(max-width:780px){
       body.ux3{padding-bottom:86px!important}
       body.ux3:not([data-ux-view="resumen"]):not([data-ux-view="pedidos"]):not([data-ux-view="entregas"]) .main-container{display:block!important}
@@ -21,22 +21,23 @@
       #uxMobileNav{position:fixed;z-index:9985;left:8px;right:8px;bottom:8px;height:64px;border:1px solid #e9e0ed;border-radius:19px;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);box-shadow:0 10px 35px rgba(46,18,58,.16);display:grid;grid-template-columns:repeat(4,1fr);padding:5px}
       #uxMobileNav button{border:0!important;background:transparent!important;color:#817789!important;padding:3px!important;font-size:9px!important;font-weight:800!important;display:grid;place-items:center;gap:1px;border-radius:13px!important}
       #uxMobileNav button span{display:block;font-size:19px;line-height:1}
-      #uxMobileNav button.active{background:#f1e6f7!important;color:#6a0dad!important}
+      #uxMobileNav button.active{background:color-mix(in srgb,var(--tenant-primary,#6b7280) 10%,white)!important;color:var(--tenant-primary,#6a0dad)!important}
       #uxOverview{margin-bottom:6px!important}.ux-overview-row{margin-top:8px!important}
     }
   `;
   document.head.appendChild(style);
   document.body.classList.add('ux3');
 
-  const TITLES={resumen:['Dashboard general','Clientes, fidelidad, campañas y pedidos en un solo lugar.'],clientes:['Clientes','Base de clientes y actividad.'],fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],recompensas:['Recompensas','Crea y administra beneficios para tus clientes.'],ofertas:['Ofertas / Push','Campañas, promociones y notificaciones.'],pedidos:['Pedidos','Gestiona los pedidos activos y su progreso.'],entregas:['Entregas','Seguimiento operativo de pedidos para entrega.'],envio:['Configurar envío','Reglas, zonas y tarifas de entrega.'],reportes:['Reportes','Indicadores y rendimiento del negocio.'],ajustes:['Ajustes','Configuración de la empresa y sus módulos.']};
+  const TITLES={resumen:['Dashboard general','Clientes, fidelidad, campañas y pedidos en un solo lugar.'],clientes:['Clientes','Base de clientes y actividad.'],fidelidad:['Fidelidad','Registra compras, canjea beneficios y administra el programa.'],recompensas:['Recompensas','Crea y administra beneficios para tus clientes.'],ofertas:['Ofertas / Push','Campañas, promociones y notificaciones.'],pedidos:['Pedidos','Gestiona los pedidos activos y su progreso.'],menu:['Menú','Productos, categorías, precios y disponibilidad.'],entregas:['Entregas','Seguimiento operativo de pedidos para entrega.'],envio:['Configurar envío','Reglas, zonas y tarifas de entrega.'],reportes:['Reportes','Indicadores y rendimiento del negocio.'],ajustes:['Ajustes','Configuración de la empresa y sus módulos.']};
 
   const GROUPS={
     clientes:['base de clientes','opiniones de clientes'],
     fidelidad:['niveles vip','bonus','bono','referidos'],
     recompensas:['recompensas','cumpleaños'],
     ofertas:['promociones activas','promociones expiradas','crear nueva promoción','notificaciones'],
+    menu:['menú / productos','menu / productos','catálogo oficial','catalogo oficial'],
     envio:['configurar envío','tarifa','entrega'],
-    ajustes:['logs del sistema','configuración de google reviews']
+    ajustes:['logs del sistema','configuración de google reviews','diagnóstico de instalación','diagnostico de instalacion','identidad del restaurante','firebase','onesignal']
   };
 
   function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
@@ -56,7 +57,7 @@
 
   function setActiveNav(view){
     document.querySelectorAll('#uxSidebar .ux-nav button').forEach(b=>b.classList.remove('active'));
-    const map={resumen:'Resumen',clientes:'Clientes',fidelidad:'Fidelidad',recompensas:'Recompensas',ofertas:'Ofertas / Push',pedidos:'Pedidos',entregas:'Entregas',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
+    const map={resumen:'Resumen',clientes:'Clientes',fidelidad:'Fidelidad',recompensas:'Recompensas',ofertas:'Ofertas / Push',pedidos:'Pedidos',menu:'Menú',entregas:'Entregas',envio:'Configurar envío',reportes:'Reportes',ajustes:'Ajustes'};
     [...document.querySelectorAll('#uxSidebar .ux-nav button')].find(b=>norm(b.textContent)===norm(map[view]))?.classList.add('active');
     mobile.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   }
@@ -76,7 +77,7 @@
 
   function inferView(btn){
     const txt=norm(btn.textContent);
-    if(txt.includes('resumen'))return'resumen';if(txt.includes('clientes'))return'clientes';if(txt.includes('fidelidad'))return'fidelidad';if(txt.includes('recompensas'))return'recompensas';if(txt.includes('ofertas'))return'ofertas';if(txt.includes('pedidos'))return'pedidos';if(txt.includes('entregas'))return'entregas';if(txt.includes('configurar envio'))return'envio';if(txt.includes('reportes'))return'reportes';if(txt.includes('ajustes'))return'ajustes';return null;
+    if(txt.includes('resumen'))return'resumen';if(txt.includes('clientes'))return'clientes';if(txt.includes('fidelidad'))return'fidelidad';if(txt.includes('recompensas'))return'recompensas';if(txt.includes('ofertas'))return'ofertas';if(txt.includes('pedidos'))return'pedidos';if(txt==='menu'||txt==='menú'||txt.includes('menu'))return'menu';if(txt.includes('entregas'))return'entregas';if(txt.includes('configurar envio'))return'envio';if(txt.includes('reportes'))return'reportes';if(txt.includes('ajustes'))return'ajustes';return null;
   }
 
   const sidebar=document.getElementById('uxSidebar');
