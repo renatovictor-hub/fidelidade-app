@@ -13,6 +13,21 @@ body{min-height:100vh;display:grid;place-items:center;padding:18px}.card{width:m
 </style>
 </head>
 <body>
+<script>
+const previewTenantConfigPromise=fetch('/api/cliente?action=public_config&company='+encodeURIComponent(companyParam)+'&t='+Date.now(),{cache:'no-store'})
+ .then(r=>r.ok?r.json():null).catch(()=>null).then(cfg=>{
+   if(!cfg)return cfg;
+   const name=cfg.short_name||cfg.name||'Restaurante';
+   document.title='Preview cliente · '+name;
+   const logo=document.querySelector('.logo');
+   if(logo){
+     if(cfg.logo){logo.src=cfg.logo;logo.alt=name}
+     else if(companyParam!=='uai-so'){logo.removeAttribute('src');logo.style.display='none'}
+   }
+   const title=document.querySelector('.title');if(title)title.textContent='Abrir app cliente · '+name;
+   return cfg;
+ });
+</script>
 <main class="card">
   <img src="/logo.png" class="logo" alt="Restaurante">
   <span class="tag">PREVIEW v1.1</span>
