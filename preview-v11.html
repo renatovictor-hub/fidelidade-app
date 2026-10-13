@@ -14,6 +14,7 @@ body{min-height:100vh;display:grid;place-items:center;padding:18px}.card{width:m
 </head>
 <body>
 <script>
+const companyParam=String(new URLSearchParams(location.search).get('company')||'uai-so').trim()||'uai-so';
 const previewTenantConfigPromise=fetch('/api/cliente?action=public_config&company='+encodeURIComponent(companyParam)+'&t='+Date.now(),{cache:'no-store'})
  .then(r=>r.ok?r.json():null).catch(()=>null).then(cfg=>{
    if(!cfg)return cfg;
@@ -21,15 +22,16 @@ const previewTenantConfigPromise=fetch('/api/cliente?action=public_config&compan
    document.title='Preview cliente · '+name;
    const logo=document.querySelector('.logo');
    if(logo){
-     if(cfg.logo){logo.src=cfg.logo;logo.alt=name}
-     else if(companyParam!=='uai-so'){logo.removeAttribute('src');logo.style.display='none'}
+     if(cfg.logo){logo.src=cfg.logo;logo.alt=name;logo.style.removeProperty('display')}
+     else if(companyParam==='uai-so'){logo.src='/logo.png';logo.style.removeProperty('display')}
+     else{logo.removeAttribute('src');logo.style.display='none'}
    }
    const title=document.querySelector('.title');if(title)title.textContent='Abrir app cliente · '+name;
    return cfg;
  });
 </script>
 <main class="card">
-  <img src="/logo.png" class="logo" alt="Restaurante">
+  <img class="logo" alt="Restaurante" style="display:none">
   <span class="tag">PREVIEW v1.1</span>
   <h1 class="title">Abrir o app de teste</h1>
   <p class="copy">Este acesso ignora a tela de instalação. Digite o telefone de um cliente já cadastrado para abrir diretamente a versão v1.1.</p>
@@ -41,7 +43,6 @@ const previewTenantConfigPromise=fetch('/api/cliente?action=public_config&compan
   <div class="note">Não instala nada e não altera a produção. Serve apenas para testar a branch v1.1 com os dados reais do cliente selecionado.</div>
 </main>
 <script>
-const companyParam=String(new URLSearchParams(location.search).get('company')||'').trim();
 const form=document.getElementById('form'),phone=document.getElementById('phone'),btn=document.getElementById('btn'),msg=document.getElementById('msg');
 form.addEventListener('submit',async e=>{
   e.preventDefault();msg.textContent='';const digits=phone.value.replace(/\D/g,'');if(digits.length!==10){msg.textContent='Digite os 10 dígitos do telefone.';return}
