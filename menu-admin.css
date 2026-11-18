@@ -22,7 +22,22 @@
   gap: 12px;
 }
 .menu-top, .menu-editor-heading, .menu-card-head { justify-content: space-between; }
-.menu-top, .menu-editor-heading { margin-bottom: 22px; }
+#uxMenuView :is(.menu-top,.menu-editor-heading) {
+  margin-bottom: 22px; padding: clamp(14px,3cqi,24px); border-radius: 14px;
+  background: color-mix(in srgb, var(--menu-accent) 62%, #231233);
+  color: #fff;
+}
+#uxMenuView :is(.menu-top,.menu-editor-heading) :is(h2,p,.menu-link) { color: #fff; }
+#uxMenuView :is(.menu-top,.menu-editor-heading) :focus-visible { outline-color: #fff; }
+#uxMenuView :is(.menu-top,.menu-editor-heading) .menu-primary {
+  background: #fff; color: #32174b; border-color: #fff;
+}
+#uxMenuView .menu-editor-heading .menu-actions button:first-child {
+  background: transparent; color: #fff; border-color: #ffffff80;
+}
+.menu-general-settings { margin-bottom: 16px; padding-block: 16px; }
+.menu-general-settings .menu-card-head { flex-wrap: wrap; }
+.menu-modifier-link { border-top: 1px solid var(--menu-line); padding: 8px 0 12px; }
 .menu-top p { margin-top: 5px !important; }
 .menu-actions, .menu-filters { flex-wrap: wrap; }
 #uxMenuView .menu-button {
@@ -67,9 +82,9 @@
 .menu-category-rail small { font-weight: 650; }
 #uxMenuView .menu-category-rail .menu-rail-link { color: var(--menu-accent); margin-top: 5px; }
 .menu-list-card { padding: 0 18px; }
-.menu-list-card > header { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 16px 0; }
-.menu-list-card > header span { color: var(--menu-muted); font-size: 12px; }
-.menu-list-card > header p { flex-basis: 100%; }
+.menu-list-card > .menu-list-heading { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 16px 0; }
+.menu-list-card > .menu-list-heading span { color: var(--menu-muted); font-size: 12px; }
+.menu-list-card > .menu-list-heading p { flex-basis: 100%; }
 .menu-row, .menu-manage-row {
   display: grid; align-items: center; gap: 12px; min-height: 72px;
   padding: 12px 0; border-top: 1px solid var(--menu-line);

@@ -16,6 +16,11 @@
   let restaurantConfig=null;
   let checkoutVipBenefits=[],selectedVipBenefit=null,selectedVipRequestId='';
   let upsellDrink=null;
+  let generalGroups=[];
+  const generalStorage='restaurant_general_modifiers:'+ (qs.get('company') || 'uai-so');
+  let generalCounts={};
+  try { generalCounts=JSON.parse(localStorage.getItem(generalStorage)) || {}; } catch (_) {}
+
 
   async function loadRestaurantContact(){
     try{
@@ -45,6 +50,18 @@
       const r=await fetch('/api/cliente?action=menu_catalog&t='+Date.now(),{cache:'no-store'});
       const d=await r.json(); if(!r.ok)throw new Error();
       const cfg=d.catalog||{};
+      generalGroups=d.generalModifierGroups||[];
+      const nextCounts={};
+      for(const group of generalGroups){
+        let remaining=group.max;
+        for(const option of group.options){
+          const count=Math.max(0,Math.min(remaining,group.repeat===false?1:remaining,Math.floor(Number(generalCounts[option.id])||0)));
+          if(count)nextCounts[option.id]=count;
+          remaining-=count;
+        }
+      }
+      generalCounts=nextCounts;
+      saveGeneralCounts();
       const byId=new Map(PRODUCTS.map(product=>[product.id,product]));
       const labels=new Map((d.categories||[]).map(category=>[category.key,category.label]));
       PRODUCTS=Object.entries(cfg).filter(([,item])=>item?.active!==false).map(([id,item])=>{
@@ -78,8 +95,6 @@
           if(!current||!batch)return false;
           line.choices=current;
           line.batchChoices=batch;
-          line.unitPrice=item.price+current.reduce((sum,choice)=>sum+choice.price*choice.qty,0)/line.qty;
-          return true;
         }
         const byExtra=new Map(allExtras(item).map(extra=>[extra.id,extra]));
         const refresh=extras=>(extras||[]).flatMap(extra=>{
@@ -89,7 +104,8 @@
         line.extras=refresh(line.extras);
         line.batchExtras=refresh(line.batchExtras);
         if(!validExtraCounts(item,line.extras,line.qty)||!validExtraCounts(item,line.batchExtras,line.batchQty||line.qty))return false;
-        line.unitPrice=item.price+line.extras.reduce((sum,extra)=>sum+Number(extra.price)*extra.qty,0)/line.qty;
+        const comboSurcharge=item.groups?line.choices.reduce((sum,choice)=>sum+choice.price*choice.qty,0):0;
+        line.unitPrice=item.price+(comboSurcharge+line.extras.reduce((sum,extra)=>sum+Number(extra.price)*extra.qty,0))/line.qty;
         return true;
       });
       saveCart();
@@ -97,6 +113,8 @@
       if(typeof renderCatalog==='function')renderCatalog();
       if(typeof renderFeed==='function')renderFeed();
       renderUpsell();
+      if($('cartWrap')?.classList.contains('open'))renderCart();
+      if($('checkoutWrap')?.classList.contains('open'))updateCheckout();
     }catch(e){console.warn('Menu catalog sync',e)}
   }
   loadMenuCatalog();
@@ -135,7 +153,8 @@
     const counts=Object.fromEntries(extras.map(extra=>[extra.id,Number(extra.qty)||0]));
     return (p.modifierGroups||[]).every(group=>{
       const total=selectedInGroup(group,counts);
-      return total>=group.min*qty&&total<=group.max*qty&&group.options.every(option=>(counts[option.id]||0)<=qty);
+      return total>=group.min*qty&&total<=group.max*qty&&
+        (group.repeat!==false||group.options.every(option=>(counts[option.id]||0)<=qty));
     });
   }
 
@@ -268,7 +287,8 @@
   const nativeUpdateCheckout=window.updateCheckout;
   window.updateCheckout=function(){
     nativeUpdateCheckout();
-    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*(upsellDrink?.price||0)),fee=deliveryFee(),preview=vipPreview(subtotal,delivery?fee:0),feeText=delivery?(fee?MXN.format(preview.fee):'Por calcular'):'Sin costo';
+    renderGeneralModifiers($('checkoutGeneralModifiers'),true);
+    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*(upsellDrink?.price||0))+generalSelection(true).total,fee=deliveryFee(),preview=vipPreview(subtotal,delivery?fee:0),feeText=delivery?(fee?MXN.format(preview.fee):'Por calcular'):'Sin costo';
     if(selectedVipBenefit?.type==='free_delivery'&&!delivery){selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderCheckoutVipBenefits()}
     const summary=document.getElementById('checkoutSummary');
     if(summary)summary.innerHTML=`<div class="summary-line"><span>Subtotal</span><strong>${MXN.format(subtotal)}</strong></div>${upsellCocaQty?`<div class="summary-line"><span>${esc(upsellDrink?.name)} × ${upsellCocaQty}</span><strong>${MXN.format(upsellCocaQty*(upsellDrink?.price||0))}</strong></div>`:''}${selectedVipBenefit?`<div class="summary-line"><span>👑 ${selectedVipBenefit.title}</span><strong>${selectedVipBenefit.type==='free_delivery'?'Aplicado':('-'+MXN.format(preview.discount))}</strong></div>`:''}<div class="summary-line"><span>${delivery?'Envío':'Retiro'}</span><strong>${feeText}</strong></div><div class="summary-line final"><span>Total</span><strong>${MXN.format(preview.total)}</strong></div>`;
@@ -306,8 +326,15 @@
         total-=remove;
       }
     }
-    Object.keys(detailState.extraQty).forEach(id=>{detailState.extraQty[id]=Math.min(maxExtras,Number(detailState.extraQty[id])||0);});
+    for(const extra of selectableExtras(p)){
+      detailState.extraQty[extra.id]=Math.min(maxExtras,Number(detailState.extraQty[extra.id])||0);
+    }
     for(const group of p.modifierGroups||[]){
+      if(group.repeat===false){
+        for(const option of group.options){
+          detailState.extraQty[option.id]=Math.min(detailState.qty,Number(detailState.extraQty[option.id])||0);
+        }
+      }
       let over=selectedInGroup(group,detailState.extraQty)-group.max*detailState.qty;
       for(const option of [...group.options].reverse()){
         if(over<=0)break;
@@ -336,7 +363,7 @@
     const p=product(detailState.productId);
     const group=p.modifierGroups?.find(group=>group.options.some(option=>option.id===id));
     const current=Math.max(0,Number(detailState.extraQty[id])||0);
-    const limit=group?detailState.qty:extraLimit(p);
+    const limit=group?(group.repeat===false?1:group.max)*detailState.qty:extraLimit(p);
     if(delta>0&&group&&selectedInGroup(group,detailState.extraQty)>=group.max*detailState.qty)return;
     detailState.extraQty[id]=Math.max(0,Math.min(limit,current+Number(delta||0)));
     if(!detailState.extraQty[id])delete detailState.extraQty[id];
@@ -360,9 +387,8 @@
     renderDetailOptions();
   }
 
-  function renderComboOptions(item){
-    const output=$('detailOptions');
-    output.innerHTML=item.groups.map((group,index)=>{
+  function comboOptionBlocks(item){
+    return item.groups.map((group,index)=>{
       const total=group.options.reduce((sum,option)=>sum+(detailState.choices[group.id+'/'+option.productId]||0),0);
       return `<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
         <span>${group.fixed?'Incluido':`${total} de ${group.quantity}`}</span></div>
@@ -375,21 +401,15 @@
               <button type="button" data-combo-choice="${index}:${optionIndex}:1" ${total>=group.quantity?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button>
             </div>`}</div>`;
         }).join('')}</div></div>`;
-    }).join('');
-    output.querySelectorAll('[data-combo-choice]').forEach(button=>{
-      const [groupIndex,optionIndex,delta]=button.dataset.comboChoice.split(':').map(Number);
-      const group=item.groups[groupIndex];
-      button.onclick=()=>changeComboChoice(group,group.options[optionIndex],delta);
     });
-    updateDetailTotal();
   }
 
   window.detailTotal=function(){
     if(!detailState)return 0;
     normalizeDetailState();
     const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1);
-    if(p.groups)return p.price+comboChoices(p).reduce((total,choice)=>total+choice.price*choice.qty,0);
-    let total=(Number(p?.price)||0)*qty;
+    let total=p.price*qty;
+    if(p.groups)total+=comboChoices(p).reduce((sum,choice)=>sum+choice.price*choice.qty,0);
     (p?.choice?.options||[]).forEach(x=>total+=(Number(detailState.choices[x.id])||0)*(Number(x.price)||0));
     allExtras(p).forEach(x=>total+=(Number(detailState.extraQty[x.id])||0)*(Number(x.price)||0));
     return total;
@@ -402,7 +422,7 @@
     const groupsComplete=(p.modifierGroups||[]).every(group=>selectedInGroup(group,detailState.extraQty)>=group.min*qty);
     const complete=(!p.choice||selected===required)&&groupsComplete;
     if(p.groups){
-      const valid=!!comboCartSelections(p,comboChoices(p),1);
+      const valid=groupsComplete&&!!comboCartSelections(p,comboChoices(p),1);
       $('detailPrice').textContent=MXN.format(detailTotal());
       $('detailOrder').disabled=!valid;
       $('detailOrder').textContent=valid?`AGREGAR COMBO · ${MXN.format(detailTotal())}`:'COMPLETA TUS OPCIONES';
@@ -413,12 +433,81 @@
     $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}` : 'COMPLETA TUS OPCIONES';
   };
 
+  function modifierOptionBlocks(groups,counts,units,attribute){
+    const blocks=[];
+    for(const [groupIndex,group] of groups.entries()){
+      if(!group.options.length)continue;
+      const count=selectedInGroup(group,counts);
+      const max=group.max*units;
+      blocks.push(`<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
+        <span>${group.min?`Elige al menos ${group.min*units}`:'Opcional'} · ${count}/${max}</span></div>
+        <div class="flavor-list">${group.options.map((option,index)=>{
+          const qty=Number(counts[option.id])||0;
+          return `<div class="flavor-row"><div><b>${esc(option.name)}</b><small>${option.price?'+ '+MXN.format(option.price)+' c/u':'Incluido'}</small></div>
+            <div class="mini-qty"><button type="button" ${attribute}="${groupIndex}:${index}:-1" ${qty?'':'disabled'} aria-label="Quitar ${esc(option.name)}">−</button>
+            <b>${qty}</b><button type="button" ${attribute}="${groupIndex}:${index}:1" ${count>=max||(group.repeat===false&&qty>=units)?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button></div></div>`;
+        }).join('')}</div></div>`);
+    }
+    return blocks;
+  }
+
+  function generalSelection(includeUpsell){
+    const eligible=cartItems().some(({p})=>!p.groups)||(includeUpsell&&upsellDrink&&upsellCocaQty>0);
+    const groups=eligible?generalGroups:[];
+    const options=groups.flatMap(group=>group.options.flatMap(option=>{
+      const qty=Number(generalCounts[option.id]);
+      return Number.isInteger(qty)&&qty>0?[{id:option.id,qty,price:option.price}]:[];
+    }));
+    return {
+      groups,options,
+      total:options.reduce((sum,option)=>sum+option.price*option.qty,0),
+      valid:validExtraCounts({modifierGroups:groups},options,1)
+    };
+  }
+
+  function saveGeneralCounts(){
+    localStorage.setItem(generalStorage,JSON.stringify(generalCounts));
+  }
+
+  function renderGeneralModifiers(target,checkout){
+    if(!target)return;
+    const {groups}=generalSelection(checkout);
+    target.hidden=!groups.length;
+    if(!groups.length){target.replaceChildren();return;}
+    target.innerHTML='<h3>Complementos generales</h3><p class="sheet-copy">Para los productos sueltos de tu pedido.</p>'+
+      modifierOptionBlocks(groups,generalCounts,1,'data-general-choice').join('');
+    target.querySelectorAll('[data-general-choice]').forEach(button=>{
+      button.onclick=()=>{
+        const key=button.dataset.generalChoice;
+        const [groupIndex,optionIndex,delta]=key.split(':').map(Number);
+        const group=groups[groupIndex], option=group.options[optionIndex];
+        const qty=Number(generalCounts[option.id])||0;
+        if(delta>0&&selectedInGroup(group,generalCounts)>=group.max)return;
+        generalCounts[option.id]=Math.max(0,qty+delta);
+        saveGeneralCounts();
+        if(checkout)updateCheckout();else renderCart();
+        const next=target.querySelector(`[data-general-choice="${key}"]`);
+        if(next?.disabled)next.parentElement.querySelector('button:not(:disabled)')?.focus();
+        else next?.focus();
+      };
+    });
+  }
+
+  const nativeRenderCart=window.renderCart;
+  window.renderCart=function(){
+    nativeRenderCart();
+    if(!cart.length){generalCounts={};saveGeneralCounts();}
+    renderGeneralModifiers($('cartGeneralModifiers'),false);
+    const {total,groups}=generalSelection(false);
+    if(groups.length)$('cartTotal').querySelector('strong').textContent=MXN.format(cartSubtotal()+total);
+  };
+
   window.renderDetailOptions=function(){
     if(!detailState)return;
     normalizeDetailState();
     const p=product(detailState.productId),blocks=[],maxExtras=extraLimit(p),extras=selectableExtras(p);
-    if(p.groups){renderComboOptions(p);return;}
-    blocks.push(`<div class="option-block"><div class="option-title"><strong>Cantidad</strong><span>${detailState.qty} ${detailState.qty===1?'pieza':'piezas'}</span></div><div class="mini-qty" style="justify-content:flex-end"><button type="button" onclick="changeProductQty(-1)" ${detailState.qty<=1?'disabled':''} aria-label="Quitar una pieza">−</button><b>${detailState.qty}</b><button type="button" onclick="changeProductQty(1)" ${detailState.qty>=20?'disabled':''} aria-label="Agregar una pieza">+</button></div></div>`);
+    if(p.groups)blocks.push(...comboOptionBlocks(p));
+    else blocks.push(`<div class="option-block"><div class="option-title"><strong>Cantidad</strong><span>${detailState.qty} ${detailState.qty===1?'pieza':'piezas'}</span></div><div class="mini-qty" style="justify-content:flex-end"><button type="button" onclick="changeProductQty(-1)" ${detailState.qty<=1?'disabled':''} aria-label="Quitar una pieza">−</button><b>${detailState.qty}</b><button type="button" onclick="changeProductQty(1)" ${detailState.qty>=20?'disabled':''} aria-label="Agregar una pieza">+</button></div></div>`);
     if(p.choice){
       const count=selectedChoiceCount(),required=selectedRequired(p),complete=count===required;
       blocks.push(`<div class="option-block"><div class="option-title"><strong>Elige ${required} sabores</strong><span class="${complete?'complete':''}">${count} de ${required}</span></div><div class="flavor-list">${p.choice.options.map(x=>{const qty=Number(detailState.choices[x.id])||0,full=count>=required;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>${x.price?`+ ${MXN.format(x.price)} por pieza`:'Sin costo extra'}</small></div><div class="mini-qty"><button type="button" onclick="changeFlavor('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeFlavor('${esc(x.id)}',1)" ${full?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
@@ -426,20 +515,13 @@
     if(extras.length){
       blocks.push(`<div class="option-block"><div class="option-title"><strong>Extras</strong><span>Hasta ${maxExtras} por extra</span></div><div class="flavor-list">${extras.map(x=>{const qty=Number(detailState.extraQty[x.id])||0;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>+ ${MXN.format(x.price)} c/u</small></div><div class="mini-qty"><button type="button" onclick="changeExtraQty('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeExtraQty('${esc(x.id)}',1)" ${qty>=maxExtras?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
     }
-    for(const [groupIndex,group] of (p.modifierGroups||[]).entries()){
-      if(!group.options.length)continue;
-      const count=selectedInGroup(group,detailState.extraQty);
-      const max=group.max*detailState.qty;
-      blocks.push(`<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
-        <span>${group.min?`Elige al menos ${group.min*detailState.qty}`:'Opcional'} · ${count}/${max}</span></div>
-        <div class="flavor-list">${group.options.map((option,index)=>{
-          const qty=Number(detailState.extraQty[option.id])||0;
-          return `<div class="flavor-row"><div><b>${esc(option.name)}</b><small>${option.price?'+ '+MXN.format(option.price)+' c/u':'Incluido'}</small></div>
-            <div class="mini-qty"><button type="button" data-mod-choice="${groupIndex}:${index}:-1" ${qty?'':'disabled'} aria-label="Quitar ${esc(option.name)}">−</button>
-            <b>${qty}</b><button type="button" data-mod-choice="${groupIndex}:${index}:1" ${count>=max||qty>=detailState.qty?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button></div></div>`;
-        }).join('')}</div></div>`);
-    }
+    blocks.push(...modifierOptionBlocks(p.modifierGroups||[],detailState.extraQty,detailState.qty,'data-mod-choice'));
     $('detailOptions').innerHTML=blocks.join('');
+    $('detailOptions').querySelectorAll('[data-combo-choice]').forEach(button=>{
+      const [groupIndex,optionIndex,delta]=button.dataset.comboChoice.split(':').map(Number);
+      const group=p.groups[groupIndex];
+      button.onclick=()=>changeComboChoice(group,group.options[optionIndex],delta);
+    });
     $('detailOptions').querySelectorAll('[data-mod-choice]').forEach(button=>{
       const [groupIndex,index,delta]=button.dataset.modChoice.split(':').map(Number);
       button.onclick=()=>changeExtraQty(p.modifierGroups[groupIndex].options[index].id,delta);
@@ -515,7 +597,13 @@
     if(!form?.reportValidity())return;
     const name=document.getElementById('customerName')?.value.trim()||'',phone=document.getElementById('customerPhone')?.value.trim()||'',digits=phone.replace(/\D/g,'');
     if(digits.length<10){if(typeof checkoutError==='function')checkoutError('Revisa el número de teléfono.');return;}
-    const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),baseSubtotal=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=baseSubtotal+(upsellCocaQty*(upsellDrink?.price||0)),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number(document.getElementById('cashChange')?.value)||0);
+    const general=generalSelection(true);
+    if(!general.valid){
+      checkoutError('Completa la selección de complementos generales.');
+      $('checkoutGeneralModifiers')?.scrollIntoView({block:'nearest'});
+      return;
+    }
+    const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),baseSubtotal=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=baseSubtotal+(upsellCocaQty*(upsellDrink?.price||0))+general.total,fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number(document.getElementById('cashChange')?.value)||0);
     if(fulfillment==='delivery'&&!fee){if(typeof checkoutError==='function')checkoutError('Calcula el envío o selecciona una tarifa provisional.');return;}
     if(payment==='cash'&&change>0&&change<total){if(typeof checkoutError==='function')checkoutError(`El cambio debe ser para una cantidad igual o mayor a ${MXN.format(total)}.`);return;}
     const btn=form.querySelector('button[type="submit"]'),old=btn?.textContent||'CONFIRMAR POR WHATSAPP';
@@ -532,14 +620,16 @@
       if(needsQr)accessParts.push('Requiere QR para entrar');
       if(residentialInstructions)accessParts.push(`Acceso: ${residentialInstructions}`);
       const references=[baseReferences,...accessParts].filter(Boolean).join(' · ');
-      const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),benefit_request_id:selectedVipRequestId||'',deliveryDestination:fulfillment==='delivery'?{...(deliveryLocation||{}),address,placeId:deliveryPlaceId}:null,insidePlaza:!!document.getElementById('insidePlaza')?.checked,deliveryAt:scheduledAt,route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
+      const payload={action:'order_create',uid:getUid(),name,phone,items:items.map(({line,...rest})=>rest),generalModifiers:general.options.map(({id,qty})=>({id,qty})),fulfillment,scheduledAt,subtotal,deliveryFee:fee,total,address,references,payment:labelPayment(payment,change),benefit_request_id:selectedVipRequestId||'',deliveryDestination:fulfillment==='delivery'?{...(deliveryLocation||{}),address,placeId:deliveryPlaceId}:null,insidePlaza:!!document.getElementById('insidePlaza')?.checked,deliveryAt:scheduledAt,route:deliveryQuote?{distanceKm:deliveryQuote.distanceKm,durationMinutes:deliveryQuote.durationMinutes}:null};
       const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
       const order=data.order||{},serverItems=Array.isArray(order.items)?order.items:items,lines=serverItems.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format((Number(i.unitPrice)||0)*(Number(i.qty)||1))}${i.details?`\n${i.details}`:''}`),serverSubtotal=Number(order.subtotal||0),serverFee=Number(order.deliveryFee||0),serverDiscount=Number(order.discount||0),serverTotal=Number(order.total||0),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)} · Total envío ${MXN.format(fee)}`:'',residentialText=isResidential?`\nResidencial: Sí${needsQr?' · Requiere QR':''}${residentialInstructions?`\nInstrucciones de acceso: ${residentialInstructions}`:''}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}${residentialText}\nReferencias: ${baseReferences||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
+      if(order.generalModifiers?.details)lines.push(`• Complementos generales — ${MXN.format(order.generalModifiers.total)}\n${order.generalModifiers.details}`);
       const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n\n')}\n\nSubtotal: ${MXN.format(serverSubtotal)}\n${serverDiscount?`Descuento VIP: -${MXN.format(serverDiscount)}\n`:''}${fulfillment==='delivery'?`Envío: ${MXN.format(serverFee)}\n`:''}TOTAL: ${MXN.format(serverTotal)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
       localStorage.setItem('restaurant_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
       try{cart=[];}catch(_){}
+      generalCounts={};saveGeneralCounts();
       upsellCocaQty=0;selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderUpsell();
       localStorage.setItem('restaurant_video_cart','[]');
       if(typeof renderCartBadge==='function')renderCartBadge();

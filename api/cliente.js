@@ -9,7 +9,7 @@ import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/
 
 import { availableComboGroups, normalizeComboGroups, priceCombo } from "../lib/server/menu-combos.js";
 
-import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings } from "../lib/server/menu-settings.js";
+import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings, normalizeModifierRules, generalModifierGroups } from "../lib/server/menu-settings.js";
 
 const admin=getFirebaseAdmin();
 
@@ -105,6 +105,7 @@ function normalizedCatalog(raw,includeInactive=false,tenant="uai-so",settings={g
             modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]
         };
         if(Array.isArray(p.modifierGroupIds)&&p.modifierGroupIds.length)catalog[id].modifierGroupIds=p.modifierGroupIds;
+        if(Array.isArray(p.modifierGroupRules)&&p.modifierGroupRules.length)catalog[id].modifierGroupRules=p.modifierGroupRules;
         if(p.type==="combo"){
             catalog[id].type="combo";
             catalog[id].groups=normalizeComboGroups(p.groups);
@@ -112,9 +113,9 @@ function normalizedCatalog(raw,includeInactive=false,tenant="uai-so",settings={g
     }
     if(includeInactive)return catalog;
     for(const item of Object.values(catalog)){
-        if(item.type==="combo"||!item.modifierGroupIds)continue;
-        item.modifierGroups=listedModifierGroups(item.modifierGroupIds,settings.groups);
-        if(item.modifierGroups.some(group=>group.options.length<group.min))item.active=false;
+        if(!item.modifierGroupRules&&!item.modifierGroupIds)continue;
+        item.modifierGroups=listedModifierGroups(item.modifierGroupRules,settings.groups,item.modifierGroupIds);
+        if(item.modifierGroups.some(group=>group.min>0&&(!group.options.length||(group.repeat===false&&group.options.length<group.min))))item.active=false;
     }
     return Object.fromEntries(Object.entries(catalog).flatMap(([id,item])=>{
         if(!item.active)return [];
@@ -174,7 +175,12 @@ async function saveCatalogItem(req,res){
             entry.modifiers.push({id:mid,name:mname,price:cleanOrderMoney(mprice),active:modifier.active!==false});
         }
     }
-    if(item.type!=="combo"&&Array.isArray(item.modifierGroupIds)&&item.modifierGroupIds.length){
+    if(item.modifierGroupRules!==undefined){
+        const settings=await loadMenuSettings(requestDb(req));
+        const rules=normalizeModifierRules(item.modifierGroupRules,settings.groups);
+        if(!rules)return res.status(400).json({error:"Revisa los grupos y sus límites para este artículo."});
+        if(rules.length)entry.modifierGroupRules=rules;
+    }else if(item.type!=="combo"&&Array.isArray(item.modifierGroupIds)&&item.modifierGroupIds.length){
         const settings=await loadMenuSettings(requestDb(req));
         const ids=[...new Set(item.modifierGroupIds)];
         if(ids.length>10||ids.some(id=>!settings.groups.some(group=>group.id===id))){
@@ -212,6 +218,30 @@ async function saveCatalogItem(req,res){
     return res.status(200).json({catalog:normalizedCatalog(result.snapshot.val(),true,tenant)});
 }
 
+function priceModifiers(requested, legacyOptions, groups, qty) {
+    const requestedModifiers=Array.isArray(requested)?requested:[];
+    if(requestedModifiers.length>230)return null;
+    const available=new Map([...(legacyOptions||[]),...(groups||[]).flatMap(group=>group.options)]
+        .filter(option=>option?.active!==false).map(option=>[option.id,option]));
+    const validated=[], modifierDetails=[];
+    const seen=new Set();
+    let modifierTotal=0;
+    for(const modifier of requestedModifiers){
+        const id=String(modifier?.id||"").trim();
+        const allowed=available.get(id);
+        if(!allowed||seen.has(id))return null;
+        seen.add(id);
+        const requestedQty=Number(modifier?.qty);
+        const shared=id.startsWith("group:");
+        const count=shared?requestedQty:Math.max(1,Math.min(qty,Math.floor(requestedQty)||1));
+        if(shared&&(!Number.isInteger(count)||count<1||count>20*qty))return null;
+        validated.push({id,qty:count});
+        modifierTotal+=Math.max(0,Number(allowed.price||0))*count;
+        modifierDetails.push(allowed.name+" ×"+count);
+    }
+    return checkModifierGroups(groups,validated,qty)?{modifierTotal,modifierDetails,validated}:null;
+}
+
 function secureOrderItems(items,catalog) {
     if (!Array.isArray(items) || items.length > 50) return { items:[], invalid:true };
     const byName=new Map(Object.entries(catalog).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
@@ -224,38 +254,22 @@ function secureOrderItems(items,catalog) {
         const product=byId ? {id:requestedId,...byId} : byNameMatch;
         if(!product){invalid=true;continue}
         const qty=Math.max(1,Math.min(99,Math.floor(Number(raw?.qty)||1)));
+        const modifiers=priceModifiers(raw?.modifiers,product.modifiers,product.modifierGroups,qty);
+        if(!modifiers){invalid=true;continue}
+        const { modifierTotal, modifierDetails, validated }=modifiers;
+        const note=cleanOrderText(raw?.note,200);
         if(product.type==="combo"){
             const combo=priceCombo(product.groups,raw?.comboSelections??[],qty);
             if(!combo){invalid=true;continue}
             priced.push({
                 productId:product.id,name:product.name,qty,
-                unitPrice:product.price+combo.surcharge/qty,baseUnitPrice:product.price,
-                components:combo.components,
+                unitPrice:product.price+(combo.surcharge+modifierTotal)/qty,baseUnitPrice:product.price,
+                components:combo.components,modifiers:validated,
                 details:[...combo.components.map(component=>`${component.qty}× ${component.name}`),
-                    cleanOrderText(raw?.note,200)].filter(Boolean).join(", ")
+                    ...modifierDetails,note].filter(Boolean).join(", ")
             });
             continue;
         }
-        let modifierTotal=0,modifierDetails=[];
-        const requestedModifiers=Array.isArray(raw?.modifiers)?raw.modifiers:[];
-        if(requestedModifiers.length>230){invalid=true;continue}
-        const available=new Map([...(product.modifiers||[]),...(product.modifierGroups||[]).flatMap(group=>group.options)]
-            .filter(option=>option?.active!==false).map(option=>[option.id,option]));
-        const validated=[];
-        const seen=new Set();
-        for(const m of requestedModifiers){
-            const mid=String(m?.id||"").trim();
-            const allowed=available.get(mid);
-            if(!allowed||seen.has(mid)){invalid=true;continue}
-            seen.add(mid);
-            const mq=Math.max(1,Math.min(qty,Math.floor(Number(m?.qty)||1)));
-            if(mid.startsWith("group:")&&Number(m?.qty)!==mq){invalid=true;continue}
-            validated.push({id:mid,qty:mq});
-            modifierTotal+=Math.max(0,Number(allowed.price||0))*mq;
-            modifierDetails.push(String(allowed.name||mid)+" x"+mq);
-        }
-        if(!checkModifierGroups(product.modifierGroups,validated,qty)){invalid=true;continue}
-        const note=cleanOrderText(raw?.note,200);
         priced.push({
             productId:product.id,
             name:product.name,
@@ -290,6 +304,7 @@ function publicOrder(id, order) {
         references: order.references || "",
         payment: order.payment || "",
         items: Array.isArray(order.items) ? order.items : [],
+        generalModifiers: order.generalModifiers || null,
         history: order.history || {},
         name: order.name || "",
         phone: order.phone || ""
@@ -392,7 +407,7 @@ async function secureDeliveryQuote(body){
 
 async function loadMenuSettings(db){
     const snap=await db.ref("config/menu_workspace").once("value");
-    return normalizeMenuSettings(snap.val())||{categories:[],groups:[]};
+    return normalizeMenuSettings(snap.val())||{categories:[],groups:[],generalRules:[]};
 }
 
 async function loadMenuCatalog(db,tenant="uai-so",includeInactive=false){
@@ -546,11 +561,14 @@ async function handleOrderCreate(req, res) {
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
     const db = requestDb(req);
-    const {catalog}=await loadMenuCatalog(db,tenantFromRequest(req));
+    const {catalog,settings}=await loadMenuCatalog(db,tenantFromRequest(req));
     const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
+    const generalGroups=items.some(item=>catalog[item.productId]?.type!=="combo")?generalModifierGroups(settings):[];
+    const general=priceModifiers(body.generalModifiers,[],generalGroups,1);
+    if(!general)return res.status(400).json({error:"Revisa los complementos generales para tus productos sueltos."});
     const orderRef = db.ref("pedidos").push();
     const now = new Date().toISOString();
     const code = `US-${now.slice(2,10).replace(/-/g,"")}-${orderRef.key.slice(-4).toUpperCase()}`;
@@ -563,7 +581,7 @@ async function handleOrderCreate(req, res) {
     const requestedVipId = cleanOrderText(body.benefit_request_id, 120);
     const vipRequest = requestedVipId ? await claimVipRequestForOrder(db, requestedVipId, uid, orderRef.key) : null;
     if (requestedVipId && !vipRequest) return res.status(409).json({ error:"El beneficio VIP ya no está disponible para este pedido. Vuelve a solicitarlo." });
-    const subtotal = Math.round(items.reduce((sum,item)=>sum+(item.unitPrice*item.qty),0)*100)/100;
+    const subtotal = Math.round(items.reduce((sum,item)=>sum+(item.unitPrice*item.qty),general.modifierTotal)*100)/100;
     const fulfillment = body.fulfillment === "pickup" ? "pickup" : "delivery";
     let secureRoute=null, originalDeliveryFee=0;
     if(fulfillment==="delivery"){
@@ -601,6 +619,9 @@ async function handleOrderCreate(req, res) {
             breakdown: secureRoute.breakdown
         } : null,
         items,
+        generalModifiers: general.modifierDetails.length ? {
+            selections:general.validated, details:general.modifierDetails.join(", "), total:cleanOrderMoney(general.modifierTotal)
+        } : null,
         history: { received: { at: now, label: ORDER_STATUS.received.label } }
     };
 
@@ -1024,7 +1045,7 @@ export default async function handler(req, res) {
 
     if (req.method === "GET" && req.query.action === "menu_catalog") {
         const {catalog,settings}=await loadMenuCatalog(requestDb(req),tenantFromRequest(req));
-        return res.status(200).json({catalog,categories:settings.categories});
+        return res.status(200).json({catalog,categories:settings.categories,generalModifierGroups:generalModifierGroups(settings)});
     }
 
     if (req.method === "GET" && req.query.action === "admin_catalog") {
@@ -1060,9 +1081,9 @@ export default async function handler(req, res) {
         await ref.transaction(current=>Object.fromEntries(Object.entries(clean).map(([pid,item])=>{
             const stored=current?.[pid];
             if(!stored)return [pid,item];
-            const {photoData,modifierGroupIds,type,groups}=stored;
+            const {photoData,modifierGroupIds,modifierGroupRules,type,groups}=stored;
             return [pid,{...item,...(item.image===stored.image&&photoData?{photoData}:{}),
-                ...(modifierGroupIds?{modifierGroupIds}:{}),...(type==="combo"?{type,groups}:{})}];
+                ...(modifierGroupIds?{modifierGroupIds}:{}),...(modifierGroupRules?{modifierGroupRules}:{}),...(type==="combo"?{type,groups}:{})}];
         })));
         return res.status(200).json({success:true,catalog:clean});
     }

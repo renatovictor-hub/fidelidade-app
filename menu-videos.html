@@ -70,7 +70,7 @@
   <div id="cartWrap" class="sheet-wrap" onclick="if(event.target===this)closeCart()">
     <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
       <div class="handle"></div><div class="sheet-head"><h2 id="cartTitle">Tu pedido</h2><button class="close" type="button" onclick="closeCart()" aria-label="Cerrar">×</button></div>
-      <div id="cartList" class="cart-list"></div><div id="cartTotal" class="total"></div>
+      <div id="cartList" class="cart-list"></div><div id="cartGeneralModifiers" class="checkout-step" hidden></div><div id="cartTotal" class="total"></div>
       <button id="sendOrder" class="primary" type="button" onclick="openCheckout()">CONTINUAR</button>
     </section>
   </div>
@@ -90,6 +90,7 @@
 
         <div class="checkout-step"><h3>Método de pago</h3><div class="choice-grid"><label class="choice-card"><input type="radio" name="payment" value="cash" checked onchange="updateCheckout()"><span>💵 Efectivo</span></label><label class="choice-card"><input type="radio" name="payment" value="transfer" onchange="updateCheckout()"><span>↗ Transferencia</span></label></div><div id="cashField" class="conditional" style="margin-top:10px"><label class="field"><span>¿Cambio para cuánto?</span><input id="cashChange" type="number" min="0" step="1" inputmode="numeric" placeholder="Déjalo vacío si no necesitas cambio"></label></div></div>
 
+        <div id="checkoutGeneralModifiers" class="checkout-step" hidden></div>
         <div id="checkoutSummary" class="checkout-summary"></div><div id="checkoutError" class="checkout-error" role="alert"></div>
         <button class="primary whatsapp" type="submit">CONFIRMAR POR WHATSAPP</button>
       </form>
@@ -259,7 +260,7 @@ async function initTenantMenu(){
 }
 initTenantMenu();
 </script>
-<script src="/menu-order-tracker.js?v=20261118-workspace"></script>
+<script src="/menu-order-tracker.js?v=20261118-modifier-rules"></script>
 <script src="/tenant-runtime.js?v=20261005-1"></script>
 </body>
 </html>
