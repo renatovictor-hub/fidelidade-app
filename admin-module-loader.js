@@ -9,7 +9,7 @@
     ['/reviews-admin.js?v=20260927-reorg1','reviewsAdminScript'],
     ['/reviews-dashboard-v2.js?v=20260928-4','reviewsDashboardV2Script'],
     ['/pedidos-admin.js?v=20261118-general-extras','pedidosAdminScript'],
-    ['/dashboard-ux-v2.js?v=20261004-multirest2','dashboardUxV2Script'],
+    ['/dashboard-ux-v2.js?v=20261118-sidebar-scroll','dashboardUxV2Script'],
     ['/dashboard-navigation-v3.js?v=20260928-fidunified1','dashboardNavigationV3Script'],
     ['/dashboard-overview-v4.js?v=20260927-crm2','dashboardOverviewV4Script'],
     ['/dashboard-core-modules-v5.js?v=20261004-multirest2','dashboardCoreModulesV5Script'],
