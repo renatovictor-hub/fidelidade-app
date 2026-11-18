@@ -113,7 +113,7 @@ let PRODUCTS=[
   {id:'romeo-julieta',name:'Romeo y Julieta',category:'ESFIHAS DULCES',price:50,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/cff5d297-2e93-4eb9-9db7-022b19c289d6.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/cff5d297-2e93-4eb9-9db7-022b19c289d6.webp',description:'La clásica combinación brasileña de guayaba con queso.',ingredients:['Guayaba','Queso','Masa artesanal']},
   {id:'coxinha',name:'Coxinha',category:'COXINHAS',price:50,video:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/12faf6bc-4310-431c-be9c-1472c99af6af.mp4',image:'https://wsrv.nl/?url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2Fhf_20260929_064707_a011e5c3-42bc-43d4-9aa0-1c81af1baef3.png&w=700&h=1100&fit=cover&output=webp&q=76',thumb:'https://wsrv.nl/?url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2Fhf_20260929_064707_a011e5c3-42bc-43d4-9aa0-1c81af1baef3.png&w=320&h=480&fit=cover&output=webp&q=68',description:'Clásica coxinha brasileña dorada y crujiente, rellena de pollo sazonado.',ingredients:['Pollo sazonado','Masa de coxinha','Empanizado']}
 ];
-const MXN=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0});
+const MXN=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:2,minimumFractionDigits:0});
 const qs=new URLSearchParams(location.search),uid=String(qs.get('uid')||'').trim();
 let cart=readCart(),activeIndex=0,muted=true,toastTimer,menuView=(localStorage.getItem('restaurant_menu_view')||localStorage.getItem('uaiso_menu_view'))==='explore'?'explore':'catalog',activeCategory='TODOS',detailState=null,videoProductId=null,deliveryQuote=null,deliveryLocation=null,deliveryPlaceId=null,addressTimer=null,addressAbort=null,addressSuggestions=[],placesSessionToken=createPlacesSessionToken(),loyaltyProfile=null;
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
@@ -146,14 +146,28 @@ function toggleSound(event){
 }
 function setView(view){
   const previous=menuView;menuView=view==='catalog'?'catalog':'explore';localStorage.setItem('restaurant_menu_view',menuView);
-  if(previous==='explore'&&menuView==='catalog'&&PRODUCTS[activeIndex])activeCategory=PRODUCTS[activeIndex].category;
+  if(previous==='explore'&&menuView==='catalog'){
+    const featuredId=$('feed').querySelector(`.dish[data-index="${activeIndex}"]`)?.dataset.id;
+    const featured=product(featuredId);
+    if(featured)activeCategory=featured.category;
+  }
   const catalog=menuView==='catalog';$('feed').classList.toggle('hidden',catalog);$('pager').classList.toggle('hidden',catalog);$('catalog').classList.toggle('hidden',!catalog);
   $('exploreTab').classList.toggle('active',!catalog);$('catalogTab').classList.toggle('active',catalog);$('exploreTab').setAttribute('aria-selected',String(!catalog));$('catalogTab').setAttribute('aria-selected',String(catalog));
   $('viewSubtitle').textContent=catalog?'Elige rápido por categoría':'Desliza para explorar';
   if(catalog){document.querySelectorAll('.dish-inline-video').forEach(v=>v.pause());renderCatalog()}else{const v=document.querySelector(`.dish[data-index="${activeIndex}"] .dish-inline-video`);if(v){if(!v.src){v.src=v.dataset.src;v.load()}v.muted=true;v.play().catch(()=>{})}}
 }
 function setCategory(category){activeCategory=category;renderCatalog()}
-function renderCategories(){const categories=['TODOS',...new Set(PRODUCTS.map(p=>p.category))];$('categories').innerHTML=categories.map(c=>`<button class="${c===activeCategory?'active':''}" type="button" onclick="setCategory('${esc(c)}')">${c==='TODOS'?'Todo':esc(c.replace(' ABIERTAS','').replace('PARA ','Para ').toLowerCase().replace(/^./,x=>x.toUpperCase()))}</button>`).join('')}
+function renderCategories(){
+  const categories=['TODOS',...new Set(PRODUCTS.map(p=>p.category))];
+  $('categories').replaceChildren(...categories.map(category=>{
+    const button=document.createElement('button');
+    button.classList.toggle('active',category===activeCategory);
+    button.type='button';
+    button.textContent=category==='TODOS'?'Todo':category.toLocaleLowerCase('es-MX').replace(/^./,letter=>letter.toUpperCase());
+    button.onclick=()=>setCategory(category);
+    return button;
+  }));
+}
 function renderCatalog(){
   renderCategories();
   const term=String($('menuSearch')?.value||'').trim().toLocaleLowerCase('es');
@@ -244,26 +258,8 @@ document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if($(
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return document.querySelectorAll('video').forEach(v=>v.pause());if(videoProductId)$('popupVideo').play().catch(()=>{});else if(menuView==='explore')document.querySelector(`.dish[data-index="${activeIndex}"] video`)?.play().catch(()=>{})});
 
 async function initTenantMenu(){
-  const company=String(new URLSearchParams(location.search).get('company')||'').trim();
-  if(company&&company!=='uai-so'){
-    try{
-      const r=await fetch('/api/cliente?action=menu_catalog&company='+encodeURIComponent(company)+'&t='+Date.now(),{cache:'no-store'});
-      const d=await r.json().catch(()=>({}));
-      if(r.ok){
-        PRODUCTS=Object.entries(d.catalog||{}).map(([id,p])=>({
-          id,
-          name:String(p?.name||id),
-          category:String(p?.category||'OTROS'),
-          price:Number(p?.price||0),
-          image:String(p?.image||''),
-          thumb:String(p?.image||''),
-          description:String(p?.description||''),
-          ingredients:[],
-          modifiers:Array.isArray(p?.modifiers)?p.modifiers:[]
-        }));
-      }else PRODUCTS=[];
-    }catch(_){PRODUCTS=[]}
-  }
+  const company=String(qs.get('company')||'').trim();
+  if(company&&company!=='uai-so')PRODUCTS=[];
   renderFeed();
   renderCartBadge();
   setView(menuView);
@@ -275,7 +271,7 @@ async function initTenantMenu(){
 }
 initTenantMenu();
 </script>
-<script src="/menu-order-tracker.js?v=20261004-multiclient1"></script>
+<script src="/menu-order-tracker.js?v=20261118-combos"></script>
 <script src="/tenant-runtime.js?v=20261005-1"></script>
 </body>
 </html>

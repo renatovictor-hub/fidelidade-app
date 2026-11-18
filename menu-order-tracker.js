@@ -15,7 +15,7 @@
   let restaurantWhatsApp='';
   let restaurantConfig=null;
   let checkoutVipBenefits=[],selectedVipBenefit=null,selectedVipRequestId='';
-  let COCA_PRICE=35;
+  let upsellDrink=null;
 
   async function loadRestaurantContact(){
     try{
@@ -45,34 +45,77 @@
       const r=await fetch('/api/cliente?action=menu_catalog&t='+Date.now(),{cache:'no-store'});
       const d=await r.json(); if(!r.ok)throw new Error();
       const cfg=d.catalog||{};
-      for(let i=PRODUCTS.length-1;i>=0;i--){
-        const p=PRODUCTS[i],cp=cfg[p.id];
-        if(!cp||cp.active===false){PRODUCTS.splice(i,1);continue}
-        p.name=String(cp.name||p.name);p.category=String(cp.category||p.category||'OTROS');p.price=Number(cp.price??p.price);
-        if(cp.image)p.image=String(cp.image);if(cp.description)p.description=String(cp.description);
-        p.extras=Array.isArray(cp.modifiers)?cp.modifiers.filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name),price:Number(x.price||0)})):[];
-      }
-      Object.entries(cfg).forEach(([id,cp])=>{
-        if(!cp||cp.active===false||PRODUCTS.some(p=>p.id===id))return;
-        PRODUCTS.push({id,name:String(cp.name||id),category:String(cp.category||'OTROS'),price:Number(cp.price||0),image:String(cp.image||'/logo.png'),thumb:String(cp.image||'/logo.png'),description:String(cp.description||''),ingredients:[],extras:Array.isArray(cp.modifiers)?cp.modifiers.filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name),price:Number(x.price||0)})):[]});
+      const byId=new Map(PRODUCTS.map(product=>[product.id,product]));
+      PRODUCTS=Object.entries(cfg).filter(([,item])=>item?.active!==false).map(([id,item])=>{
+        const original=byId.get(id)||{ingredients:[]};
+        return {
+          ...original,id,name:item.name,category:item.category||original.category||'OTROS',
+          price:Number(item.price)||0,image:item.image||original.image||'',
+          thumb:item.image||original.thumb||'',description:item.description||original.description||'',
+          groups:item.type==='combo'?item.groups:null,
+          extras:(item.modifiers||[]).filter(x=>x&&x.active!==false)
+        };
       });
-      const coca=cfg['coca-600']; if(coca&&coca.active!==false)COCA_PRICE=Number(coca.price||35);
-      cart=cart.filter(line=>PRODUCTS.some(p=>p.id===line.productId));
-      cart.forEach(line=>{
-        const p=PRODUCTS.find(x=>x.id===line.productId); if(!p)return;
-        let unit=Number(p.price||0);
-        const selected=new Set((line.extras||[]).map(x=>String(x.id)));
-        line.extras=(p.extras||[]).filter(x=>selected.has(String(x.id))).map(x=>({id:x.id,name:x.name,price:Number(x.price||0)}));
-        unit+=line.extras.reduce((s,x)=>s+Number(x.price||0),0);
-        line.unitPrice=unit;
+      const categories=['COMBOS','ESFIHAS SALADAS','ESFIHAS DULCES','COXINHAS','BEBIDAS','OTROS'];
+      PRODUCTS.sort((a,b)=>{
+        const rank=category=>categories.includes(category)?categories.indexOf(category):categories.length;
+        return rank(a.category)-rank(b.category);
+      });
+      if(activeCategory!=='TODOS'&&!PRODUCTS.some(p=>p.category===activeCategory))activeCategory='TODOS';
+      upsellDrink=product('coca-600')||null;
+      if(!upsellDrink)upsellCocaQty=0;
+      const previousCount=cart.length;
+      cart=cart.filter(line=>{
+        const item=product(line.productId);
+        if(!item)return false;
+        if(item.groups){
+          const current=comboCartSelections(item,line.choices,line.qty);
+          const batch=comboCartSelections(item,line.batchChoices,line.batchQty);
+          if(!current||!batch)return false;
+          line.choices=current;
+          line.batchChoices=batch;
+          line.unitPrice=item.price+current.reduce((sum,choice)=>sum+choice.price*choice.qty,0)/line.qty;
+          return true;
+        }
+        const byExtra=new Map(item.extras.map(extra=>[extra.id,extra]));
+        const refresh=extras=>(extras||[]).flatMap(extra=>{
+          const match=byExtra.get(extra.id);
+          return match?[{...match,qty:Number(extra.qty)||line.qty}]:[];
+        });
+        line.extras=refresh(line.extras);
+        line.batchExtras=refresh(line.batchExtras);
+        line.unitPrice=item.price+line.extras.reduce((sum,extra)=>sum+Number(extra.price)*extra.qty,0)/line.qty;
+        return true;
       });
       saveCart();
+      if(cart.length<previousCount)showToast('Quitamos artículos que ya no están disponibles.');
       if(typeof renderCatalog==='function')renderCatalog();
       if(typeof renderFeed==='function')renderFeed();
       renderUpsell();
     }catch(e){console.warn('Menu catalog sync',e)}
   }
   loadMenuCatalog();
+
+  function comboCartSelections(item,choices,qty){
+    if(!Number.isInteger(qty)||qty<1||!Array.isArray(choices))return null;
+    const result=[];
+    for(const group of item.groups){
+      const required=group.quantity*qty;
+      const options=group.fixed
+        ? [{productId:group.options[0].productId,qty:required}]
+        : choices.filter(choice=>choice.groupId===group.id);
+      if(options.reduce((sum,choice)=>sum+choice.qty,0)!==required)return null;
+      for(const choice of options){
+        const option=group.options.find(entry=>entry.productId===choice.productId);
+        if(!option||!Number.isInteger(choice.qty)||choice.qty<1)return null;
+        result.push({
+          id:group.id+'/'+option.productId,groupId:group.id,productId:option.productId,
+          fixed:group.fixed,name:option.name,price:option.surcharge,qty:choice.qty
+        });
+      }
+    }
+    return result;
+  }
 
   function getUid(){return String(new URLSearchParams(location.search).get('uid')||'').trim();}
   function labelPayment(value,change){return value==='cash'?(change?`Efectivo · Cambio para $${change}`:'Efectivo · Sin cambio'):'Transferencia';}
@@ -101,14 +144,28 @@
     const box=document.createElement('div');
     box.id='checkoutUpsell';
     box.className='checkout-step';
-    box.innerHTML=`<h3>¿Algo más para tu pedido?</h3><div class="flavor-row"><div><b>🥤 Coca-Cola 600 ml</b><small>Se agrega como producto separado · ${MXN.format(COCA_PRICE)} c/u</small></div><div class="mini-qty"><button id="upsellCocaMinus" type="button" aria-label="Quitar Coca-Cola">−</button><b id="upsellCocaQty">0</b><button id="upsellCocaPlus" type="button" aria-label="Agregar Coca-Cola">+</button></div></div><p class="delivery-note" style="margin-top:8px">Aquí también podremos sugerir postres y otros productos antes de finalizar.</p>`;
+    box.innerHTML=`<h3>¿Algo más para tu pedido?</h3><div class="flavor-row"><div><b id="upsellDrinkName"></b><small id="upsellDrinkPrice"></small></div><div class="mini-qty"><button id="upsellCocaMinus" type="button" aria-label="Quitar Coca-Cola">−</button><b id="upsellCocaQty">0</b><button id="upsellCocaPlus" type="button" aria-label="Agregar Coca-Cola">+</button></div></div>`;
     summary.insertAdjacentElement('beforebegin',box);
     document.getElementById('upsellCocaMinus').onclick=()=>changeUpsellCoca(-1);
     document.getElementById('upsellCocaPlus').onclick=()=>changeUpsellCoca(1);
     renderUpsell();
   }
-  function changeUpsellCoca(delta){upsellCocaQty=Math.max(0,Math.min(20,upsellCocaQty+Number(delta||0)));renderUpsell();updateCheckout();}
-  function renderUpsell(){const q=document.getElementById('upsellCocaQty'),m=document.getElementById('upsellCocaMinus');if(q)q.textContent=upsellCocaQty;if(m)m.disabled=upsellCocaQty<=0;}
+  function changeUpsellCoca(delta){
+    if(!upsellDrink)return;
+    upsellCocaQty=Math.max(0,Math.min(20,upsellCocaQty+delta));
+    renderUpsell();
+    updateCheckout();
+  }
+  function renderUpsell(){
+    const box=$('checkoutUpsell');
+    if(!box)return;
+    box.classList.toggle('hidden',!upsellDrink);
+    if(!upsellDrink)return;
+    $('upsellDrinkName').textContent=upsellDrink.name;
+    $('upsellDrinkPrice').textContent=MXN.format(upsellDrink.price)+' c/u';
+    $('upsellCocaQty').textContent=upsellCocaQty;
+    $('upsellCocaMinus').disabled=upsellCocaQty<=0;
+  }
   injectUpsell();
 
   function vipAutomaticBenefit(b){
@@ -195,10 +252,10 @@
   const nativeUpdateCheckout=window.updateCheckout;
   window.updateCheckout=function(){
     nativeUpdateCheckout();
-    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*COCA_PRICE),fee=deliveryFee(),preview=vipPreview(subtotal,delivery?fee:0),feeText=delivery?(fee?MXN.format(preview.fee):'Por calcular'):'Sin costo';
+    const delivery=selectedValue('fulfillment')==='delivery',base=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=base+(upsellCocaQty*(upsellDrink?.price||0)),fee=deliveryFee(),preview=vipPreview(subtotal,delivery?fee:0),feeText=delivery?(fee?MXN.format(preview.fee):'Por calcular'):'Sin costo';
     if(selectedVipBenefit?.type==='free_delivery'&&!delivery){selectedVipBenefit=null;selectedVipRequestId='';localStorage.removeItem('vip_benefit_request_id');renderCheckoutVipBenefits()}
     const summary=document.getElementById('checkoutSummary');
-    if(summary)summary.innerHTML=`<div class="summary-line"><span>Subtotal</span><strong>${MXN.format(subtotal)}</strong></div>${upsellCocaQty?`<div class="summary-line"><span>Coca-Cola 600 ml × ${upsellCocaQty}</span><strong>${MXN.format(upsellCocaQty*COCA_PRICE)}</strong></div>`:''}${selectedVipBenefit?`<div class="summary-line"><span>👑 ${selectedVipBenefit.title}</span><strong>${selectedVipBenefit.type==='free_delivery'?'Aplicado':('-'+MXN.format(preview.discount))}</strong></div>`:''}<div class="summary-line"><span>${delivery?'Envío':'Retiro'}</span><strong>${feeText}</strong></div><div class="summary-line final"><span>Total</span><strong>${MXN.format(preview.total)}</strong></div>`;
+    if(summary)summary.innerHTML=`<div class="summary-line"><span>Subtotal</span><strong>${MXN.format(subtotal)}</strong></div>${upsellCocaQty?`<div class="summary-line"><span>${esc(upsellDrink?.name)} × ${upsellCocaQty}</span><strong>${MXN.format(upsellCocaQty*(upsellDrink?.price||0))}</strong></div>`:''}${selectedVipBenefit?`<div class="summary-line"><span>👑 ${selectedVipBenefit.title}</span><strong>${selectedVipBenefit.type==='free_delivery'?'Aplicado':('-'+MXN.format(preview.discount))}</strong></div>`:''}<div class="summary-line"><span>${delivery?'Envío':'Retiro'}</span><strong>${feeText}</strong></div><div class="summary-line final"><span>Total</span><strong>${MXN.format(preview.total)}</strong></div>`;
   };
 
   function normalizeDetailState(){
@@ -256,10 +313,52 @@
     renderDetailOptions();
   };
 
+  function comboChoices(item){
+    return item.groups.flatMap(group=>group.options.flatMap(option=>{
+      const id=group.id+'/'+option.productId;
+      const qty=group.fixed?group.quantity:Number(detailState.choices[id])||0;
+      return qty?[{id,groupId:group.id,productId:option.productId,
+        fixed:group.fixed,name:option.name,price:option.surcharge,qty}]:[];
+    }));
+  }
+
+  function changeComboChoice(group,option,delta){
+    const total=group.options.reduce((sum,item)=>sum+(detailState.choices[group.id+'/'+item.productId]||0),0);
+    if(delta>0&&total>=group.quantity)return;
+    const id=group.id+'/'+option.productId;
+    detailState.choices[id]=Math.max(0,(detailState.choices[id]||0)+delta);
+    renderDetailOptions();
+  }
+
+  function renderComboOptions(item){
+    const output=$('detailOptions');
+    output.innerHTML=item.groups.map((group,index)=>{
+      const total=group.options.reduce((sum,option)=>sum+(detailState.choices[group.id+'/'+option.productId]||0),0);
+      return `<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
+        <span>${group.fixed?'Incluido':`${total} de ${group.quantity}`}</span></div>
+        <div class="flavor-list">${group.options.map((option,optionIndex)=>{
+          const qty=group.fixed?group.quantity:detailState.choices[group.id+'/'+option.productId]||0;
+          return `<div class="flavor-row"><div><b>${esc(option.name)}</b><small>${option.surcharge?'+ '+MXN.format(option.surcharge)+' c/u':'Incluido en el precio'}</small></div>
+            ${group.fixed?`<strong>× ${qty}</strong>`:`<div class="mini-qty">
+              <button type="button" data-combo-choice="${index}:${optionIndex}:-1" ${qty?'':'disabled'} aria-label="Quitar ${esc(option.name)}">−</button>
+              <b>${qty}</b>
+              <button type="button" data-combo-choice="${index}:${optionIndex}:1" ${total>=group.quantity?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button>
+            </div>`}</div>`;
+        }).join('')}</div></div>`;
+    }).join('');
+    output.querySelectorAll('[data-combo-choice]').forEach(button=>{
+      const [groupIndex,optionIndex,delta]=button.dataset.comboChoice.split(':').map(Number);
+      const group=item.groups[groupIndex];
+      button.onclick=()=>changeComboChoice(group,group.options[optionIndex],delta);
+    });
+    updateDetailTotal();
+  }
+
   window.detailTotal=function(){
     if(!detailState)return 0;
     normalizeDetailState();
     const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1);
+    if(p.groups)return p.price+comboChoices(p).reduce((total,choice)=>total+choice.price*choice.qty,0);
     let total=(Number(p?.price)||0)*qty;
     (p?.choice?.options||[]).forEach(x=>total+=(Number(detailState.choices[x.id])||0)*(Number(x.price)||0));
     selectableExtras(p).forEach(x=>total+=(Number(detailState.extraQty[x.id])||0)*(Number(x.price)||0));
@@ -270,6 +369,13 @@
     if(!detailState)return;
     normalizeDetailState();
     const p=product(detailState.productId),required=selectedRequired(p),selected=selectedChoiceCount(),complete=!p.choice||selected===required,qty=detailState.qty;
+    if(p.groups){
+      const valid=!!comboCartSelections(p,comboChoices(p),1);
+      $('detailPrice').textContent=MXN.format(detailTotal());
+      $('detailOrder').disabled=!valid;
+      $('detailOrder').textContent=valid?`AGREGAR COMBO · ${MXN.format(detailTotal())}`:'COMPLETA TUS OPCIONES';
+      return;
+    }
     $('detailPrice').textContent=MXN.format(detailTotal());
     $('detailOrder').disabled=!complete;
     $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}`:`ELIGE ${required-selected} MÁS`;
@@ -279,6 +385,7 @@
     if(!detailState)return;
     normalizeDetailState();
     const p=product(detailState.productId),blocks=[],maxExtras=extraLimit(p),extras=selectableExtras(p);
+    if(p.groups){renderComboOptions(p);return;}
     blocks.push(`<div class="option-block"><div class="option-title"><strong>Cantidad</strong><span>${detailState.qty} ${detailState.qty===1?'pieza':'piezas'}</span></div><div class="mini-qty" style="justify-content:flex-end"><button type="button" onclick="changeProductQty(-1)" ${detailState.qty<=1?'disabled':''} aria-label="Quitar una pieza">−</button><b>${detailState.qty}</b><button type="button" onclick="changeProductQty(1)" ${detailState.qty>=20?'disabled':''} aria-label="Agregar una pieza">+</button></div></div>`);
     if(p.choice){
       const count=selectedChoiceCount(),required=selectedRequired(p),complete=count===required;
@@ -295,14 +402,16 @@
     if(!detailState)return;
     normalizeDetailState();
     const p=product(detailState.productId),qty=Math.max(1,Number(detailState.qty)||1),required=selectedRequired(p);
+    if(p.groups&&!comboCartSelections(p,comboChoices(p),1))return;
     if(p.choice&&selectedChoiceCount()!==required)return;
-    const choices=(p.choice?.options||[]).map(x=>({id:x.id,name:x.name,qty:Number(detailState.choices[x.id])||0,price:Number(x.price)||0})).filter(x=>x.qty);
+    const choices=p.groups?comboChoices(p):(p.choice?.options||[]).map(x=>({id:x.id,name:x.name,qty:Number(detailState.choices[x.id])||0,price:Number(x.price)||0})).filter(x=>x.qty);
     const extras=selectableExtras(p).map(x=>({id:x.id,name:x.name,price:Number(x.price)||0,qty:Number(detailState.extraQty[x.id])||0})).filter(x=>x.qty);
     const note=String($('detailNote').value||'').trim(),totalPrice=detailTotal(),unitPrice=totalPrice/qty;
     const signature=JSON.stringify({productId:p.id,qty,choices:choices.map(x=>[x.id,x.qty]),extras:extras.map(x=>[x.id,x.qty]),note});
     const batchChoices=choices.map(x=>({...x})),batchExtras=extras.map(x=>({...x}));
     let line=cart.find(x=>x.signature===signature);
     if(line){
+      if(line.qty+qty>99){showToast('El máximo por artículo es de 99 unidades.');return;}
       line.qty+=qty;
       line.choices=(line.choices||[]).map(x=>{const b=batchChoices.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
       batchChoices.filter(b=>!line.choices.some(x=>x.id===b.id)).forEach(b=>line.choices.push({...b}));
@@ -319,6 +428,7 @@
     const line=cart.find(x=>x.lineId===lineId);
     if(!line||!line.batchQty)return nativeChangeQty(lineId,delta);
     const direction=delta>0?1:-1,batch=Math.max(1,Number(line.batchQty)||1),next=Math.max(0,(Number(line.qty)||0)+direction*batch);
+    if(next>99){showToast('El máximo por artículo es de 99 unidades.');return;}
     if(direction>0){
       line.qty=next;
       (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.choices||(line.choices=[])).push({...b});});
@@ -355,15 +465,16 @@
     if(!form?.reportValidity())return;
     const name=document.getElementById('customerName')?.value.trim()||'',phone=document.getElementById('customerPhone')?.value.trim()||'',digits=phone.replace(/\D/g,'');
     if(digits.length<10){if(typeof checkoutError==='function')checkoutError('Revisa el número de teléfono.');return;}
-    const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),baseSubtotal=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=baseSubtotal+(upsellCocaQty*COCA_PRICE),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number(document.getElementById('cashChange')?.value)||0);
+    const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),baseSubtotal=cartItems().reduce((n,x)=>n+(Number(x.line.unitPrice)||0)*x.qty,0),subtotal=baseSubtotal+(upsellCocaQty*(upsellDrink?.price||0)),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number(document.getElementById('cashChange')?.value)||0);
     if(fulfillment==='delivery'&&!fee){if(typeof checkoutError==='function')checkoutError('Calcula el envío o selecciona una tarifa provisional.');return;}
     if(payment==='cash'&&change>0&&change<total){if(typeof checkoutError==='function')checkoutError(`El cambio debe ser para una cantidad igual o mayor a ${MXN.format(total)}.`);return;}
     const btn=form.querySelector('button[type="submit"]'),old=btn?.textContent||'CONFIRMAR POR WHATSAPP';
     sending=true;if(btn){btn.disabled=true;btn.textContent='CREANDO PEDIDO...';}
     const waWindow=window.open('about:blank','_blank');
     try{
-      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:Math.max(1,Number(m.qty)||x.qty)})),details:whatsappDetails(x.line),line:x.line}));
-      if(upsellCocaQty>0)items.push({productId:'coca-600',name:'Coca-Cola 600 ml',qty:upsellCocaQty,unitPrice:COCA_PRICE,details:'',line:null});
+      const items=cartItems().map(x=>({productId:x.p.id,name:x.p.name,qty:x.qty,unitPrice:Number(x.line.unitPrice)||0,modifiers:(x.line.extras||[]).map(m=>({id:m.id,qty:Math.max(1,Number(m.qty)||x.qty)})),comboSelections:x.p.groups?(x.line.choices||[]).filter(choice=>!choice.fixed).map(({groupId,productId,qty})=>({groupId,productId,qty})):undefined,note:x.line.note,details:whatsappDetails(x.line),line:x.line}));
+      if(upsellDrink&&upsellCocaQty>0)items.push({productId:upsellDrink.id,name:upsellDrink.name,qty:upsellCocaQty,unitPrice:upsellDrink.price,details:'',line:null});
+      if(!items.length)throw new Error('Agrega un artículo antes de confirmar el pedido.');
       const address=document.getElementById('deliveryAddress')?.value.trim()||'',baseReferences=document.getElementById('deliveryReference')?.value.trim()||'',scheduledAt=scheduled?(document.getElementById('scheduledAt')?.value||''):'';
       const isResidential=!!document.getElementById('residentialDelivery')?.checked,needsQr=isResidential&&!!document.getElementById('residentialQr')?.checked,residentialInstructions=isResidential?(document.getElementById('residentialInstructions')?.value.trim()||''):'';
       const accessParts=[];

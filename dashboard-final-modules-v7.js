@@ -64,10 +64,7 @@
     .ux-caja-vip-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid #eee7f1;border-radius:10px;background:#faf8fb}
     .ux-caja-vip-item b{display:block;font-size:13px}.ux-caja-vip-item small{display:block;color:#706574;margin-top:3px}.ux-caja-vip-item button{width:auto!important;min-width:126px!important}
     .ux-caja-vip-pending{border-color:#d7b8ef;background:#fbf6ff}
-    .ux-catalog-grid{display:grid;gap:9px}.ux-catalog-row{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(120px,.8fr) 100px 90px;gap:8px;align-items:center;padding:10px;border:1px solid #eee5f1;border-radius:12px;background:#fbf9fc}
-    .ux-catalog-row input[type="text"],.ux-catalog-row input[type="number"]{min-height:40px}.ux-catalog-mods,.ux-catalog-extra{grid-column:1/-1;font-size:11px}.ux-catalog-head{font-size:11px;font-weight:900;color:#6b5d71;text-transform:uppercase;padding:0 10px}
-    .ux-catalog-remove{background:#fff1f1!important;color:#b42323!important;border:1px solid #ffd0d0!important;width:auto!important}
-    @media(max-width:780px){.ux-catalog-row{grid-template-columns:1fr 100px}.ux-catalog-row .ux-catalog-mods,.ux-catalog-row .ux-catalog-extra{grid-column:1/-1}.ux-catalog-head{display:none}}
+
 
     .ux-fid-tabs{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:12px;background:#fff;border:1px solid #ebe4ee;border-radius:16px;padding:9px}
     .ux-fid-tabs button{min-height:44px!important;border:1px solid #e9e1ed!important;background:#fff!important;color:#5c4d62!important;font-size:13px!important;font-weight:850!important}
@@ -133,22 +130,7 @@
     </div>`;
   anchor.parentNode.insertBefore(reports,anchor);
 
-  const menuView=document.createElement('section');menuView.id='uxMenuView';menuView.className='ux-virtual-view';menuView.innerHTML=`
-    <div class="ux-section-grid">
-      <div class="ux-panel ux-span-12">
-        <h2>Menú / Productos</h2>
-        <p>Catálogo oficial usado por el checkout y por el servidor para calcular precios. Cambiar un precio aquí cambia el precio válido del pedido.</p>
-        <div id="uxCatalogState" style="font-size:12px;color:#6d6272;margin:10px 0">Cargando catálogo…</div>
-        <div id="uxCatalogEditor"></div>
-        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap">
-          <button class="btn-secondary" id="uxCatalogAdd" style="width:auto!important">+ PRODUCTO</button>
-          <div style="display:flex;gap:8px">
-            <button class="btn-secondary" id="uxCatalogReload" style="width:auto!important">RECARGAR</button>
-            <button class="btn-primary" id="uxCatalogSave" style="width:auto!important">GUARDAR CATÁLOGO</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
+  const menuView=document.createElement('section');menuView.id='uxMenuView';menuView.className='ux-virtual-view';
   anchor.parentNode.insertBefore(menuView,anchor);
 
   const settings=document.createElement('section');settings.id='uxSettingsView';settings.className='ux-virtual-view';settings.innerHTML=`
@@ -274,59 +256,6 @@
     finally{if(btn){btn.disabled=false;btn.textContent='GUARDAR'}}
   }
 
-  let catalogLoaded=false,catalogData={};
-  function catalogModsText(mods){
-    return (Array.isArray(mods)?mods:[]).map(m=>String(m.name||m.id||'').trim()+'='+Number(m.price||0)).filter(Boolean).join('; ');
-  }
-  function parseCatalogMods(text){
-    return String(text||'').split(';').map(x=>x.trim()).filter(Boolean).map((row,index)=>{
-      const parts=row.split('='),name=String(parts[0]||'').trim(),price=Math.max(0,Number(parts[1]||0));
-      return {id:'mod_'+index+'_'+name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,45),name,price,active:true};
-    }).filter(x=>x.name);
-  }
-  function renderCatalogEditor(){
-    const host=document.getElementById('uxCatalogEditor');if(!host)return;
-    const entries=Object.entries(catalogData||{});
-    host.innerHTML='<div class="ux-catalog-grid"><div class="ux-catalog-row ux-catalog-head"><span>Producto</span><span>Categoría</span><span>Precio</span><span>Activo</span></div>'+
-      entries.map(([id,p])=>'<div class="ux-catalog-row" data-product="'+String(id).replace(/"/g,'&quot;')+'"><input type="text" data-field="name" value="'+String(p.name||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="Nombre"><input type="text" data-field="category" value="'+String(p.category||'OTROS').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="Categoría"><input type="number" min="0" step="0.01" data-field="price" value="'+Number(p.price||0)+'"><label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800"><input type="checkbox" data-field="active" '+(p.active!==false?'checked':'')+'> Activo</label><input class="ux-catalog-extra" type="text" data-field="image" value="'+String(p.image||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="URL de imagen"><input class="ux-catalog-extra" type="text" data-field="description" value="'+String(p.description||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="Descripción"><input class="ux-catalog-mods" type="text" data-field="mods" value="'+catalogModsText(p.modifiers).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="Adicionales: Queso extra=15; Catupiry=20"><button class="ux-catalog-remove" type="button" data-remove-product>ELIMINAR</button></div>').join('')+
-      '</div>';
-    host.querySelectorAll('[data-remove-product]').forEach(btn=>btn.onclick=()=>{const row=btn.closest('[data-product]');if(row&&confirm('¿Eliminar este producto del catálogo?'))row.remove()});
-  }
-  function addCatalogProduct(){
-    let base='producto',n=1,id=base;
-    while(catalogData[id]||document.querySelector('#uxCatalogEditor [data-product="'+id+'"]'))id=base+'_'+(++n);
-    catalogData[id]={name:'Nuevo producto',category:'OTROS',price:0,active:true,image:'',description:'',modifiers:[]};
-    renderCatalogEditor();
-    document.querySelector('#uxCatalogEditor [data-product="'+id+'"] [data-field="name"]')?.focus();
-  }
-
-  async function loadCatalog(force=false){
-    if(catalogLoaded&&!force)return;
-    const state=document.getElementById('uxCatalogState');if(!state)return;
-    state.textContent='Cargando catálogo…';
-    try{
-      const r=await fetch('/api/cliente?action=admin_catalog&t='+Date.now(),{cache:'no-store'}),d=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(d.error||'No se pudo cargar el catálogo');
-      catalogData=d.catalog||{};catalogLoaded=true;renderCatalogEditor();
-      state.textContent=Object.keys(catalogData).length+' producto(s) · los precios guardados aquí son los que valida el servidor.';
-    }catch(e){state.textContent='❌ '+e.message}
-  }
-  async function saveCatalog(){
-    const state=document.getElementById('uxCatalogState'),btn=document.getElementById('uxCatalogSave'),rows=[...document.querySelectorAll('#uxCatalogEditor [data-product]')],catalog={};
-    rows.forEach(row=>{
-      const id=row.dataset.product,name=row.querySelector('[data-field="name"]')?.value.trim()||'',price=Number(row.querySelector('[data-field="price"]')?.value||0),active=!!row.querySelector('[data-field="active"]')?.checked,mods=row.querySelector('[data-field="mods"]')?.value||'';
-      const category=row.querySelector('[data-field="category"]')?.value.trim()||'OTROS',image=row.querySelector('[data-field="image"]')?.value.trim()||'',description=row.querySelector('[data-field="description"]')?.value.trim()||'';
-      if(id&&name)catalog[id]={name,category,price,active,image,description,modifiers:parseCatalogMods(mods)};
-    });
-    if(btn){btn.disabled=true;btn.textContent='GUARDANDO...'};if(state)state.textContent='Guardando catálogo…';
-    try{
-      const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'catalog_save',catalog})}),d=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(d.error||'No se pudo guardar');
-      catalogData=d.catalog||catalog;catalogLoaded=true;renderCatalogEditor();if(state)state.textContent='✅ Catálogo guardado. El checkout ya usa estos precios.';
-    }catch(e){if(state)state.textContent='❌ '+e.message}
-    finally{if(btn){btn.disabled=false;btn.textContent='GUARDAR CATÁLOGO'}}
-  }
-
   let installStatusLoaded=false;
   async function loadInstallationStatus(force=false){
     if(installStatusLoaded&&!force)return;
@@ -350,13 +279,7 @@
       const btn=document.getElementById('uxSaveRestaurantWhatsApp');
       if(btn&&!btn.dataset.bound){btn.dataset.bound='1';btn.onclick=saveRestaurantContact}
     }
-    if(document.body.dataset.uxView==='menu'){
-      loadCatalog();
-      const save=document.getElementById('uxCatalogSave'),reload=document.getElementById('uxCatalogReload'),add=document.getElementById('uxCatalogAdd');
-      if(save&&!save.dataset.bound){save.dataset.bound='1';save.onclick=saveCatalog}
-      if(reload&&!reload.dataset.bound){reload.dataset.bound='1';reload.onclick=()=>{catalogLoaded=false;loadCatalog(true)}}
-      if(add&&!add.dataset.bound){add.dataset.bound='1';add.onclick=addCatalogProduct}
-    }
+    if(document.body.dataset.uxView==='menu')window.restaurantMenuAdmin?.mount(menuView);
     const clients=numText('totalClientes');
     const rewards=document.querySelectorAll('#listaRecompensas .reward-item').length;
     const offers=document.querySelectorAll('#listaPromos .promo-item').length;
