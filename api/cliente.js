@@ -9,6 +9,8 @@ import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/
 
 import { availableComboGroups, normalizeComboGroups, priceCombo } from "../lib/server/menu-combos.js";
 
+import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings } from "../lib/server/menu-settings.js";
+
 const admin=getFirebaseAdmin();
 
 const RESTAURANT_CONFIG=getRestaurantConfig();
@@ -91,7 +93,7 @@ function normalizeOrderName(value){
 function catalogFallback(tenant="uai-so"){
     return tenant==="uai-so" && RESTAURANT_CONFIG.legacyCatalogFallback ? ORDER_CATALOG : {};
 }
-function normalizedCatalog(raw,includeInactive=false,tenant="uai-so"){
+function normalizedCatalog(raw,includeInactive=false,tenant="uai-so",settings={groups:[]}){
     const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:catalogFallback(tenant);
     const catalog={};
     for(const [id,p] of Object.entries(source)){
@@ -102,12 +104,18 @@ function normalizedCatalog(raw,includeInactive=false,tenant="uai-so"){
             image:cleanOrderText(p.image,800),description:cleanOrderText(p.description,240),
             modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]
         };
+        if(Array.isArray(p.modifierGroupIds)&&p.modifierGroupIds.length)catalog[id].modifierGroupIds=p.modifierGroupIds;
         if(p.type==="combo"){
             catalog[id].type="combo";
             catalog[id].groups=normalizeComboGroups(p.groups);
         }
     }
     if(includeInactive)return catalog;
+    for(const item of Object.values(catalog)){
+        if(item.type==="combo"||!item.modifierGroupIds)continue;
+        item.modifierGroups=listedModifierGroups(item.modifierGroupIds,settings.groups);
+        if(item.modifierGroups.some(group=>group.options.length<group.min))item.active=false;
+    }
     return Object.fromEntries(Object.entries(catalog).flatMap(([id,item])=>{
         if(!item.active)return [];
         if(item.type!=="combo")return [[id,item]];
@@ -122,13 +130,27 @@ function validCatalogId(id){
 
 async function saveCatalogItem(req,res){
     if(!requireAdmin(req,res))return;
-    const {id,item,previous}=req.body;
+    const {id,item,previous,photo}=req.body;
     const name=cleanOrderText(item?.name,120),price=Number(item?.price);
     if(typeof id!=="string"||!validCatalogId(id)||!name||!Number.isFinite(price)||price<0||price>100000){
         return res.status(400).json({error:"Revisa el nombre y el precio del artículo."});
     }
-    const image=cleanOrderText(item.image,800);
-    if(image&&!/^(https?:\/\/|\/(?!\/))/i.test(image)){
+    const tenant=tenantFromRequest(req);
+    let image=cleanOrderText(item.image,800);
+    let photoData;
+    if(photo!==undefined){
+        if(typeof photo!=="string"||photo.length>175000||!/^[A-Za-z0-9+/]+={0,2}$/.test(photo)){
+            return res.status(400).json({error:"La foto supera el tamaño permitido o tiene un formato inválido."});
+        }
+        const bytes=Buffer.from(photo,"base64");
+        if(bytes[0]!==0xff||bytes[1]!==0xd8||bytes[2]!==0xff){
+            return res.status(400).json({error:"No se pudo leer la foto."});
+        }
+        const version=crypto.createHash("sha256").update(bytes).digest("hex").slice(0,16);
+        image="/api/cliente?"+new URLSearchParams({action:"menu_photo",id,company:tenant,v:version});
+        photoData=photo;
+    }
+    if(image&&image!=="-"&&!/^(https?:\/\/|\/(?!\/))/i.test(image)){
         return res.status(400).json({error:"Usa un enlace válido para la foto."});
     }
     const entry={
@@ -152,7 +174,14 @@ async function saveCatalogItem(req,res){
             entry.modifiers.push({id:mid,name:mname,price:cleanOrderMoney(mprice),active:modifier.active!==false});
         }
     }
-    const tenant=tenantFromRequest(req);
+    if(item.type!=="combo"&&Array.isArray(item.modifierGroupIds)&&item.modifierGroupIds.length){
+        const settings=await loadMenuSettings(requestDb(req));
+        const ids=[...new Set(item.modifierGroupIds)];
+        if(ids.length>10||ids.some(id=>!settings.groups.some(group=>group.id===id))){
+            return res.status(400).json({error:"Revisa los grupos de complementos de este producto."});
+        }
+        entry.modifierGroupIds=ids;
+    }
     const ref=requestDb(req).ref("config/menu_catalog");
     // Prime the transaction with the current state before comparing the edited item.
     await ref.once("value");
@@ -174,7 +203,10 @@ async function saveCatalogItem(req,res){
             error="El combo debe usar productos del catálogo.";
             return;
         }
-        return {...(current&&Object.keys(current).length?current:catalog),[id]:entry};
+        const stored=current?.[id];
+        const savedPhoto=photoData??(stored?.image===entry.image?stored.photoData:undefined);
+        const next=savedPhoto?{...entry,photoData:savedPhoto}:entry;
+        return {...(current&&Object.keys(current).length?current:catalog),[id]:next};
     });
     if(!result.committed)return res.status(409).json({error:error||"No se pudo guardar el artículo."});
     return res.status(200).json({catalog:normalizedCatalog(result.snapshot.val(),true,tenant)});
@@ -205,23 +237,33 @@ function secureOrderItems(items,catalog) {
             continue;
         }
         let modifierTotal=0,modifierDetails=[];
-        const requestedModifiers=Array.isArray(raw?.modifiers)?raw.modifiers.slice(0,20):[];
+        const requestedModifiers=Array.isArray(raw?.modifiers)?raw.modifiers:[];
+        if(requestedModifiers.length>230){invalid=true;continue}
+        const available=new Map([...(product.modifiers||[]),...(product.modifierGroups||[]).flatMap(group=>group.options)]
+            .filter(option=>option?.active!==false).map(option=>[option.id,option]));
+        const validated=[];
+        const seen=new Set();
         for(const m of requestedModifiers){
             const mid=String(m?.id||"").trim();
-            const allowed=(product.modifiers||[]).find(x=>String(x?.id||"")===mid&&x?.active!==false);
-            if(!allowed){invalid=true;continue}
+            const allowed=available.get(mid);
+            if(!allowed||seen.has(mid)){invalid=true;continue}
+            seen.add(mid);
             const mq=Math.max(1,Math.min(qty,Math.floor(Number(m?.qty)||1)));
+            if(mid.startsWith("group:")&&Number(m?.qty)!==mq){invalid=true;continue}
+            validated.push({id:mid,qty:mq});
             modifierTotal+=Math.max(0,Number(allowed.price||0))*mq;
             modifierDetails.push(String(allowed.name||mid)+" x"+mq);
         }
+        if(!checkModifierGroups(product.modifierGroups,validated,qty)){invalid=true;continue}
+        const note=cleanOrderText(raw?.note,200);
         priced.push({
             productId:product.id,
             name:product.name,
             qty,
             unitPrice:product.price+(modifierTotal/qty),
             baseUnitPrice:product.price,
-            modifiers:requestedModifiers.map(m=>({id:String(m?.id||""),qty:Math.max(1,Math.floor(Number(m?.qty)||1))})),
-            details:modifierDetails.length?modifierDetails.join(", "):cleanOrderText(raw?.details,300)
+            modifiers:validated,
+            details:modifierDetails.length?[...modifierDetails,note&&"Nota: "+note].filter(Boolean).join(", "):cleanOrderText(raw?.details,300)
         });
     }
     return { items:priced, invalid };
@@ -348,9 +390,47 @@ async function secureDeliveryQuote(body){
     };
 }
 
-async function loadMenuCatalog(db,tenant="uai-so"){
-    const snap=await db.ref("config/menu_catalog").once("value");
-    return normalizedCatalog(snap.val(),false,tenant);
+async function loadMenuSettings(db){
+    const snap=await db.ref("config/menu_workspace").once("value");
+    return normalizeMenuSettings(snap.val())||{categories:[],groups:[]};
+}
+
+async function loadMenuCatalog(db,tenant="uai-so",includeInactive=false){
+    const [catalogSnap,settings]=await Promise.all([
+        db.ref("config/menu_catalog").once("value"),
+        loadMenuSettings(db)
+    ]);
+    return {catalog:normalizedCatalog(catalogSnap.val(),includeInactive,tenant,settings),settings};
+}
+
+async function saveMenuSettings(req,res){
+    if(!requireAdmin(req,res))return;
+    const settings=normalizeMenuSettings(req.body.settings);
+    if(!settings)return res.status(400).json({error:"Revisa los nombres, opciones y límites del menú."});
+    const db=requestDb(req);
+    const ref=db.ref("config/menu_workspace");
+    const previous=normalizeMenuSettings(req.body.previous);
+    await ref.once("value");
+    const updated=await ref.transaction(current=>{
+        if(JSON.stringify(normalizeMenuSettings(current))!==JSON.stringify(previous))return;
+        return settings;
+    });
+    if(!updated.committed)return res.status(409).json({error:"El menú cambió. Recarga la pantalla antes de guardar."});
+    return res.status(200).json({settings});
+}
+
+async function getMenuPhoto(req,res){
+    const id=String(req.query.id||"");
+    const version=String(req.query.v||"");
+    if(!validCatalogId(id)||!/^[0-9a-f]{16}$/.test(version))return res.status(404).end();
+    const snap=await requestDb(req).ref(`config/menu_catalog/${id}/photoData`).once("value");
+    const encoded=snap.val();
+    if(typeof encoded!=="string")return res.status(404).end();
+    const bytes=Buffer.from(encoded,"base64");
+    if(crypto.createHash("sha256").update(bytes).digest("hex").slice(0,16)!==version)return res.status(404).end();
+    res.setHeader("Content-Type","image/jpeg");
+    res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+    return res.status(200).end(bytes);
 }
 function promoEligibleForUser(p,user,rewards,uid){
     const segmento=String(p?.segmento||"todos"),value=String(p?.valor_segmento??"").trim();
@@ -466,7 +546,7 @@ async function handleOrderCreate(req, res) {
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
     const db = requestDb(req);
-    const catalog=await loadMenuCatalog(db,tenantFromRequest(req));
+    const {catalog}=await loadMenuCatalog(db,tenantFromRequest(req));
     const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
@@ -940,16 +1020,19 @@ export default async function handler(req, res) {
         });
     }
 
-    if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
-        const snap=await requestDb(req).ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val(),false,tenantFromRequest(req))});
+    if(req.method==="GET"&&req.query.action==="menu_photo")return getMenuPhoto(req,res);
+
+    if (req.method === "GET" && req.query.action === "menu_catalog") {
+        const {catalog,settings}=await loadMenuCatalog(requestDb(req),tenantFromRequest(req));
+        return res.status(200).json({catalog,categories:settings.categories});
     }
 
-    if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
+    if (req.method === "GET" && req.query.action === "admin_catalog") {
         if(!requireAdmin(req,res))return;
-        const snap=await requestDb(req).ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val(),true,tenantFromRequest(req))});
+        return res.status(200).json(await loadMenuCatalog(requestDb(req),tenantFromRequest(req),true));
     }
+
+    if(req.method==="POST"&&req.body?.action==="menu_settings_save")return saveMenuSettings(req,res);
 
     if (req.method === "POST" && req.body?.action === "catalog_item_save") {
         return saveCatalogItem(req,res);
@@ -973,7 +1056,14 @@ export default async function handler(req, res) {
             clean[pid]={name,category:cleanOrderText(p?.category||"OTROS",80),price,active:p?.active!==false,image:cleanOrderText(p?.image,800),description:cleanOrderText(p?.description,240),modifiers};
         }
         if(!Object.keys(clean).length)return res.status(400).json({error:"El catálogo no puede quedar vacío"});
-        await requestDb(req).ref("config/menu_catalog").set(clean);
+        const ref=requestDb(req).ref("config/menu_catalog");
+        await ref.transaction(current=>Object.fromEntries(Object.entries(clean).map(([pid,item])=>{
+            const stored=current?.[pid];
+            if(!stored)return [pid,item];
+            const {photoData,modifierGroupIds,type,groups}=stored;
+            return [pid,{...item,...(item.image===stored.image&&photoData?{photoData}:{}),
+                ...(modifierGroupIds?{modifierGroupIds}:{}),...(type==="combo"?{type,groups}:{})}];
+        })));
         return res.status(200).json({success:true,catalog:clean});
     }
 

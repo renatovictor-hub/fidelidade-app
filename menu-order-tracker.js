@@ -46,23 +46,27 @@
       const d=await r.json(); if(!r.ok)throw new Error();
       const cfg=d.catalog||{};
       const byId=new Map(PRODUCTS.map(product=>[product.id,product]));
+      const labels=new Map((d.categories||[]).map(category=>[category.key,category.label]));
       PRODUCTS=Object.entries(cfg).filter(([,item])=>item?.active!==false).map(([id,item])=>{
         const original=byId.get(id)||{ingredients:[]};
         return {
-          ...original,id,name:item.name,category:item.category||original.category||'OTROS',
-          price:Number(item.price)||0,image:item.image||original.image||'',
-          thumb:item.image||original.thumb||'',description:item.description||original.description||'',
+          ...original,id,name:item.name,categoryKey:item.category,
+          category:labels.get(item.category)||item.category||original.category||'OTROS',
+          price:Number(item.price)||0,image:item.image==='-'?'':item.image||original.image||'',
+          thumb:item.image==='-'?'':item.image||original.thumb||'',description:item.description||original.description||'',
           groups:item.type==='combo'?item.groups:null,
-          extras:(item.modifiers||[]).filter(x=>x&&x.active!==false)
+          extras:(item.modifiers||[]).filter(x=>x&&x.active!==false),
+          modifierGroups:item.modifierGroups||[]
         };
       });
-      const categories=['COMBOS','ESFIHAS SALADAS','ESFIHAS DULCES','COXINHAS','BEBIDAS','OTROS'];
+      const categories=[...new Set([...labels.keys(),'COMBOS','ESFIHAS SALADAS','ESFIHAS DULCES','COXINHAS','BEBIDAS','OTROS'])];
       PRODUCTS.sort((a,b)=>{
         const rank=category=>categories.includes(category)?categories.indexOf(category):categories.length;
-        return rank(a.category)-rank(b.category);
+        return rank(a.categoryKey)-rank(b.categoryKey);
       });
       if(activeCategory!=='TODOS'&&!PRODUCTS.some(p=>p.category===activeCategory))activeCategory='TODOS';
-      upsellDrink=product('coca-600')||null;
+      const coca=product('coca-600');
+      upsellDrink=coca&&!coca.modifierGroups?.some(group=>group.min>0)?coca:null;
       if(!upsellDrink)upsellCocaQty=0;
       const previousCount=cart.length;
       cart=cart.filter(line=>{
@@ -77,13 +81,14 @@
           line.unitPrice=item.price+current.reduce((sum,choice)=>sum+choice.price*choice.qty,0)/line.qty;
           return true;
         }
-        const byExtra=new Map(item.extras.map(extra=>[extra.id,extra]));
+        const byExtra=new Map(allExtras(item).map(extra=>[extra.id,extra]));
         const refresh=extras=>(extras||[]).flatMap(extra=>{
           const match=byExtra.get(extra.id);
           return match?[{...match,qty:Number(extra.qty)||line.qty}]:[];
         });
         line.extras=refresh(line.extras);
         line.batchExtras=refresh(line.batchExtras);
+        if(!validExtraCounts(item,line.extras,line.qty)||!validExtraCounts(item,line.batchExtras,line.batchQty||line.qty))return false;
         line.unitPrice=item.price+line.extras.reduce((sum,extra)=>sum+Number(extra.price)*extra.qty,0)/line.qty;
         return true;
       });
@@ -122,6 +127,17 @@
   function selectedRequired(p){return (Number(p?.choice?.required)||0)*Math.max(1,Number(detailState?.qty)||1);}
   function extraLimit(p){const qty=Math.max(1,Number(detailState?.qty)||1);return p?.choice?.required?qty*Number(p.choice.required):qty;}
   function selectableExtras(p){return (p?.extras||[]).filter(x=>x.id!=='coca-600');}
+  function allExtras(p){return [...selectableExtras(p),...(p?.modifierGroups||[]).flatMap(group=>group.options)];}
+  function selectedInGroup(group, counts) {
+    return group.options.reduce((sum, option) => sum+(Number(counts[option.id])||0),0);
+  }
+  function validExtraCounts(p, extras, qty) {
+    const counts=Object.fromEntries(extras.map(extra=>[extra.id,Number(extra.qty)||0]));
+    return (p.modifierGroups||[]).every(group=>{
+      const total=selectedInGroup(group,counts);
+      return total>=group.min*qty&&total<=group.max*qty&&group.options.every(option=>(counts[option.id]||0)<=qty);
+    });
+  }
 
   function injectResidentialFields(){
     if(document.getElementById('residentialDelivery'))return;
@@ -291,6 +307,16 @@
       }
     }
     Object.keys(detailState.extraQty).forEach(id=>{detailState.extraQty[id]=Math.min(maxExtras,Number(detailState.extraQty[id])||0);});
+    for(const group of p.modifierGroups||[]){
+      let over=selectedInGroup(group,detailState.extraQty)-group.max*detailState.qty;
+      for(const option of [...group.options].reverse()){
+        if(over<=0)break;
+        const count=Number(detailState.extraQty[option.id])||0;
+        const removed=Math.min(count,over);
+        detailState.extraQty[option.id]=count-removed;
+        over-=removed;
+      }
+    }
     renderDetailOptions();
   };
 
@@ -307,7 +333,11 @@
   window.changeExtraQty=function(id,delta){
     if(!detailState)return;
     normalizeDetailState();
-    const p=product(detailState.productId),limit=extraLimit(p),current=Math.max(0,Number(detailState.extraQty[id])||0);
+    const p=product(detailState.productId);
+    const group=p.modifierGroups?.find(group=>group.options.some(option=>option.id===id));
+    const current=Math.max(0,Number(detailState.extraQty[id])||0);
+    const limit=group?detailState.qty:extraLimit(p);
+    if(delta>0&&group&&selectedInGroup(group,detailState.extraQty)>=group.max*detailState.qty)return;
     detailState.extraQty[id]=Math.max(0,Math.min(limit,current+Number(delta||0)));
     if(!detailState.extraQty[id])delete detailState.extraQty[id];
     renderDetailOptions();
@@ -361,14 +391,16 @@
     if(p.groups)return p.price+comboChoices(p).reduce((total,choice)=>total+choice.price*choice.qty,0);
     let total=(Number(p?.price)||0)*qty;
     (p?.choice?.options||[]).forEach(x=>total+=(Number(detailState.choices[x.id])||0)*(Number(x.price)||0));
-    selectableExtras(p).forEach(x=>total+=(Number(detailState.extraQty[x.id])||0)*(Number(x.price)||0));
+    allExtras(p).forEach(x=>total+=(Number(detailState.extraQty[x.id])||0)*(Number(x.price)||0));
     return total;
   };
 
   window.updateDetailTotal=function(){
     if(!detailState)return;
     normalizeDetailState();
-    const p=product(detailState.productId),required=selectedRequired(p),selected=selectedChoiceCount(),complete=!p.choice||selected===required,qty=detailState.qty;
+    const p=product(detailState.productId),required=selectedRequired(p),selected=selectedChoiceCount(),qty=detailState.qty;
+    const groupsComplete=(p.modifierGroups||[]).every(group=>selectedInGroup(group,detailState.extraQty)>=group.min*qty);
+    const complete=(!p.choice||selected===required)&&groupsComplete;
     if(p.groups){
       const valid=!!comboCartSelections(p,comboChoices(p),1);
       $('detailPrice').textContent=MXN.format(detailTotal());
@@ -378,7 +410,7 @@
     }
     $('detailPrice').textContent=MXN.format(detailTotal());
     $('detailOrder').disabled=!complete;
-    $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}`:`ELIGE ${required-selected} MÁS`;
+    $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}` : 'COMPLETA TUS OPCIONES';
   };
 
   window.renderDetailOptions=function(){
@@ -394,7 +426,24 @@
     if(extras.length){
       blocks.push(`<div class="option-block"><div class="option-title"><strong>Extras</strong><span>Hasta ${maxExtras} por extra</span></div><div class="flavor-list">${extras.map(x=>{const qty=Number(detailState.extraQty[x.id])||0;return`<div class="flavor-row"><div><b>${esc(x.name)}</b><small>+ ${MXN.format(x.price)} c/u</small></div><div class="mini-qty"><button type="button" onclick="changeExtraQty('${esc(x.id)}',-1)" ${qty?'':'disabled'} aria-label="Quitar ${esc(x.name)}">−</button><b>${qty}</b><button type="button" onclick="changeExtraQty('${esc(x.id)}',1)" ${qty>=maxExtras?'disabled':''} aria-label="Agregar ${esc(x.name)}">+</button></div></div>`}).join('')}</div></div>`);
     }
+    for(const [groupIndex,group] of (p.modifierGroups||[]).entries()){
+      if(!group.options.length)continue;
+      const count=selectedInGroup(group,detailState.extraQty);
+      const max=group.max*detailState.qty;
+      blocks.push(`<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
+        <span>${group.min?`Elige al menos ${group.min*detailState.qty}`:'Opcional'} · ${count}/${max}</span></div>
+        <div class="flavor-list">${group.options.map((option,index)=>{
+          const qty=Number(detailState.extraQty[option.id])||0;
+          return `<div class="flavor-row"><div><b>${esc(option.name)}</b><small>${option.price?'+ '+MXN.format(option.price)+' c/u':'Incluido'}</small></div>
+            <div class="mini-qty"><button type="button" data-mod-choice="${groupIndex}:${index}:-1" ${qty?'':'disabled'} aria-label="Quitar ${esc(option.name)}">−</button>
+            <b>${qty}</b><button type="button" data-mod-choice="${groupIndex}:${index}:1" ${count>=max||qty>=detailState.qty?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button></div></div>`;
+        }).join('')}</div></div>`);
+    }
     $('detailOptions').innerHTML=blocks.join('');
+    $('detailOptions').querySelectorAll('[data-mod-choice]').forEach(button=>{
+      const [groupIndex,index,delta]=button.dataset.modChoice.split(':').map(Number);
+      button.onclick=()=>changeExtraQty(p.modifierGroups[groupIndex].options[index].id,delta);
+    });
     updateDetailTotal();
   };
 
@@ -405,7 +454,8 @@
     if(p.groups&&!comboCartSelections(p,comboChoices(p),1))return;
     if(p.choice&&selectedChoiceCount()!==required)return;
     const choices=p.groups?comboChoices(p):(p.choice?.options||[]).map(x=>({id:x.id,name:x.name,qty:Number(detailState.choices[x.id])||0,price:Number(x.price)||0})).filter(x=>x.qty);
-    const extras=selectableExtras(p).map(x=>({id:x.id,name:x.name,price:Number(x.price)||0,qty:Number(detailState.extraQty[x.id])||0})).filter(x=>x.qty);
+    const extras=allExtras(p).map(x=>({id:x.id,name:x.name,price:Number(x.price)||0,qty:Number(detailState.extraQty[x.id])||0})).filter(x=>x.qty);
+    if(!validExtraCounts(p,extras,qty))return;
     const note=String($('detailNote').value||'').trim(),totalPrice=detailTotal(),unitPrice=totalPrice/qty;
     const signature=JSON.stringify({productId:p.id,qty,choices:choices.map(x=>[x.id,x.qty]),extras:extras.map(x=>[x.id,x.qty]),note});
     const batchChoices=choices.map(x=>({...x})),batchExtras=extras.map(x=>({...x}));
