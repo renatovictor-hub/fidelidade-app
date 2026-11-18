@@ -1,0 +1,148 @@
+#uxMenuView {
+  --menu-accent: var(--tenant-primary, var(--ux-purple, #57009a));
+  --menu-text: #272133;
+  --menu-muted: #645b70;
+  --menu-line: #e8e2ee;
+  --menu-light: #f8f5fb;
+  --menu-tint: color-mix(in srgb, var(--menu-accent) 8%, white);
+  color: var(--menu-text);
+  container-type: inline-size;
+}
+#uxMenuView *, #uxMenuView *::before, #uxMenuView *::after { box-sizing: border-box; }
+#uxMenuView [hidden] { display: none !important; }
+#uxMenuView :focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 3px; }
+#uxMenuView :is(h2,h3,p) { margin: 0; }
+#uxMenuView h2 { color: var(--menu-text); font-size: clamp(25px, 4cqi, 34px); letter-spacing: -.04em; }
+#uxMenuView h3 { color: var(--menu-text); font-size: 16px; font-weight: 800; }
+#uxMenuView p { color: var(--menu-muted); font-size: 14px; line-height: 1.5; }
+.menu-workspace, .menu-editor { max-width: 1320px; margin: 0 auto; }
+.menu-top, .menu-editor-heading, .menu-card-head, .menu-actions, .menu-filters, .menu-feedback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-top, .menu-editor-heading, .menu-card-head { justify-content: space-between; }
+.menu-top, .menu-editor-heading { margin-bottom: 22px; }
+.menu-top p { margin-top: 5px !important; }
+.menu-actions, .menu-filters { flex-wrap: wrap; }
+#uxMenuView .menu-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: auto; min-height: 42px; padding: 9px 15px; border: 1px solid var(--menu-line);
+  border-radius: 9px; background: #fff; color: var(--menu-text);
+  font: inherit; font-size: 13px; font-weight: 750; text-decoration: none; line-height: 1.3;
+  white-space: nowrap; cursor: pointer;
+}
+#uxMenuView .menu-primary { background: var(--menu-accent); color: #fff; border-color: var(--menu-accent); }
+#uxMenuView .menu-link { background: transparent; color: var(--menu-accent); border-color: transparent; }
+#uxMenuView .menu-icon { min-width: 42px; padding-inline: 9px; }
+#uxMenuView .menu-button:disabled { opacity: .5; cursor: default; }
+#uxMenuView .menu-button:hover:not(:disabled) { box-shadow: inset 0 0 0 1px currentColor; }
+.menu-tabs, .menu-editor-nav, .menu-group-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
+.menu-tabs { border-bottom: 1px solid var(--menu-line); margin-bottom: 18px; }
+#uxMenuView :is(.menu-tabs,.menu-editor-nav,.menu-group-tabs,.menu-category-rail) button {
+  width: auto; background: transparent; border: 1px solid transparent; border-radius: 8px;
+  padding: 11px 13px; margin: 0; color: var(--menu-muted); font: inherit; font-size: 13px;
+  font-weight: 750; text-align: left; cursor: pointer;
+}
+#uxMenuView .menu-tabs button { border-radius: 0; border-bottom-width: 2px; }
+#uxMenuView .menu-tabs [aria-pressed="true"] { color: var(--menu-accent); border-bottom-color: var(--menu-accent); }
+#uxMenuView :is(.menu-editor-nav,.menu-group-tabs,.menu-category-rail) [aria-pressed="true"] {
+  color: var(--menu-accent); background: var(--menu-tint);
+}
+.menu-filters { margin-bottom: 18px; }
+.menu-search { flex: 1 1 230px; position: relative; display: flex; align-items: center; margin: 0; }
+.menu-search span { position: absolute; left: 13px; font-size: 20px; color: var(--menu-muted); pointer-events: none; }
+#uxMenuView .menu-search input { padding-left: 38px; }
+#uxMenuView .menu-filters select { width: auto; flex: 0 1 190px; }
+.menu-feedback { font-size: 13px; color: var(--menu-muted); margin: 0 0 16px; }
+#uxMenuView .menu-error { color: #a51e3b; }
+.menu-catalog-layout { display: grid; grid-template-columns: 215px minmax(0,1fr); gap: 20px; align-items: start; }
+.menu-category-lists { display: grid; gap: 16px; min-width: 0; }
+.menu-category-rail, .menu-list-card, .menu-editor-card, .menu-preview-card {
+  background: #fff; border: 1px solid var(--menu-line); border-radius: 14px;
+}
+.menu-category-rail { display: grid; padding: 12px; gap: 3px; }
+.menu-category-rail h3 { padding: 7px 10px 8px; }
+#uxMenuView .menu-category-rail button { display: flex; justify-content: space-between; gap: 8px; padding: 9px 10px; }
+.menu-category-rail small { font-weight: 650; }
+#uxMenuView .menu-category-rail .menu-rail-link { color: var(--menu-accent); margin-top: 5px; }
+.menu-list-card { padding: 0 18px; }
+.menu-list-card > header { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 16px 0; }
+.menu-list-card > header span { color: var(--menu-muted); font-size: 12px; }
+.menu-list-card > header p { flex-basis: 100%; }
+.menu-row, .menu-manage-row {
+  display: grid; align-items: center; gap: 12px; min-height: 72px;
+  padding: 12px 0; border-top: 1px solid var(--menu-line);
+}
+.menu-row { grid-template-columns: 46px minmax(0,1fr) auto auto; }
+.menu-manage-row { grid-template-columns: 40px minmax(0,1fr) auto; }
+.menu-photo { display: grid; place-items: center; width: 46px; height: 46px; overflow: hidden; border-radius: 9px; background: var(--menu-tint); color: var(--menu-accent); font-weight: 850; }
+.menu-icon-tile { width: 40px; height: 40px; }
+.menu-photo img, .menu-preview-photo img { width: 100%; height: 100%; object-fit: cover; }
+.menu-item { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.menu-item small { color: var(--menu-muted); font-size: 12px; line-height: 1.35; }
+.menu-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+#uxMenuView .menu-row-actions .menu-link { min-height: 34px; padding: 4px 8px; }
+.menu-price { white-space: nowrap; font-size: 14px; }
+#uxMenuView .menu-state {
+  display: flex; justify-self: end; align-items: center; gap: 6px; border: 0; border-radius: 20px;
+  background: #f0edf3; color: #544c5c; cursor: pointer; padding: 7px 9px; font: inherit; font-size: 11px; font-weight: 750;
+}
+#uxMenuView .menu-state[data-state="on"] { background: #e7f5ed; color: #186044; }
+#uxMenuView .menu-state[data-state="blocked"] { background: #fff3da; color: #74501d; }
+.menu-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.menu-empty { padding: 34px 18px; text-align: center; border: 1px dashed var(--menu-line); background: #fff; border-radius: 14px; }
+.menu-empty p { margin-top: 6px !important; }
+.menu-editor-heading .menu-link { padding-left: 0 !important; }
+.menu-editor-error { margin-bottom: 14px !important; }
+.menu-item-editor { display: grid; grid-template-columns: minmax(0,1fr) minmax(220px,300px); gap: 20px; align-items: start; }
+.menu-editor-main, .menu-single-editor { display: grid; gap: 16px; min-width: 0; }
+.menu-single-editor { max-width: 760px; }
+.menu-editor-nav { background: #fff; border: 1px solid var(--menu-line); border-radius: 12px; padding: 5px; }
+.menu-editor-card { padding: 19px; display: grid; gap: 14px; justify-items: stretch; }
+.menu-editor-card > button { justify-self: start; }
+.menu-editor-card label { display: grid; gap: 6px; font-size: 13px; font-weight: 750; min-width: 0; margin: 0; }
+#uxMenuView :is(input:not([type="checkbox"],[type="file"]), select, textarea) {
+  min-width: 0; width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid #ddd5e6;
+  border-radius: 8px; margin: 0; background: #fff; color: var(--menu-text); font: inherit; font-size: 14px;
+}
+#uxMenuView textarea { resize: vertical; }
+#uxMenuView input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--menu-accent); }
+.menu-fields, .menu-option-row { display: grid; gap: 12px; align-items: end; }
+.menu-fields { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.menu-option-row { grid-template-columns: minmax(130px,1fr) minmax(100px,.65fr) auto auto; padding: 12px 0; border-top: 1px solid var(--menu-line); }
+.menu-combo-option { grid-template-columns: minmax(145px,1fr) minmax(100px,.65fr) auto; }
+.menu-combo-option .menu-icon { grid-column: -2; }
+.menu-editor-card [data-combo-group], .menu-combo-products { display: grid; gap: 12px; }
+.menu-editor-card :is(.menu-check,.menu-group-choice) { display: flex; align-items: center; gap: 8px; min-height: 42px; }
+.menu-group-choice small { display: block; color: var(--menu-muted); margin-top: 3px; }
+.menu-image-control { display: flex; gap: 14px; align-items: center; }
+.menu-image-control .menu-photo { width: 72px; height: 72px; }
+.menu-image-control p { margin-top: 5px !important; font-size: 12px !important; }
+#uxMenuView .menu-file { position: relative; overflow: hidden; }
+.menu-file input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.menu-file:focus-within { outline: 2px solid var(--menu-accent); outline-offset: 2px; }
+.menu-preview-card { overflow: hidden; position: sticky; top: 16px; }
+.menu-preview-card > h3 { padding: 15px 16px; }
+.menu-preview-photo { display: grid; place-items: center; height: 155px; overflow: hidden; background: var(--menu-tint); color: var(--menu-accent); font-size: 37px; font-weight: 850; }
+.menu-preview-content { display: grid; gap: 7px; padding: 16px; overflow-wrap: anywhere; }
+.menu-preview-content small, .menu-preview-content span { color: var(--menu-muted); font-size: 12px; }
+.menu-preview-content > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+@container (max-width: 760px) {
+  .menu-catalog-layout, .menu-item-editor { grid-template-columns: 1fr; gap: 13px; }
+  .menu-category-rail { display: flex; flex-wrap: wrap; align-items: center; }
+  .menu-category-rail h3 { flex-basis: 100%; }
+  .menu-preview-card { position: static; }
+  .menu-option-row { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .menu-combo-option .menu-icon { grid-column: auto; justify-self: end; }
+}
+@container (max-width: 460px) {
+  .menu-top, .menu-editor-heading { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .menu-list-card, .menu-editor-card { padding-inline: 12px; }
+  .menu-row { grid-template-columns: 40px minmax(0,1fr) auto; gap: 7px; }
+  .menu-row .menu-photo { width: 40px; height: 40px; }
+  .menu-row-actions { grid-column: 2 / -1; justify-content: flex-start; }
+  .menu-manage-row { grid-template-columns: 34px minmax(0,1fr); }
+  .menu-manage-row :is(.menu-actions,button) { grid-column: 2; justify-self: start; }
+  .menu-fields { grid-template-columns: 1fr; gap: 8px; }
+}

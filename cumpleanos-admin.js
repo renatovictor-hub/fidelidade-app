@@ -30,7 +30,7 @@
     <div id="cumpleEstado" style="font-size:12px;color:#777;margin-top:9px;"></div>
 
     <div style="border-top:1px solid #eee;margin-top:16px;padding-top:14px;">
-      <div style="font-weight:800;color:#6a0dad;margin-bottom:8px;">Cliente seleccionado</div>
+      <div style="font-weight:800;color:var(--tenant-primary,#6b7280);margin-bottom:8px;">Cliente seleccionado</div>
       <div id="cumpleClienteInfo" style="font-size:13px;color:#666;">Busca un cliente en “Agregar Puntos”.</div>
       <button id="cumpleCanjear" class="btn-success" style="display:none;margin-top:10px;">🎁 MARCAR REGALO COMO CANJEADO</button>
     </div>

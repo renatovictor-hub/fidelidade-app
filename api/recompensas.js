@@ -2,17 +2,20 @@ import { getFirebaseAdmin } from "../lib/server/firebase.js";
 import { requireAdmin } from "../lib/server/admin-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 const CFG=getRestaurantConfig();
 
 const admin=getFirebaseAdmin();
 
 async function resgatarRecompensa(req, res) {
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
     const uid = String(req.body?.uid || "").trim();
     const recompensaId = String(req.body?.recompensaId || "").trim();
     if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error: "UID inválido" });
     if (!recompensaId) return res.status(400).json({ error: "Recompensa obligatoria" });
 
-    const db = admin.database();
+    const db = tenantDatabase(admin.database(), tenant);
     const recompensaSnap = await db.ref(`recompensas/${recompensaId}`).once("value");
     if (!recompensaSnap.exists()) return res.status(404).json({ error: "Recompensa no encontrada" });
     const recompensa = recompensaSnap.val();
@@ -80,11 +83,14 @@ async function resgatarRecompensa(req, res) {
 
 export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
+    const tenant=await requireTenant(admin,req,res);
+    if(!tenant)return;
+    const db=tenantDatabase(admin.database(),tenant);
 
     if (req.method === "OPTIONS") return res.status(200).end();
     if (!requireAdmin(req, res)) return;
 
-    const ref = admin.database().ref("recompensas");
+    const ref = db.ref("recompensas");
 
     try {
         if (req.method === "POST" && String(req.query?.action || req.body?.action || "") === "redeem") {
@@ -94,7 +100,7 @@ export default async function handler(req, res) {
         if (req.method === "GET") {
             const [snapshot, txSnap] = await Promise.all([
                 ref.once("value"),
-                admin.database().ref("transacoes").orderByChild("origem").equalTo("recompensa").once("value")
+                db.ref("transacoes").orderByChild("origem").equalTo("recompensa").once("value")
             ]);
             const data = snapshot.val() || {};
             const stats = {};

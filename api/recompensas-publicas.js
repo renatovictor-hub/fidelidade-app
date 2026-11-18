@@ -1,4 +1,5 @@
 import { getFirebaseAdmin } from "../lib/server/firebase.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
 const admin=getFirebaseAdmin();
 
@@ -10,7 +11,10 @@ export default async function handler(req, res) {
     }
 
     try {
-        const snapshot = await admin.database().ref("recompensas").once("value");
+        const tenant=await requireTenant(admin,req,res);
+        if(!tenant)return;
+        const db=tenantDatabase(admin.database(),tenant);
+        const snapshot = await db.ref("recompensas").once("value");
         const data = snapshot.val() || {};
 
         const recompensas = Object.entries(data)

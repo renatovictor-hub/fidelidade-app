@@ -24,7 +24,7 @@
         <input id="pushValorSegmento" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:15px;" />
         <small id="pushValorAjuda" style="display:block;margin-top:5px;color:#777;"></small>
       </div>
-      <div id="pushSegmentoResumo" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#f8f5ff;color:#6a0dad;font-size:13px;font-weight:700;">Se enviará a todos los clientes con notificaciones activas.</div>
+      <div id="pushSegmentoResumo" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#f8f5ff;color:var(--tenant-primary,#6b7280);font-size:13px;font-weight:700;">Se enviará a todos los clientes con notificaciones activas.</div>
       <button type="button" id="pushPreviewBtn" class="btn-secondary" style="margin-top:10px;width:100%;">CALCULAR PÚBLICO</button>
     </div>`;
   botao.parentNode.insertBefore(box, botao);
@@ -102,7 +102,7 @@
         const dataFmt = item.data ? new Date(item.data).toLocaleString("es-MX") : "";
         const destino = item.destinatarios_estimados == null ? item.publico : `${item.publico} · ${item.destinatarios_estimados} cliente(s)`;
         const pushState=item.delivery_status==="accepted_by_provider"?"✅ Aceptado por OneSignal":"Envío registrado";
-        return `<div style="border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:9px;background:#fafafa;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:#6a0dad;">${escapeHtml(item.titulo || "")}</strong><small style="color:#999;white-space:nowrap;">${escapeHtml(dataFmt)}</small></div><div style="font-size:13px;color:#666;margin-top:5px;">${escapeHtml(item.mensagem || "")}</div><div style="font-size:12px;color:#856404;background:#fff9e6;padding:6px 8px;border-radius:7px;margin-top:8px;">🎯 ${escapeHtml(destino || "")}</div><div style="font-size:11px;color:#666;margin-top:6px;">${escapeHtml(pushState)} · La entrega al dispositivo no se marca como confirmada sin recibo del proveedor.</div></div>`;
+        return `<div style="border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:9px;background:#fafafa;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:var(--tenant-primary,#6b7280);">${escapeHtml(item.titulo || "")}</strong><small style="color:#999;white-space:nowrap;">${escapeHtml(dataFmt)}</small></div><div style="font-size:13px;color:#666;margin-top:5px;">${escapeHtml(item.mensagem || "")}</div><div style="font-size:12px;color:#856404;background:#fff9e6;padding:6px 8px;border-radius:7px;margin-top:8px;">🎯 ${escapeHtml(destino || "")}</div><div style="font-size:11px;color:#666;margin-top:6px;">${escapeHtml(pushState)} · La entrega al dispositivo no se marca como confirmada sin recibo del proveedor.</div></div>`;
       }).join("");
     } catch (e) { lista.innerHTML = `<span style="color:#c0392b;">No se pudo cargar el historial: ${escapeHtml(e.message)}</span>`; }
   }

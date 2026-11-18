@@ -5,11 +5,17 @@ import { requireClient, setClientSession } from "../lib/server/client-auth.js";
 import { enviarNotificacao } from "../lib/server/onesignal.js";
 import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 import { getPublicCompanyConfig } from "../lib/server/tenant-config.js";
+import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
+
+import { availableComboGroups, normalizeComboGroups, priceCombo } from "../lib/server/menu-combos.js";
+
+import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings } from "../lib/server/menu-settings.js";
 
 const admin=getFirebaseAdmin();
 
 const RESTAURANT_CONFIG=getRestaurantConfig();
 const RESTAURANT = RESTAURANT_CONFIG.location;
+function requestDb(req){return tenantDatabase(admin.database(),tenantFromRequest(req));}
 const ORDER_STATUS = {
     received: { label:"Pedido enviado", push:"Recibimos tu pedido. En breve lo confirmaremos." },
     accepted: { label:"Pedido aceptado", push:"✅ Tu pedido fue aceptado." },
@@ -65,72 +71,199 @@ function cleanOrderMoney(value) {
 }
 
 const ORDER_CATALOG = Object.freeze({
-    "carne":{ name:"Carne", price:45 },
-    "carne-queso":{ name:"Carne con Queso", price:45 },
-    "queso-cremoso":{ name:"Queso Cremoso", price:45 },
-    "marguerita":{ name:"Marguerita", price:45 },
-    "portuguesa":{ name:"Portuguesa", price:45 },
-    "brasilena":{ name:"Brasileña", price:45 },
-    "brasilena-habanero":{ name:"Brasileña Habanero", price:45 },
-    "dulce-leche":{ name:"Dulce de Leche", price:50 },
-    "platano-lechera":{ name:"Plátano con Lechera", price:50 },
-    "chabacano-macha":{ name:"Chabacano con Macha", price:50 },
-    "romeo-julieta":{ name:"Romeo y Julieta", price:50 },
-    "coxinha":{ name:"Coxinha", price:50 },
-    "coca-600":{ name:"Coca-Cola 600 ml", price:35 }
+    "carne":{ name:"Carne", price:45, category:"ESFIHAS SALADAS" },
+    "carne-queso":{ name:"Carne con Queso", price:45, category:"ESFIHAS SALADAS" },
+    "queso-cremoso":{ name:"Queso Cremoso", price:45, category:"ESFIHAS SALADAS" },
+    "marguerita":{ name:"Marguerita", price:45, category:"ESFIHAS SALADAS" },
+    "portuguesa":{ name:"Portuguesa", price:45, category:"ESFIHAS SALADAS" },
+    "brasilena":{ name:"Brasileña", price:45, category:"ESFIHAS SALADAS" },
+    "brasilena-habanero":{ name:"Brasileña Habanero", price:45, category:"ESFIHAS SALADAS" },
+    "dulce-leche":{ name:"Dulce de Leche", price:50, category:"ESFIHAS DULCES" },
+    "platano-lechera":{ name:"Plátano con Lechera", price:50, category:"ESFIHAS DULCES" },
+    "chabacano-macha":{ name:"Chabacano con Macha", price:50, category:"ESFIHAS DULCES" },
+    "romeo-julieta":{ name:"Romeo y Julieta", price:50, category:"ESFIHAS DULCES" },
+    "coxinha":{ name:"Coxinha", price:50, category:"COXINHAS" },
+    "coca-600":{ name:"Coca-Cola 600 ml", price:35, category:"BEBIDAS" }
 });
 
 function normalizeOrderName(value){
     return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
 }
-const ORDER_CATALOG_BY_NAME = Object.fromEntries(Object.entries(ORDER_CATALOG).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
 
-function catalogFallback(){
-    return RESTAURANT_CONFIG.legacyCatalogFallback ? ORDER_CATALOG : {};
+function catalogFallback(tenant="uai-so"){
+    return tenant==="uai-so" && RESTAURANT_CONFIG.legacyCatalogFallback ? ORDER_CATALOG : {};
 }
-function normalizedCatalog(raw,includeInactive=false){
-    const fallback=catalogFallback();
-    const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:fallback;
-    const out={};
+function normalizedCatalog(raw,includeInactive=false,tenant="uai-so",settings={groups:[]}){
+    const source=raw&&typeof raw==="object"&&Object.keys(raw).length?raw:catalogFallback(tenant);
+    const catalog={};
     for(const [id,p] of Object.entries(source)){
-        if(!p||(!includeInactive&&p.active===false))continue;
-        const price=Math.max(0,Number(p.price||0));
-        if(!id||!String(p.name||"").trim()||!Number.isFinite(price))continue;
-        out[id]={name:String(p.name).trim().slice(0,120),category:String(p.category||"OTROS").trim().slice(0,80),price,active:p.active!==false,image:String(p.image||"").trim().slice(0,800),description:String(p.description||"").trim().slice(0,240),modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]};
+        const name=cleanOrderText(p?.name,120),price=Number(p?.price??0);
+        if(!name||!Number.isFinite(price)||price<0||!validCatalogId(id))continue;
+        catalog[id]={
+            name,price,category:cleanOrderText(p.category||(tenant==="uai-so"&&ORDER_CATALOG[id]?.category)||"OTROS",80),active:p.active!==false,
+            image:cleanOrderText(p.image,800),description:cleanOrderText(p.description,240),
+            modifiers:Array.isArray(p.modifiers)?p.modifiers.slice(0,30):[]
+        };
+        if(Array.isArray(p.modifierGroupIds)&&p.modifierGroupIds.length)catalog[id].modifierGroupIds=p.modifierGroupIds;
+        if(p.type==="combo"){
+            catalog[id].type="combo";
+            catalog[id].groups=normalizeComboGroups(p.groups);
+        }
     }
-    return out;
+    if(includeInactive)return catalog;
+    for(const item of Object.values(catalog)){
+        if(item.type==="combo"||!item.modifierGroupIds)continue;
+        item.modifierGroups=listedModifierGroups(item.modifierGroupIds,settings.groups);
+        if(item.modifierGroups.some(group=>group.options.length<group.min))item.active=false;
+    }
+    return Object.fromEntries(Object.entries(catalog).flatMap(([id,item])=>{
+        if(!item.active)return [];
+        if(item.type!=="combo")return [[id,item]];
+        const groups=availableComboGroups(item.groups,catalog);
+        return groups?[[id,{...item,groups}]]:[];
+    }));
 }
-function secureOrderItems(items,catalogRaw) {
-    if (!Array.isArray(items)) return { items:[], invalid:true };
-    const catalog=normalizedCatalog(catalogRaw);
-    const byName=Object.fromEntries(Object.entries(catalog).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
+
+function validCatalogId(id){
+    return /^[a-zA-Z0-9_-]{1,80}$/.test(id)&&!Object.hasOwn(Object.prototype,id);
+}
+
+async function saveCatalogItem(req,res){
+    if(!requireAdmin(req,res))return;
+    const {id,item,previous,photo}=req.body;
+    const name=cleanOrderText(item?.name,120),price=Number(item?.price);
+    if(typeof id!=="string"||!validCatalogId(id)||!name||!Number.isFinite(price)||price<0||price>100000){
+        return res.status(400).json({error:"Revisa el nombre y el precio del artículo."});
+    }
+    const tenant=tenantFromRequest(req);
+    let image=cleanOrderText(item.image,800);
+    let photoData;
+    if(photo!==undefined){
+        if(typeof photo!=="string"||photo.length>175000||!/^[A-Za-z0-9+/]+={0,2}$/.test(photo)){
+            return res.status(400).json({error:"La foto supera el tamaño permitido o tiene un formato inválido."});
+        }
+        const bytes=Buffer.from(photo,"base64");
+        if(bytes[0]!==0xff||bytes[1]!==0xd8||bytes[2]!==0xff){
+            return res.status(400).json({error:"No se pudo leer la foto."});
+        }
+        const version=crypto.createHash("sha256").update(bytes).digest("hex").slice(0,16);
+        image="/api/cliente?"+new URLSearchParams({action:"menu_photo",id,company:tenant,v:version});
+        photoData=photo;
+    }
+    if(image&&image!=="-"&&!/^(https?:\/\/|\/(?!\/))/i.test(image)){
+        return res.status(400).json({error:"Usa un enlace válido para la foto."});
+    }
+    const entry={
+        name, price:cleanOrderMoney(price), category:cleanOrderText(item.category,80)||"OTROS",
+        active:item.active!==false, image, description:cleanOrderText(item.description,240),
+        modifiers:[]
+    };
+    if(item.type==="combo"){
+        entry.type="combo";
+        entry.groups=normalizeComboGroups(item.groups);
+        if(!entry.groups)return res.status(400).json({error:"Revisa las cantidades y los productos del combo."});
+    }else{
+        const modifiers=Array.isArray(item.modifiers)?item.modifiers:[];
+        const ids=new Set();
+        for(const modifier of modifiers.slice(0,30)){
+            const mid=String(modifier?.id||""),mname=cleanOrderText(modifier?.name,100),mprice=Number(modifier?.price);
+            if(!validCatalogId(mid)||!mname||ids.has(mid)||!Number.isFinite(mprice)||mprice<0||mprice>100000){
+                return res.status(400).json({error:"Revisa los nombres y precios de los complementos."});
+            }
+            ids.add(mid);
+            entry.modifiers.push({id:mid,name:mname,price:cleanOrderMoney(mprice),active:modifier.active!==false});
+        }
+    }
+    if(item.type!=="combo"&&Array.isArray(item.modifierGroupIds)&&item.modifierGroupIds.length){
+        const settings=await loadMenuSettings(requestDb(req));
+        const ids=[...new Set(item.modifierGroupIds)];
+        if(ids.length>10||ids.some(id=>!settings.groups.some(group=>group.id===id))){
+            return res.status(400).json({error:"Revisa los grupos de complementos de este producto."});
+        }
+        entry.modifierGroupIds=ids;
+    }
+    const ref=requestDb(req).ref("config/menu_catalog");
+    // Prime the transaction with the current state before comparing the edited item.
+    await ref.once("value");
+    let error="";
+    const result=await ref.transaction(current=>{
+        const catalog=normalizedCatalog(current,true,tenant);
+        const existing=Object.hasOwn(catalog,id)?catalog[id]:null;
+        if(JSON.stringify(existing)!==JSON.stringify(previous??null)){
+            error="El artículo cambió. Recarga el menú antes de editarlo.";
+            return;
+        }
+        if(!existing&&Object.keys(catalog).length>=200){
+            error="El catálogo ya tiene 200 artículos.";
+            return;
+        }
+        if(entry.groups?.some(group=>group.options.some(option=>
+            !Object.hasOwn(catalog,option.productId)||catalog[option.productId].type==="combo"||option.productId===id
+        ))){
+            error="El combo debe usar productos del catálogo.";
+            return;
+        }
+        const stored=current?.[id];
+        const savedPhoto=photoData??(stored?.image===entry.image?stored.photoData:undefined);
+        const next=savedPhoto?{...entry,photoData:savedPhoto}:entry;
+        return {...(current&&Object.keys(current).length?current:catalog),[id]:next};
+    });
+    if(!result.committed)return res.status(409).json({error:error||"No se pudo guardar el artículo."});
+    return res.status(200).json({catalog:normalizedCatalog(result.snapshot.val(),true,tenant)});
+}
+
+function secureOrderItems(items,catalog) {
+    if (!Array.isArray(items) || items.length > 50) return { items:[], invalid:true };
+    const byName=new Map(Object.entries(catalog).map(([id,p])=>[normalizeOrderName(p.name),{id,...p}]));
     const priced=[];
     let invalid=false;
-    for (const raw of items.slice(0,50)) {
+    for (const raw of items) {
         const requestedId=cleanOrderText(raw?.productId,80);
-        const byId=requestedId ? catalog[requestedId] : null;
-        const byNameMatch=byName[normalizeOrderName(raw?.name)];
+        const byId=Object.hasOwn(catalog,requestedId) ? catalog[requestedId] : null;
+        const byNameMatch=!requestedId ? byName.get(normalizeOrderName(raw?.name)) : null;
         const product=byId ? {id:requestedId,...byId} : byNameMatch;
         if(!product){invalid=true;continue}
         const qty=Math.max(1,Math.min(99,Math.floor(Number(raw?.qty)||1)));
+        if(product.type==="combo"){
+            const combo=priceCombo(product.groups,raw?.comboSelections??[],qty);
+            if(!combo){invalid=true;continue}
+            priced.push({
+                productId:product.id,name:product.name,qty,
+                unitPrice:product.price+combo.surcharge/qty,baseUnitPrice:product.price,
+                components:combo.components,
+                details:[...combo.components.map(component=>`${component.qty}× ${component.name}`),
+                    cleanOrderText(raw?.note,200)].filter(Boolean).join(", ")
+            });
+            continue;
+        }
         let modifierTotal=0,modifierDetails=[];
-        const requestedModifiers=Array.isArray(raw?.modifiers)?raw.modifiers.slice(0,20):[];
+        const requestedModifiers=Array.isArray(raw?.modifiers)?raw.modifiers:[];
+        if(requestedModifiers.length>230){invalid=true;continue}
+        const available=new Map([...(product.modifiers||[]),...(product.modifierGroups||[]).flatMap(group=>group.options)]
+            .filter(option=>option?.active!==false).map(option=>[option.id,option]));
+        const validated=[];
+        const seen=new Set();
         for(const m of requestedModifiers){
             const mid=String(m?.id||"").trim();
-            const allowed=(product.modifiers||[]).find(x=>String(x?.id||"")===mid&&x?.active!==false);
-            if(!allowed){invalid=true;continue}
+            const allowed=available.get(mid);
+            if(!allowed||seen.has(mid)){invalid=true;continue}
+            seen.add(mid);
             const mq=Math.max(1,Math.min(qty,Math.floor(Number(m?.qty)||1)));
+            if(mid.startsWith("group:")&&Number(m?.qty)!==mq){invalid=true;continue}
+            validated.push({id:mid,qty:mq});
             modifierTotal+=Math.max(0,Number(allowed.price||0))*mq;
             modifierDetails.push(String(allowed.name||mid)+" x"+mq);
         }
+        if(!checkModifierGroups(product.modifierGroups,validated,qty)){invalid=true;continue}
+        const note=cleanOrderText(raw?.note,200);
         priced.push({
             productId:product.id,
             name:product.name,
             qty,
             unitPrice:product.price+(modifierTotal/qty),
             baseUnitPrice:product.price,
-            modifiers:requestedModifiers.map(m=>({id:String(m?.id||""),qty:Math.max(1,Math.floor(Number(m?.qty)||1))})),
-            details:modifierDetails.length?modifierDetails.join(", "):cleanOrderText(raw?.details,300)
+            modifiers:validated,
+            details:modifierDetails.length?[...modifierDetails,note&&"Nota: "+note].filter(Boolean).join(", "):cleanOrderText(raw?.details,300)
         });
     }
     return { items:priced, invalid };
@@ -257,9 +390,47 @@ async function secureDeliveryQuote(body){
     };
 }
 
-async function loadMenuCatalog(db){
-    const snap=await db.ref("config/menu_catalog").once("value");
-    return normalizedCatalog(snap.val()||catalogFallback());
+async function loadMenuSettings(db){
+    const snap=await db.ref("config/menu_workspace").once("value");
+    return normalizeMenuSettings(snap.val())||{categories:[],groups:[]};
+}
+
+async function loadMenuCatalog(db,tenant="uai-so",includeInactive=false){
+    const [catalogSnap,settings]=await Promise.all([
+        db.ref("config/menu_catalog").once("value"),
+        loadMenuSettings(db)
+    ]);
+    return {catalog:normalizedCatalog(catalogSnap.val(),includeInactive,tenant,settings),settings};
+}
+
+async function saveMenuSettings(req,res){
+    if(!requireAdmin(req,res))return;
+    const settings=normalizeMenuSettings(req.body.settings);
+    if(!settings)return res.status(400).json({error:"Revisa los nombres, opciones y límites del menú."});
+    const db=requestDb(req);
+    const ref=db.ref("config/menu_workspace");
+    const previous=normalizeMenuSettings(req.body.previous);
+    await ref.once("value");
+    const updated=await ref.transaction(current=>{
+        if(JSON.stringify(normalizeMenuSettings(current))!==JSON.stringify(previous))return;
+        return settings;
+    });
+    if(!updated.committed)return res.status(409).json({error:"El menú cambió. Recarga la pantalla antes de guardar."});
+    return res.status(200).json({settings});
+}
+
+async function getMenuPhoto(req,res){
+    const id=String(req.query.id||"");
+    const version=String(req.query.v||"");
+    if(!validCatalogId(id)||!/^[0-9a-f]{16}$/.test(version))return res.status(404).end();
+    const snap=await requestDb(req).ref(`config/menu_catalog/${id}/photoData`).once("value");
+    const encoded=snap.val();
+    if(typeof encoded!=="string")return res.status(404).end();
+    const bytes=Buffer.from(encoded,"base64");
+    if(crypto.createHash("sha256").update(bytes).digest("hex").slice(0,16)!==version)return res.status(404).end();
+    res.setHeader("Content-Type","image/jpeg");
+    res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+    return res.status(200).end(bytes);
 }
 function promoEligibleForUser(p,user,rewards,uid){
     const segmento=String(p?.segmento||"todos"),value=String(p?.valor_segmento??"").trim();
@@ -374,8 +545,8 @@ async function handleOrderCreate(req, res) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
-    const db = admin.database();
-    const catalog=await loadMenuCatalog(db);
+    const db = requestDb(req);
+    const {catalog}=await loadMenuCatalog(db,tenantFromRequest(req));
     const secure = secureOrderItems(body.items,catalog);
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
@@ -441,7 +612,7 @@ async function handleOrderCreate(req, res) {
 async function handleCustomersGet(req, res) {
     if (!requireAdmin(req, res)) return;
 
-    const db = admin.database();
+    const db = requestDb(req);
     const [usersSnap, txSnap] = await Promise.all([
         db.ref("users").once("value"),
         db.ref("transacoes").once("value")
@@ -542,7 +713,7 @@ async function handleCustomersGet(req, res) {
 }
 
 async function handleOrdersGet(req, res) {
-    const db = admin.database();
+    const db = requestDb(req);
     if (String(req.query.admin || "") === "1") {
         if (!requireAdmin(req, res)) return;
         const snap = await db.ref("pedidos").orderByChild("createdAt").limitToLast(100).once("value");
@@ -566,7 +737,7 @@ async function handleOrderStatus(req, res) {
     const status = cleanOrderText(req.body?.status, 40);
     if (!id || !ORDER_STATUS[status]) return res.status(400).json({ error:"Pedido o estado inválido" });
 
-    const db = admin.database();
+    const db = requestDb(req);
     const ref = db.ref(`pedidos/${id}`);
     const snap = await ref.once("value");
     if (!snap.exists()) return res.status(404).json({ error:"Pedido no encontrado" });
@@ -722,6 +893,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
+    const activeTenant=await requireTenant(admin,req,res);
+    if(!activeTenant)return;
+
     if (req.method === "POST" && req.body?.action === "auth_register") {
         try {
             const nome=cleanOrderText(req.body?.nome,100);
@@ -729,7 +903,7 @@ export default async function handler(req, res) {
             const nascimento=String(req.body?.nascimento||"").trim();
             const referidoPor=cleanOrderText(req.body?.referido_por,80);
             if(nome.length<2||telefone.length!==10||!/^\d{4}-\d{2}-\d{2}$/.test(nascimento))return res.status(400).json({error:"Datos de registro inválidos"});
-            const db=admin.database();
+            const db=requestDb(req);
             const rate=await authRateLimit(db,req,telefone);
             if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
             const existingSnap=await db.ref("users").orderByChild("telefone").equalTo(telefone).once("value");
@@ -752,7 +926,7 @@ export default async function handler(req, res) {
                     updated_at:new Date().toISOString()
                 });
             }
-            setClientSession(res,uid);
+            setClientSession(res,uid,tenantFromRequest(req));
             await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user?.nome||user?.nombre||nome,telefone,nascimento,recovered});
         } catch(error) {
@@ -766,7 +940,7 @@ export default async function handler(req, res) {
             const telefone=String(req.body?.telefone||"").replace(/\D/g,"");
             const nascimento=String(req.body?.nascimento||"").trim();
             if(!/^user_\d+$/.test(uid)||telefone.length!==10)return res.status(400).json({error:"Datos de sesión inválidos"});
-            const db=admin.database();
+            const db=requestDb(req);
             const rate=await authRateLimit(db,req,telefone);
             if(!rate.allowed)return res.status(429).json({error:"Demasiados intentos. Intenta nuevamente en unos minutos."});
             const snap=await db.ref(`users/${uid}`).once("value");
@@ -775,7 +949,7 @@ export default async function handler(req, res) {
             if(String(user.telefone||"").replace(/\D/g,"")!==telefone)return res.status(403).json({error:"No pudimos validar esta sesión"});
             const savedBirth=String(user.nascimento||user.cumpleanos||"").trim();
             if(savedBirth&&(!nascimento||savedBirth!==nascimento))return res.status(403).json({error:"No pudimos validar esta sesión"});
-            setClientSession(res,uid);
+            setClientSession(res,uid,tenantFromRequest(req));
             await clearAuthRate(rate.ref);
             return res.status(200).json({success:true,uid,nome:user.nome||user.nombre||"",telefone:user.telefone||"",nascimento:savedBirth});
         }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
@@ -806,7 +980,7 @@ export default async function handler(req, res) {
         const uid=cleanOrderText(req.query.uid,80);
         if(!/^user_\d+$/.test(uid))return res.status(400).json({error:"Cliente inválido"});
         if(!requireClient(req,res,uid))return;
-        const db=admin.database();
+        const db=requestDb(req);
         const [userSnap,vipSnap,bonusSnap,birthdaySnap,reviewsSnap,promosSnap,rewardsSnap,contactSnap]=await Promise.all([
             db.ref("users/"+uid).once("value"),
             db.ref("config/niveles_vip").once("value"),
@@ -824,9 +998,10 @@ export default async function handler(req, res) {
             .filter(p=>promoEligibleForUser(p,user,rewards,uid))
             .sort((a,b)=>Number(b.exp||0)-Number(a.exp||0));
         const contact=contactSnap.val()||{};
+        const tenantCfg=await getPublicCompanyConfig(admin,req,RESTAURANT_CONFIG);
         return res.status(200).json({
-            restaurant:{
-                id:RESTAURANT_CONFIG.id,
+            restaurant:tenantCfg||{
+                restaurant_id:"uai-so",
                 name:RESTAURANT_CONFIG.name,
                 short_name:RESTAURANT_CONFIG.shortName,
                 logo:RESTAURANT_CONFIG.logo,
@@ -841,19 +1016,26 @@ export default async function handler(req, res) {
             birthday_claims:user.cumpleanos_canjes||{},
             reviews:reviewsSnap.val()||{},
             promos,
-            whatsapp:String(contact.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
+            whatsapp:String(contact.whatsapp||tenantCfg?.whatsapp||RESTAURANT_CONFIG.whatsapp).replace(/\D/g,"").slice(0,15)
         });
     }
 
-    if (req.method === "GET" && String(req.query.action || "") === "menu_catalog") {
-        const snap=await admin.database().ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),false)});
+    if(req.method==="GET"&&req.query.action==="menu_photo")return getMenuPhoto(req,res);
+
+    if (req.method === "GET" && req.query.action === "menu_catalog") {
+        const {catalog,settings}=await loadMenuCatalog(requestDb(req),tenantFromRequest(req));
+        return res.status(200).json({catalog,categories:settings.categories});
     }
 
-    if (req.method === "GET" && String(req.query.action || "") === "admin_catalog") {
+    if (req.method === "GET" && req.query.action === "admin_catalog") {
         if(!requireAdmin(req,res))return;
-        const snap=await admin.database().ref("config/menu_catalog").once("value");
-        return res.status(200).json({catalog:normalizedCatalog(snap.val()||catalogFallback(),true)});
+        return res.status(200).json(await loadMenuCatalog(requestDb(req),tenantFromRequest(req),true));
+    }
+
+    if(req.method==="POST"&&req.body?.action==="menu_settings_save")return saveMenuSettings(req,res);
+
+    if (req.method === "POST" && req.body?.action === "catalog_item_save") {
+        return saveCatalogItem(req,res);
     }
 
     if (req.method === "POST" && req.body?.action === "catalog_save") {
@@ -874,7 +1056,14 @@ export default async function handler(req, res) {
             clean[pid]={name,category:cleanOrderText(p?.category||"OTROS",80),price,active:p?.active!==false,image:cleanOrderText(p?.image,800),description:cleanOrderText(p?.description,240),modifiers};
         }
         if(!Object.keys(clean).length)return res.status(400).json({error:"El catálogo no puede quedar vacío"});
-        await admin.database().ref("config/menu_catalog").set(clean);
+        const ref=requestDb(req).ref("config/menu_catalog");
+        await ref.transaction(current=>Object.fromEntries(Object.entries(clean).map(([pid,item])=>{
+            const stored=current?.[pid];
+            if(!stored)return [pid,item];
+            const {photoData,modifierGroupIds,type,groups}=stored;
+            return [pid,{...item,...(item.image===stored.image&&photoData?{photoData}:{}),
+                ...(modifierGroupIds?{modifierGroupIds}:{}),...(type==="combo"?{type,groups}:{})}];
+        })));
         return res.status(200).json({success:true,catalog:clean});
     }
 
@@ -916,7 +1105,7 @@ export default async function handler(req, res) {
 
             if (action === "push_sync") {
                 const agora = new Date().toISOString();
-                const userRef = admin.database().ref(`users/${uid}`);
+                const userRef = requestDb(req).ref(`users/${uid}`);
                 const userSnap = await userRef.once("value");
                 if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
@@ -943,7 +1132,7 @@ export default async function handler(req, res) {
 
             if (action === "google_review_clicked") {
                 const agora = new Date().toISOString();
-                const userRef = admin.database().ref(`users/${uid}`);
+                const userRef = requestDb(req).ref(`users/${uid}`);
                 const userSnap = await userRef.once("value");
                 if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
@@ -961,14 +1150,14 @@ export default async function handler(req, res) {
 
             if (estrelas < 1 || estrelas > 5) return res.status(400).json({ error:"Calificación inválida" });
 
-            const userRef = admin.database().ref(`users/${uid}`);
+            const userRef = requestDb(req).ref(`users/${uid}`);
             const userSnap = await userRef.once("value");
             if (!userSnap.exists()) return res.status(404).json({ error:"Cliente no encontrado" });
 
             const user = userSnap.val() || {};
             const agora = new Date().toISOString();
-            const feedbackRef = admin.database().ref("feedback").push();
-            await admin.database().ref().update({
+            const feedbackRef = requestDb(req).ref("feedback").push();
+            await requestDb(req).ref().update({
                 [`feedback/${feedbackRef.key}`]: {
                     user_id: uid,
                     nome: user.nome || user.nombre || "",
@@ -993,14 +1182,14 @@ export default async function handler(req, res) {
         if (!/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
         if (!requireClientOrAdmin(req,res,uid)) return;
 
-        const snapshot = await admin.database().ref(`users/${uid}`).once("value");
+        const snapshot = await requestDb(req).ref(`users/${uid}`).once("value");
 
         if (!snapshot.exists()) {
             return res.status(404).json({ error: "Cliente no encontrado" });
         }
 
         const cliente = snapshot.val();
-        const reviewsSnap = await admin.database().ref("config/reviews").once("value");
+        const reviewsSnap = await requestDb(req).ref("config/reviews").once("value");
         const reviewsCfg = reviewsSnap.val() || {};
 
         return res.status(200).json({

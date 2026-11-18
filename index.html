@@ -1,6 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="tenant-loading">
 <head>
+<script>
+(()=>{const c=String(new URLSearchParams(location.search).get('company')||'uai-so').trim();if(c&&c!=='uai-so')document.documentElement.classList.add('tenant-nonlegacy')})();
+</script>
+<script src="/tenant-request-context.js?v=20261009-tenant1"></script>
 <meta charset="UTF-8">
 <title>Fidelidad</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -25,16 +29,20 @@ window.__restaurantConfigPromise=fetch('/api/cliente?action=public_config&t='+Da
         document.documentElement.style.setProperty('--roxo',primary);
         document.documentElement.style.setProperty('--amarelo',accent);
         document.documentElement.style.setProperty('--gradiente','linear-gradient(135deg,'+primary+','+accent+')');
-        document.querySelectorAll('img.logo,[data-restaurant-logo]').forEach(logo=>{if(cfg.logo)logo.src=cfg.logo;logo.alt=name});
+        const tenantId=String(cfg.restaurant_id||cfg.id||new URLSearchParams(location.search).get('company')||'uai-so');
+        const legacy=tenantId==='uai-so';
+        document.querySelectorAll('img.logo,[data-restaurant-logo]').forEach(logo=>{if(cfg.logo){logo.src=cfg.logo;logo.style.removeProperty('display')}else if(!legacy){logo.removeAttribute('src');logo.style.display='none'}logo.alt=name});
         const success=document.getElementById('successBrandText');if(success)success.innerHTML='Para empezar a usar <b>'+name+'</b> y ganar puntos:';
         const feedback=document.getElementById('feedbackBrandText');if(feedback)feedback.textContent='Tu opinión nos ayuda a mejorar '+name+'.';
         const insta=document.getElementById('restaurantInstagram');
         if(insta){const url=String(cfg.instagram_url||'').trim();insta.style.display=url?'':'none';if(url)insta.href=url}
       };
-      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyBrand,{once:true});else applyBrand();
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{applyBrand();document.documentElement.classList.remove('tenant-loading');document.documentElement.classList.add('tenant-ready')},{once:true});else{applyBrand();document.documentElement.classList.remove('tenant-loading');document.documentElement.classList.add('tenant-ready')}
+    }else{
+      document.documentElement.classList.remove('tenant-loading');document.documentElement.classList.add('tenant-ready');
     }
     return cfg;
-  });
+  }).catch(()=>{document.documentElement.classList.remove('tenant-loading');document.documentElement.classList.add('tenant-ready');return null});
 </script>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
@@ -44,15 +52,23 @@ let OneSignalInstance = null;
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 OneSignalDeferred.push(async function(OS) {
-    OneSignalInstance = OS;
-
     const cfg=await (window.__restaurantConfigPromise||Promise.resolve(window.__restaurantConfig||null));
     const appId=String(cfg?.onesignal_app_id||"").trim();
-    if(!appId)return;
-    await OS.init({
-        appId,
-        notifyButton: { enable: false }
-    });
+    if(!appId){
+        OneSignalInstance=null;
+        return;
+    }
+    try{
+        await OS.init({
+            appId,
+            notifyButton: { enable: false }
+        });
+        OneSignalInstance = OS;
+    }catch(e){
+        OneSignalInstance=null;
+        console.warn("OneSignal init:",e);
+        return;
+    }
 
     async function syncPush(reason) {
         const currentUid = String(localStorage.getItem("uid") || "").trim();
@@ -312,11 +328,11 @@ button {
 
 /* Home do cliente - layout refinado */
 .client-counter {
-    background:#f3e8ff;
+    background:color-mix(in srgb,var(--roxo) 10%,white);
     padding:12px 14px;
     border-radius:14px;
     margin:0 0 12px 0;
-    color:#6a0dad;
+    color:var(--roxo);
     font-weight:700;
     font-size:14px;
     text-align:center;
@@ -389,7 +405,7 @@ button {
     border-radius:12px;
     border:none;
     background:rgba(255,255,255,.96);
-    color:#6a0dad;
+    color:var(--roxo);
     font-weight:800;
     font-size:10px;
     cursor:pointer;
@@ -479,7 +495,7 @@ button {
 .mini-card-title {
     font-size:14px;
     font-weight:900;
-    color:#6a0dad;
+    color:var(--roxo);
     margin-top:1px;
     white-space:nowrap;
     overflow:hidden;
@@ -487,7 +503,7 @@ button {
 }
 .mini-card-toggle {
     flex:none;
-    color:#6a0dad;
+    color:var(--roxo);
     font-size:13px;
     font-weight:900;
     transition:transform .18s ease;
@@ -531,6 +547,8 @@ button {
     .client-qr-button { width:96px; min-width:96px; font-size:9px; }
 }
 
+html.tenant-loading body{visibility:hidden}
+html.tenant-nonlegacy img[src="logo.png"],html.tenant-nonlegacy img[src="/logo.png"]{display:none!important}
 </style>
 <link rel="stylesheet" href="/client-readability.css?v=20260927-1">
 </head>
@@ -542,7 +560,7 @@ button {
 <div class="container">
 
     <div class="header-app">
-        <img src="logo.png" class="logo">
+        <img class="logo" data-restaurant-logo style="display:none">
     </div>
 
     <!-- INSTALAÇÃO -->
@@ -599,8 +617,8 @@ button {
         ">
 
             <img
-                src="logo.png"
-                style="
+                data-restaurant-logo
+                style="display:none;
                     width:80px;
                     border-radius:18px;
                     box-shadow:0 4px 15px rgba(0,0,0,0.2);
@@ -693,7 +711,7 @@ button {
     <h2 style="color:var(--roxo)">
         ¿Cómo te llamas?
     </h2>
-    <div id="referralSignupBanner" style="display:none;background:#f3e8ff;color:#6a0dad;border:1px solid #dfc3ff;border-radius:12px;padding:10px 12px;margin:0 0 14px;font-size:13px;font-weight:700;">
+    <div id="referralSignupBanner" style="display:none;background:color-mix(in srgb,var(--roxo) 10%,white);color:var(--roxo);border:1px solid color-mix(in srgb,var(--roxo) 24%,white);border-radius:12px;padding:10px 12px;margin:0 0 14px;font-size:13px;font-weight:700;">
         🎁 Llegaste invitado por un amigo. Tu beneficio se activará con tu primera compra válida.
     </div>
 
@@ -726,7 +744,7 @@ button {
         "
     >
 
-    <label for="nascimentoInput" style="display:block;text-align:left;margin:14px 0 6px;font-size:13px;font-weight:700;color:#6a0dad;">
+    <label for="nascimentoInput" style="display:block;text-align:left;margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--roxo);">
         🎂 Fecha de nacimiento
     </label>
     <input
@@ -846,7 +864,7 @@ button {
 
         <!-- GOOGLE REVIEW: independente de compra, aparece uma única vez por cliente -->
         <div id="googleReviewMiniWrap" style="display:none;text-align:right;margin:-2px 0 9px;">
-            <button type="button" onclick="abrirGoogleReviewPopup()" style="border:1px solid #ead7a2;background:#fff8df;color:#6a0dad;border-radius:999px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer;box-shadow:0 3px 9px rgba(106,13,173,.06);">
+            <button type="button" onclick="abrirGoogleReviewPopup()" style="border:1px solid #ead7a2;background:#fff8df;color:var(--roxo);border-radius:999px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer;box-shadow:0 3px 9px rgba(106,13,173,.06);">
                 ⭐ Evalúanos en Google
             </button>
         </div>
@@ -856,7 +874,7 @@ button {
             <div style="display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;">
                 <div style="flex:1 1 auto;min-width:0;">
                     <div style="font-size:10px;color:#7b6b86;font-weight:800;">TU OPINIÓN</div>
-                    <div id="opinionCardTitle" style="font-size:14px;line-height:1.2;font-weight:900;color:#6a0dad;margin-top:2px;white-space:normal;overflow-wrap:anywhere;">⭐ Califica tu compra reciente</div>
+                    <div id="opinionCardTitle" style="font-size:14px;line-height:1.2;font-weight:900;color:var(--roxo);margin-top:2px;white-space:normal;overflow-wrap:anywhere;">⭐ Califica tu compra reciente</div>
                     <div id="opinionCardText" style="font-size:11px;line-height:1.25;color:#777;margin-top:3px;white-space:normal;">Tu opinión nos ayuda a mejorar.</div>
                 </div>
                 <button type="button" onclick="abrirFeedbackManual()" style="flex:0 0 auto;width:auto;max-width:88px;border:0;border-radius:10px;padding:9px 12px;background:#6a0dad;color:white;font-size:10px;font-weight:800;cursor:pointer;">
@@ -870,7 +888,7 @@ button {
             <div style="display:flex;gap:12px;align-items:flex-start;">
                 <div style="font-size:34px;">🎂</div>
                 <div style="flex:1;">
-                    <div style="font-size:17px;font-weight:800;color:#6a0dad;">¡Tienes un regalo de cumpleaños!</div>
+                    <div style="font-size:17px;font-weight:800;color:var(--roxo);">¡Tienes un regalo de cumpleaños!</div>
                     <div id="birthdayGiftName" style="font-size:14px;color:#5d4d10;margin-top:4px;"></div>
                     <div id="birthdayGiftValidity" style="font-size:12px;color:#7a6a31;margin-top:5px;"></div>
                     <div style="font-size:11px;color:#8a7b45;margin-top:7px;">Muéstralo al personal para canjearlo.</div>
@@ -884,7 +902,7 @@ button {
             <div style="display:flex;align-items:center;gap:12px;">
                 <div style="font-size:32px;">⚡</div>
                 <div style="flex:1;">
-                    <div id="bonusPontosTitulo" style="font-size:16px;font-weight:800;color:#6a0dad;">¡Puntos bonus activos!</div>
+                    <div id="bonusPontosTitulo" style="font-size:16px;font-weight:800;color:var(--roxo);">¡Puntos bonus activos!</div>
                     <div id="bonusPontosTexto" style="font-size:13px;color:#66530b;margin-top:3px;"></div>
                 </div>
             </div>
@@ -950,7 +968,7 @@ button {
 <div id="googleReviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10030;align-items:center;justify-content:center;padding:18px;">
   <div style="width:100%;max-width:330px;background:#fff;border-radius:20px;padding:20px;box-shadow:0 18px 45px rgba(0,0,0,.28);text-align:center;">
     <div style="font-size:30px;margin-bottom:5px;">⭐</div>
-    <div style="font-size:18px;font-weight:900;color:#6a0dad;">¿Nos calificas en Google?</div>
+    <div style="font-size:18px;font-weight:900;color:var(--roxo);">¿Nos calificas en Google?</div>
     <div style="font-size:12px;color:#777;line-height:1.35;margin-top:6px;">
       Tu reseña pública ayuda a otras personas a encontrarnos. Este aviso se mostrará una sola vez.
     </div>
@@ -967,14 +985,14 @@ button {
 <div id="feedbackModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:10020;align-items:center;justify-content:center;padding:18px;">
   <div style="width:100%;max-width:350px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 18px 45px rgba(0,0,0,.28);text-align:center;">
     <div style="font-size:28px;margin-bottom:4px;">⭐</div>
-    <div style="font-size:19px;font-weight:900;color:#6a0dad;">¿Cómo estuvo tu experiencia?</div>
+    <div style="font-size:19px;font-weight:900;color:var(--roxo);">¿Cómo estuvo tu experiencia?</div>
     <div style="font-size:12px;color:#777;margin-top:4px;"><span id="feedbackBrandText">Tu opinión nos ayuda a mejorar.</span></div>
     <div id="feedbackStars" style="display:flex;justify-content:center;gap:8px;margin:16px 0 12px;">
       <button type="button" onclick="seleccionarEstrellas(1)" data-star="1" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(2)" data-star="2" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(3)" data-star="3" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(4)" data-star="4" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button><button type="button" onclick="seleccionarEstrellas(5)" data-star="5" style="border:0;background:transparent;font-size:29px;cursor:pointer;padding:0;color:#ccc;">★</button>
     </div>
     <textarea id="feedbackComentario" placeholder="¿Quieres contarnos algo? (opcional)" style="width:100%;min-height:76px;resize:vertical;border:1px solid #ddd;border-radius:12px;padding:11px;font:inherit;font-size:13px;box-sizing:border-box;"></textarea>
     <button id="feedbackEnviar" onclick="enviarFeedback()" style="width:100%;margin-top:12px;border:0;border-radius:12px;padding:12px;background:#6a0dad;color:#fff;font-weight:800;cursor:pointer;">ENVIAR OPINIÓN</button>
-    <a id="googleReviewBtn" href="#" target="_blank" rel="noopener" style="display:none;margin-top:9px;width:100%;box-sizing:border-box;border-radius:12px;padding:11px;background:#fff4cc;color:#6a0dad;text-decoration:none;font-weight:800;font-size:12px;">⭐ COMPARTIR RESEÑA EN GOOGLE</a>
+    <a id="googleReviewBtn" href="#" target="_blank" rel="noopener" style="display:none;margin-top:9px;width:100%;box-sizing:border-box;border-radius:12px;padding:11px;background:#fff4cc;color:var(--roxo);text-decoration:none;font-weight:800;font-size:12px;">⭐ COMPARTIR RESEÑA EN GOOGLE</a>
     <button onclick="fecharFeedback()" style="margin-top:8px;border:0;background:transparent;color:#999;font-size:11px;cursor:pointer;">Ahora no</button>
   </div>
 </div>
@@ -1008,7 +1026,7 @@ button {
         <div style="
             font-size:19px;
             font-weight:800;
-            color:#6a0dad;
+            color:var(--roxo);
             margin-bottom:6px;
         ">
             Mi código de fidelidad
@@ -1076,6 +1094,18 @@ const isStandalone =
 let deferredPrompt;
 
 let somJaTocouInstalacao = false;
+
+const pageParamsGlobal=new URLSearchParams(location.search);
+const companyParamGlobal=String(pageParamsGlobal.get("company")||"uai-so").trim()||"uai-so";
+const previewInstalled=
+    location.hostname.includes("renatovictor-1384s-projects.vercel.app") &&
+    pageParamsGlobal.get("installed")==="1";
+
+const previousCompany=String(localStorage.getItem("loyalty_company")||"").trim();
+if(previousCompany && previousCompany!==companyParamGlobal){
+    ["uid","nome","telefone","nascimento","push","referral_uid"].forEach(k=>localStorage.removeItem(k));
+}
+localStorage.setItem("loyalty_company",companyParamGlobal);
 
 let uid =
     localStorage.getItem("uid") ||
@@ -1335,6 +1365,20 @@ window.onload = async () => {
         location.hostname.includes("renatovictor-1384s-projects.vercel.app") &&
         params.get("preview") === "1";
 
+    if (previewInstalled) {
+        if (nome) {
+            const ok=await restaurarSessaoCliente();
+            if(ok)return abrirApp();
+            localStorage.removeItem("nome");
+            localStorage.removeItem("uid");
+            localStorage.removeItem("telefone");
+            localStorage.removeItem("nascimento");
+            uid="user_"+Math.floor(Math.random()*1e9);
+            localStorage.setItem("uid",uid);
+        }
+        return show("stepNome");
+    }
+
     if (previewMode) {
         const previewUid = String(params.get("uid") || "").trim();
 
@@ -1449,7 +1493,9 @@ window.onload = async () => {
 
 
 async function abrirAppPreview() {
-    const target='/app-v11-next.html?uid='+encodeURIComponent(uid)+'#home';
+    const q=new URLSearchParams({uid:String(uid)});
+    if(companyParamGlobal&&companyParamGlobal!=="uai-so")q.set("company",companyParamGlobal);
+    const target='/app-v11-next.html?'+q.toString()+'#home';
     location.replace(target);
 }
 
@@ -1561,9 +1607,15 @@ async function salvarNome() {
         localStorage.removeItem("referral_uid");
 
         if(OneSignalInstance){
-            await OneSignalInstance.login(uid);
-            await OneSignalInstance.User.addTag("user_name",d.nome||nome);
-            await OneSignalInstance.User.addTag("telefone",telefoneLimpo);
+            try{
+                if(typeof OneSignalInstance.login==="function")await OneSignalInstance.login(uid);
+                if(OneSignalInstance.User?.addTag){
+                    await OneSignalInstance.User.addTag("user_name",d.nome||nome);
+                    await OneSignalInstance.User.addTag("telefone",telefoneLimpo);
+                }
+            }catch(pushError){
+                console.warn("OneSignal pós-cadastro:",pushError);
+            }
         }
         if(d.recovered)alert("✅ Encontramos tu cuenta existente. Tus puntos y datos fueron recuperados.");
         abrirApp();
@@ -1598,11 +1650,14 @@ async function restaurarSessaoCliente(){
 ========================== */
 
 function abrirApp() {
-    const target='/app-v11-next.html?uid='+encodeURIComponent(uid)+'#home';
+    const q=new URLSearchParams({uid:String(uid)});
+    if(companyParamGlobal&&companyParamGlobal!=="uai-so")q.set("company",companyParamGlobal);
+    const target='/app-v11-next.html?'+q.toString()+'#home';
     if(location.pathname+location.search+location.hash!==target)location.replace(target);
 }
 
 </script>
 
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+<script src="/tenant-runtime.js?v=20261005-1"></script>
+</body>
 </html>

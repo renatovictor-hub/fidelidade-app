@@ -20,6 +20,7 @@
 @media(min-width:521px){body{background:#ede7f0}.app{box-shadow:0 0 45px rgba(45,8,62,.26)}}
 @media(prefers-reduced-motion:reduce){.feed{scroll-behavior:auto}.dot,.toast{transition:none}}
 </style>
+<script src="/tenant-request-context.js?v=20261013-tenant-menu"></script>
 </head>
 <body>
 <main class="app">
@@ -97,22 +98,10 @@
   <div id="toast" class="toast" role="status"></div>
 </main>
 
+<script src="/menu-legacy-media.js?v=1"></script>
 <script>
-const PRODUCTS=[
-  {id:'carne',name:'Carne',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/e27f976b-c141-433b-8ddc-91099f347b56.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/e27f976b-c141-433b-8ddc-91099f347b56.webp',description:'Carne sazonada al estilo brasileño con cebolla y jitomate sobre masa artesanal.',ingredients:['Carne sazonada','Cebolla','Jitomate','Masa artesanal']},
-  {id:'carne-queso',name:'Carne con Queso',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/a52d6896-c43c-4038-9a0b-3c8ef21f3aa1.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/a52d6896-c43c-4038-9a0b-3c8ef21f3aa1.webp',description:'Carne sazonada con queso cremoso sobre nuestra masa artesanal.',ingredients:['Carne sazonada','Queso','Masa artesanal']},
-  {id:'queso-cremoso',name:'Queso Cremoso',category:'ESFIHAS SALADAS',price:45,image:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F6aa9e610-1ac0-45b6-ab2a-edbd7e3298b1.png&w=700&h=700&fit=cover&output=webp&q=76',thumb:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F6aa9e610-1ac0-45b6-ab2a-edbd7e3298b1.png&w=320&h=320&fit=cover&output=webp&q=68',description:'Queso cremoso gratinado sobre masa artesanal recién horneada.',ingredients:['Queso cremoso','Masa artesanal']},
-  {id:'marguerita',name:'Marguerita',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/d26d649c-5462-4943-9ba2-9327cbfd5b34.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/d26d649c-5462-4943-9ba2-9327cbfd5b34.webp',description:'Pesto, queso, jitomate y albahaca sobre nuestra masa artesanal.',ingredients:['Pesto','Queso','Jitomate','Albahaca']},
-  {id:'portuguesa',name:'Portuguesa',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/d2303f4f-86c2-48cb-b0d3-3061713d079c.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/d2303f4f-86c2-48cb-b0d3-3061713d079c.webp',description:'Queso, jamón, chícharo, elote, huevo duro y cebolla.',ingredients:['Queso','Jamón','Chícharo','Elote','Huevo duro','Cebolla']},
-  {id:'brasilena',name:'Brasileña',category:'ESFIHAS SALADAS',price:45,video:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/b3e73323-b57c-4352-944f-ae774a14039d.mp4',image:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F6086046c-d30b-4657-a7c6-f47b91536732.jpg&w=700&h=700&fit=cover&output=webp&q=76',thumb:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F6086046c-d30b-4657-a7c6-f47b91536732.jpg&w=320&h=320&fit=cover&output=webp&q=68',description:'Crema de ajo, queso, chorizo ahumado y cebolla.',ingredients:['Crema de ajo','Queso','Chorizo ahumado','Cebolla']},
-  {id:'brasilena-habanero',name:'Brasileña Habanero',category:'ESFIHAS SALADAS',price:45,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/e3a52b94-16f7-42b4-a15a-a0e01ddd39b3.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/e3a52b94-16f7-42b4-a15a-a0e01ddd39b3.webp',description:'Crema de ajo, queso, chorizo ahumado, cebolla y salsa habanero tatemado.',ingredients:['Crema de ajo','Queso','Chorizo ahumado','Cebolla','Salsa habanero tatemado']},
-  {id:'dulce-leche',name:'Dulce de Leche',category:'ESFIHAS DULCES',price:50,image:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F4d5b4d49-dc0c-48b4-95b3-9be11e6544fe.png&w=700&h=700&fit=cover&output=webp&q=76',thumb:'https://wsrv.nl/?url=https%3A%2F%2Fd2ol7oe51mr4n9.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2F4d5b4d49-dc0c-48b4-95b3-9be11e6544fe.png&w=320&h=320&fit=cover&output=webp&q=68',description:'Esfiha dulce rellena de dulce de leche cremoso.',ingredients:['Dulce de leche','Masa artesanal']},
-  {id:'platano-lechera',name:'Plátano con Lechera',category:'ESFIHAS DULCES',price:50,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/12a35956-1964-49dd-857d-ef1136fc8710.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/12a35956-1964-49dd-857d-ef1136fc8710.webp',description:'Plátano caramelizado con Lechera sobre masa artesanal.',ingredients:['Plátano','Lechera','Masa artesanal']},
-  {id:'chabacano-macha',name:'Chabacano con Macha',category:'ESFIHAS DULCES',price:50,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/f1b817de-b7cb-4584-bfb4-976d592595db.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/f1b817de-b7cb-4584-bfb4-976d592595db.webp',description:'Queso, chabacano y salsa macha en una combinación dulce y picante.',ingredients:['Queso','Chabacano','Salsa macha']},
-  {id:'romeo-julieta',name:'Romeo y Julieta',category:'ESFIHAS DULCES',price:50,image:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/cff5d297-2e93-4eb9-9db7-022b19c289d6.webp',thumb:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/cff5d297-2e93-4eb9-9db7-022b19c289d6.webp',description:'La clásica combinación brasileña de guayaba con queso.',ingredients:['Guayaba','Queso','Masa artesanal']},
-  {id:'coxinha',name:'Coxinha',category:'COXINHAS',price:50,video:'https://d2ol7oe51mr4n9.cloudfront.net/user_2yRfLCMMpFlU1sLNPt7t0aVE3dZ/12faf6bc-4310-431c-be9c-1472c99af6af.mp4',image:'https://wsrv.nl/?url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2Fhf_20260929_064707_a011e5c3-42bc-43d4-9aa0-1c81af1baef3.png&w=700&h=1100&fit=cover&output=webp&q=76',thumb:'https://wsrv.nl/?url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_2yRfLCMMpFlU1sLNPt7t0aVE3dZ%2Fhf_20260929_064707_a011e5c3-42bc-43d4-9aa0-1c81af1baef3.png&w=320&h=480&fit=cover&output=webp&q=68',description:'Clásica coxinha brasileña dorada y crujiente, rellena de pollo sazonado.',ingredients:['Pollo sazonado','Masa de coxinha','Empanizado']}
-];
-const MXN=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0});
+let PRODUCTS=window.uaiSoMenuMedia.map(product=>({...product}));
+const MXN=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:2,minimumFractionDigits:0});
 const qs=new URLSearchParams(location.search),uid=String(qs.get('uid')||'').trim();
 let cart=readCart(),activeIndex=0,muted=true,toastTimer,menuView=(localStorage.getItem('restaurant_menu_view')||localStorage.getItem('uaiso_menu_view'))==='explore'?'explore':'catalog',activeCategory='TODOS',detailState=null,videoProductId=null,deliveryQuote=null,deliveryLocation=null,deliveryPlaceId=null,addressTimer=null,addressAbort=null,addressSuggestions=[],placesSessionToken=createPlacesSessionToken(),loyaltyProfile=null;
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
@@ -145,14 +134,28 @@ function toggleSound(event){
 }
 function setView(view){
   const previous=menuView;menuView=view==='catalog'?'catalog':'explore';localStorage.setItem('restaurant_menu_view',menuView);
-  if(previous==='explore'&&menuView==='catalog'&&PRODUCTS[activeIndex])activeCategory=PRODUCTS[activeIndex].category;
+  if(previous==='explore'&&menuView==='catalog'){
+    const featuredId=$('feed').querySelector(`.dish[data-index="${activeIndex}"]`)?.dataset.id;
+    const featured=product(featuredId);
+    if(featured)activeCategory=featured.category;
+  }
   const catalog=menuView==='catalog';$('feed').classList.toggle('hidden',catalog);$('pager').classList.toggle('hidden',catalog);$('catalog').classList.toggle('hidden',!catalog);
   $('exploreTab').classList.toggle('active',!catalog);$('catalogTab').classList.toggle('active',catalog);$('exploreTab').setAttribute('aria-selected',String(!catalog));$('catalogTab').setAttribute('aria-selected',String(catalog));
   $('viewSubtitle').textContent=catalog?'Elige rápido por categoría':'Desliza para explorar';
   if(catalog){document.querySelectorAll('.dish-inline-video').forEach(v=>v.pause());renderCatalog()}else{const v=document.querySelector(`.dish[data-index="${activeIndex}"] .dish-inline-video`);if(v){if(!v.src){v.src=v.dataset.src;v.load()}v.muted=true;v.play().catch(()=>{})}}
 }
 function setCategory(category){activeCategory=category;renderCatalog()}
-function renderCategories(){const categories=['TODOS',...new Set(PRODUCTS.map(p=>p.category))];$('categories').innerHTML=categories.map(c=>`<button class="${c===activeCategory?'active':''}" type="button" onclick="setCategory('${esc(c)}')">${c==='TODOS'?'Todo':esc(c.replace(' ABIERTAS','').replace('PARA ','Para ').toLowerCase().replace(/^./,x=>x.toUpperCase()))}</button>`).join('')}
+function renderCategories(){
+  const categories=['TODOS',...new Set(PRODUCTS.map(p=>p.category))];
+  $('categories').replaceChildren(...categories.map(category=>{
+    const button=document.createElement('button');
+    button.classList.toggle('active',category===activeCategory);
+    button.type='button';
+    button.textContent=category==='TODOS'?'Todo':category.toLocaleLowerCase('es-MX').replace(/^./,letter=>letter.toUpperCase());
+    button.onclick=()=>setCategory(category);
+    return button;
+  }));
+}
 function renderCatalog(){
   renderCategories();
   const term=String($('menuSearch')?.value||'').trim().toLocaleLowerCase('es');
@@ -232,11 +235,31 @@ function formatScheduled(value){const date=new Date(value);return Number.isNaN(d
 function checkoutError(message){$('checkoutError').textContent=message;$('checkoutError').classList.add('show')}
 function submitOrder(){const form=$('checkoutForm');$('checkoutError').classList.remove('show');if(!form.reportValidity())return;const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),digits=phone.replace(/\D/g,'');if(digits.length<10)return checkoutError('Revisa el número de teléfono.');const fulfillment=selectedValue('fulfillment'),scheduled=selectedValue('orderTime')==='scheduled',payment=selectedValue('payment'),subtotal=cartSubtotal(),fee=deliveryFee(),total=subtotal+fee,change=Math.max(0,Number($('cashChange').value)||0);if(fulfillment==='delivery'&&!fee)return checkoutError('Calcula el envío o selecciona una tarifa provisional.');if(payment==='cash'&&change>0&&change<total)return checkoutError(`El cambio debe ser para una cantidad igual o mayor a ${MXN.format(total)}.`);localStorage.setItem('restaurant_checkout_profile',JSON.stringify({name,phone}));const items=cartItems(),lines=items.map(x=>{const details=lineDetails(x.line);return`• ${x.qty}x ${x.p.name} — ${MXN.format(x.line.unitPrice*x.qty)}${details?`\n  ${details}`:''}`});const address=$('deliveryAddress').value.trim(),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km · aprox. ${deliveryQuote.durationMinutes} min${quoteExtrasText(deliveryQuote)}`:`\nTarifa provisional: ${$('deliveryZone').selectedOptions[0]?.text||MXN.format(fee)}`,deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}\nReferencias: ${$('deliveryReference').value.trim()||'Sin referencias'}`:'RECOGER EN RESTAURANTE',paymentText=payment==='cash'?`Efectivo${change?` · Cambio para ${MXN.format(change)}`:' · Sin cambio'}`:'Transferencia',when=scheduled?formatScheduled($('scheduledAt').value):'Lo antes posible',client=/^user_\d+$/.test(uid)?`\nCliente fidelidad: #${uid.replace('user_','')}`:'';const text=`Hola! Quiero hacer este pedido:\n\n${lines.join('\n')}\n\nSubtotal: ${MXN.format(subtotal)}\n${fulfillment==='delivery'?`Envío: ${MXN.format(fee)}\n`:''}TOTAL: ${MXN.format(total)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${paymentText}\n\nCliente: ${name}\nTeléfono: ${phone}${client}`;window.open('https://api.whatsapp.com/send?phone='+(window.__restaurantWhatsApp||'')+'&text='+encodeURIComponent(text),'_blank','noopener')}
 function showToast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').classList.add('show');toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1700)}
-function backToApp(){location.href=`/app-v11-next.html${/^user_\d+$/.test(uid)?'?uid='+encodeURIComponent(uid):''}#home`}
+function backToApp(){
+  const q=new URLSearchParams();
+  if(/^user_\d+$/.test(uid))q.set('uid',uid);
+  const company=String(new URLSearchParams(location.search).get('company')||'').trim();
+  if(company)q.set('company',company);
+  location.href='/app-v11-next.html'+(q.toString()?'?'+q.toString():'')+'#home';
+}
 document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if($('videoWrap').classList.contains('open'))closeVideo();else if($('detailsWrap').classList.contains('open'))closeDetails();else if($('checkoutWrap').classList.contains('open'))closeCheckout();else if($('cartWrap').classList.contains('open'))closeCart()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return document.querySelectorAll('video').forEach(v=>v.pause());if(videoProductId)$('popupVideo').play().catch(()=>{});else if(menuView==='explore')document.querySelector(`.dish[data-index="${activeIndex}"] video`)?.play().catch(()=>{})});
-renderFeed();renderCartBadge();setView(menuView);hydrateCheckoutProfile(false);
+
+async function initTenantMenu(){
+  const company=String(qs.get('company')||'').trim();
+  if(company&&company!=='uai-so')PRODUCTS=[];
+  renderFeed();
+  renderCartBadge();
+  setView(menuView);
+  hydrateCheckoutProfile(false);
+  if(!PRODUCTS.length){
+    const list=$('productList');
+    if(list)list.innerHTML='<div class="empty-search">Este restaurante todavía no publicó productos.</div>';
+  }
+}
+initTenantMenu();
 </script>
-<script src="/menu-order-tracker.js?v=20261004-multiclient1"></script>
-<script src="/tenant-runtime.js?v=20261005-1"></script>\n</body>
+<script src="/menu-order-tracker.js?v=20261118-workspace"></script>
+<script src="/tenant-runtime.js?v=20261005-1"></script>
+</body>
 </html>
