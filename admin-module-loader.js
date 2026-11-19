@@ -15,7 +15,7 @@
     ['/dashboard-core-modules-v5.js?v=20261004-multirest2','dashboardCoreModulesV5Script'],
     ['/dashboard-growth-modules-v6.js?v=20261001-rewards1','dashboardGrowthModulesV6Script'],
     ['/menu-legacy-media.js?v=1','menuLegacyMediaScript'],
-    ['/menu-admin.js?v=3','menuAdminScript'],
+    ['/menu-admin.js?v=4','menuAdminScript'],
     ['/dashboard-final-modules-v7.js?v=20261118-menu','dashboardFinalModulesV7Script'],
     ['/fidelidad-growth-admin.js?v=20261002-cleanresults1','fidelidadGrowthAdminScript'],
     ['/fidelity-settings-saas.js?v=20261001-viptab1','fidelitySettingsSaasScript'],

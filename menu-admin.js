@@ -301,9 +301,9 @@
   }
 
   function renderExtras(item,general=false) {
-    const scope=general?'pedido con productos sueltos':item.type==='combo'?'combo':'producto';
+    const scope=item.type==='combo'?'combo':'producto';
     const shared=`<section class="menu-editor-card"><h3>Grupos reutilizables</h3>
-      <p>Define cuántos complementos se pueden pedir por cada ${scope}. Un mínimo de 0 deja la selección opcional.</p>
+      <p>${general?'Los adicionales con precio se cobran por unidad. El límite gratuito se comparte entre las opciones sin costo del grupo.':`Define cuántos complementos se pueden pedir por cada ${scope}. Un mínimo de 0 deja la selección opcional.`}</p>
       ${settings.groups.length?settings.groups.map(group=>{
         const rule=item.modifierGroupRules.find(entry=>entry.id===group.id);
         return `<div class="menu-modifier-link" data-modifier-link="${escape(group.id)}">
@@ -311,7 +311,19 @@
             <input type="checkbox" data-attach-group="${escape(group.id)}" ${rule?'checked':''}>
             <span><strong>${escape(group.name)}</strong><small>${group.options.length} opciones</small></span>
           </label>
-          ${rule?`<div class="menu-fields">
+          ${rule&&general?`<div class="menu-fields">
+            ${input('1 gratis por cada X productos','freeEvery',rule.freeEvery??0,'type="number" min="0" max="99"')}
+            ${input('Gratis por pedido (si X es 0)','max',rule.max,'type="number" min="1" max="20"')}
+          </div>
+          <details>
+            <summary>Categorías que cuentan para los gratis</summary>
+            <p>Si no marcas ninguna, cuentan todos los productos sueltos.</p>
+            ${categories().filter(category=>category.key!=='COMBOS').map(category=>`
+              <label class="menu-group-choice">
+                <input type="checkbox" data-free-category="${escape(category.key)}" ${rule.freeCategories?.includes(category.key)?'checked':''}>
+                ${escape(category.label)}
+              </label>`).join('')}
+          </details>`:rule?`<div class="menu-fields">
             ${input('Mínimo','min',rule.min,'type="number" min="0" max="20"')}
             ${input('Máximo','max',rule.max,'type="number" min="1" max="20"')}
           </div>`:''}
@@ -501,14 +513,20 @@
       });
       return;
     }
-    if (!field) return;
     const linkedGroup=element.closest('[data-modifier-link]')?.dataset.modifierLink;
-    if (linkedGroup) {
+    if (linkedGroup && (field || element.dataset.freeCategory!==undefined)) {
       const rule=item.modifierGroupRules.find(entry=>entry.id===linkedGroup);
-      rule[field]=element.value;
+      const category=element.dataset.freeCategory;
+      if (category!==undefined) {
+        const selected=rule.freeCategories||[];
+        rule.freeCategories=element.checked?[...selected,category]:selected.filter(key=>key!==category);
+      } else {
+        rule[field]=element.value;
+      }
       delete rule.repeat;
       return;
     }
+    if (!field) return;
     let target=item;
     if (inCombo) target=item.groups[editor.groupIndex];
     if (optionIndex!==undefined) target=(inCombo||editor.kind==='group'?target.options:item.modifiers)[Number(optionIndex)];
@@ -612,6 +630,10 @@
     } else if (kind==='general') {
       if (invalidModifierLimits(item.modifierGroupRules)) {
         showError('Revisa el mínimo y máximo de cada grupo de complementos.');
+        return;
+      }
+      if (item.modifierGroupRules.some(rule=>!Number.isInteger(Number(rule.freeEvery??0))||Number(rule.freeEvery)<0||Number(rule.freeEvery)>99||rule.freeEvery==='')) {
+        showError('Para los adicionales gratis, indica un número entre 0 y 99.');
         return;
       }
       next={...settings,generalRules:item.modifierGroupRules};

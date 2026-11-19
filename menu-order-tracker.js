@@ -51,17 +51,6 @@
       const d=await r.json(); if(!r.ok)throw new Error();
       const cfg=d.catalog||{};
       generalGroups=d.generalModifierGroups||[];
-      const nextCounts={};
-      for(const group of generalGroups){
-        let remaining=group.max;
-        for(const option of group.options){
-          const count=Math.max(0,Math.min(remaining,group.repeat===false?1:remaining,Math.floor(Number(generalCounts[option.id])||0)));
-          if(count)nextCounts[option.id]=count;
-          remaining-=count;
-        }
-      }
-      generalCounts=nextCounts;
-      saveGeneralCounts();
       const byId=new Map(PRODUCTS.map(product=>[product.id,product]));
       const labels=new Map((d.categories||[]).map(category=>[category.key,category.label]));
       PRODUCTS=Object.entries(cfg).filter(([,item])=>item?.active!==false).map(([id,item])=>{
@@ -433,36 +422,63 @@
     $('detailOrder').textContent=complete?`AGREGAR ${qty} · ${MXN.format(detailTotal())}` : 'COMPLETA TUS OPCIONES';
   };
 
+  const maxPaidAddons=999;
+  function freeAddonsSelected(group,counts){
+    return group.options.reduce((sum,option)=>sum+(option.price===0?(Number(counts[option.id])||0):0),0);
+  }
+
+  function addonLimitReached(group,option,counts){
+    return option.price>0?(Number(counts[option.id])||0)>=maxPaidAddons:freeAddonsSelected(group,counts)>=group.freeLimit;
+  }
+
   function modifierOptionBlocks(groups,counts,units,attribute){
     const blocks=[];
     for(const [groupIndex,group] of groups.entries()){
       if(!group.options.length)continue;
       const count=selectedInGroup(group,counts);
       const max=group.max*units;
+      const isGeneral=group.freeLimit!==undefined;
+      const hasFree=group.options.some(option=>option.price===0);
+      const freeLabel=group.freeLimit===0&&group.freeEvery
+        ? `1 gratis por cada ${group.freeEvery} productos elegibles`
+        : `Gratis · ${freeAddonsSelected(group,counts)}/${group.freeLimit}`;
+      const label=isGeneral?(hasFree?freeLabel:''):`${group.min?`Elige al menos ${group.min*units}`:'Opcional'} · ${count}/${max}`;
       blocks.push(`<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
-        <span>${group.min?`Elige al menos ${group.min*units}`:'Opcional'} · ${count}/${max}</span></div>
+        ${label?`<span>${label}</span>`:''}</div>
         <div class="flavor-list">${group.options.map((option,index)=>{
           const qty=Number(counts[option.id])||0;
-          return `<div class="flavor-row"><div><b>${esc(option.name)}</b><small>${option.price?'+ '+MXN.format(option.price)+' c/u':'Incluido'}</small></div>
+          return `<div class="flavor-row"><div><b>${esc(option.name)}</b><small>${option.price?'+ '+MXN.format(option.price)+' c/u':isGeneral?'Gratis':'Incluido'}</small></div>
             <div class="mini-qty"><button type="button" ${attribute}="${groupIndex}:${index}:-1" ${qty?'':'disabled'} aria-label="Quitar ${esc(option.name)}">−</button>
-            <b>${qty}</b><button type="button" ${attribute}="${groupIndex}:${index}:1" ${count>=max||(group.repeat===false&&qty>=units)?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button></div></div>`;
+            <b>${qty}</b><button type="button" ${attribute}="${groupIndex}:${index}:1" ${(isGeneral?addonLimitReached(group,option,counts):count>=max||(group.repeat===false&&qty>=units))?'disabled':''} aria-label="Agregar ${esc(option.name)}">+</button></div></div>`;
         }).join('')}</div></div>`);
     }
     return blocks;
   }
 
   function generalSelection(includeUpsell){
-    const eligible=cartItems().some(({p})=>!p.groups)||(includeUpsell&&upsellDrink&&upsellCocaQty>0);
-    const groups=eligible?generalGroups:[];
-    const options=groups.flatMap(group=>group.options.flatMap(option=>{
-      const qty=Number(generalCounts[option.id]);
-      return Number.isInteger(qty)&&qty>0?[{id:option.id,qty,price:option.price}]:[];
-    }));
-    return {
-      groups,options,
-      total:options.reduce((sum,option)=>sum+option.price*option.qty,0),
-      valid:validExtraCounts({modifierGroups:groups},options,1)
-    };
+    const looseItems=cartItems().filter(({p})=>!p.groups);
+    if(includeUpsell&&upsellDrink&&upsellCocaQty>0)looseItems.push({p:upsellDrink,qty:upsellCocaQty});
+    const groups=looseItems.length?generalGroups.map(group=>{
+      const count=looseItems.reduce((sum,{p,qty})=>
+        sum+(!group.freeCategories?.length||group.freeCategories.includes(p.categoryKey)?qty:0),0);
+      const freeLimit=group.freeEvery?Math.floor(count/group.freeEvery):count?group.max:0;
+      return {...group,freeLimit};
+    }):[];
+    const options=[];
+    let valid=true;
+    for(const group of groups){
+      let remaining=group.freeLimit;
+      let selected=0;
+      for(const option of group.options){
+        const qty=Math.max(0,Math.min(option.price>0?maxPaidAddons:remaining,Math.floor(Number(generalCounts[option.id])||0)));
+        if(!qty)continue;
+        if(option.price===0)remaining-=qty;
+        selected+=qty;
+        options.push({id:option.id,qty,price:option.price});
+      }
+      if(!group.freeEvery&&selected<group.min)valid=false;
+    }
+    return {groups,options,valid,total:options.reduce((sum,option)=>sum+option.price*option.qty,0)};
   }
 
   function saveGeneralCounts(){
@@ -471,9 +487,14 @@
 
   function renderGeneralModifiers(target,checkout){
     if(!target)return;
-    const {groups}=generalSelection(checkout);
+    const {groups,options}=generalSelection(checkout);
     target.hidden=!groups.length;
     if(!groups.length){target.replaceChildren();return;}
+    const current=Object.fromEntries(options.map(option=>[option.id,option.qty]));
+    if(JSON.stringify(current)!==JSON.stringify(generalCounts)){
+      generalCounts=current;
+      saveGeneralCounts();
+    }
     target.innerHTML='<h3>Adicionales</h3>'+
       modifierOptionBlocks(groups,generalCounts,1,'data-general-choice').join('');
     target.querySelectorAll('[data-general-choice]').forEach(button=>{
@@ -482,7 +503,7 @@
         const [groupIndex,optionIndex,delta]=key.split(':').map(Number);
         const group=groups[groupIndex], option=group.options[optionIndex];
         const qty=Number(generalCounts[option.id])||0;
-        if(delta>0&&selectedInGroup(group,generalCounts)>=group.max)return;
+        if(delta>0&&addonLimitReached(group,option,generalCounts))return;
         generalCounts[option.id]=Math.max(0,qty+delta);
         saveGeneralCounts();
         if(checkout)updateCheckout();else renderCart();

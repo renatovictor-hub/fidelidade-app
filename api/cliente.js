@@ -9,7 +9,7 @@ import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/
 
 import { availableComboGroups, normalizeComboGroups, priceCombo } from "../lib/server/menu-combos.js";
 
-import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings, normalizeModifierRules, generalModifierGroups } from "../lib/server/menu-settings.js";
+import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings, normalizeModifierRules, generalModifierGroups, MAX_PAID_ADDONS } from "../lib/server/menu-settings.js";
 
 const admin=getFirebaseAdmin();
 
@@ -223,6 +223,8 @@ function priceModifiers(requested, legacyOptions, groups, qty) {
     if(requestedModifiers.length>230)return null;
     const available=new Map([...(legacyOptions||[]),...(groups||[]).flatMap(group=>group.options)]
         .filter(option=>option?.active!==false).map(option=>[option.id,option]));
+    const generalLimits=new Map((groups||[]).filter(group=>group.freeLimit!==undefined)
+        .flatMap(group=>group.options.map(option=>[option.id,option.price>0?MAX_PAID_ADDONS:group.freeLimit])));
     const validated=[], modifierDetails=[];
     const seen=new Set();
     let modifierTotal=0;
@@ -234,7 +236,7 @@ function priceModifiers(requested, legacyOptions, groups, qty) {
         const requestedQty=Number(modifier?.qty);
         const shared=id.startsWith("group:");
         const count=shared?requestedQty:Math.max(1,Math.min(qty,Math.floor(requestedQty)||1));
-        if(shared&&(!Number.isInteger(count)||count<1||count>20*qty))return null;
+        if(shared&&(!Number.isSafeInteger(count)||count<1||count>(generalLimits.get(id)??20*qty)))return null;
         validated.push({id,qty:count});
         modifierTotal+=Math.max(0,Number(allowed.price||0))*count;
         modifierDetails.push(allowed.name+" ×"+count);
@@ -578,7 +580,9 @@ async function handleOrderCreate(req, res) {
     const items = secure.items;
     if (secure.invalid) return res.status(400).json({ error:"El pedido contiene un producto no válido o con precio desactualizado." });
     if (!items.length) return res.status(400).json({ error:"El pedido no tiene productos" });
-    const generalGroups=items.some(item=>catalog[item.productId]?.type!=="combo")?generalModifierGroups(settings):[];
+    const looseItems=items.filter(item=>catalog[item.productId]?.type!=="combo")
+        .map(item=>({category:catalog[item.productId].category,qty:item.qty}));
+    const generalGroups=generalModifierGroups(settings,looseItems);
     const general=priceModifiers(body.generalModifiers,[],generalGroups,1);
     if(!general)return res.status(400).json({error:"Revisa los complementos generales para tus productos sueltos."});
     const orderRef = db.ref("pedidos").push();
