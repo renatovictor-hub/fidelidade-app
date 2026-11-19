@@ -425,11 +425,23 @@ async function saveMenuSettings(req,res){
     const db=requestDb(req);
     const ref=db.ref("config/menu_workspace");
     const previous=normalizeMenuSettings(req.body.previous);
-    await ref.once("value");
-    const updated=await ref.transaction(current=>{
-        if(JSON.stringify(normalizeMenuSettings(current))!==JSON.stringify(previous))return;
-        return settings;
-    });
+    if(!previous)return res.status(400).json({error:"Recarga el menú antes de guardar."});
+    let listener;
+    let updated;
+    try {
+        // Keep the workspace in the local Firebase cache until the transaction finishes.
+        await new Promise((resolve,reject)=>{
+            listener=()=>resolve();
+            ref.on("value",listener,reject);
+        });
+        const previousJson=JSON.stringify(previous);
+        updated=await ref.transaction(current=>{
+            if(JSON.stringify(normalizeMenuSettings(current))!==previousJson)return;
+            return settings;
+        },undefined,false);
+    } finally {
+        if(listener)ref.off("value",listener);
+    }
     if(!updated.committed)return res.status(409).json({error:"El menú cambió. Recarga la pantalla antes de guardar."});
     return res.status(200).json({settings});
 }
