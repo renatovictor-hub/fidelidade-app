@@ -474,7 +474,7 @@
     const {groups}=generalSelection(checkout);
     target.hidden=!groups.length;
     if(!groups.length){target.replaceChildren();return;}
-    target.innerHTML='<h3>Complementos generales</h3><p class="sheet-copy">Para los productos sueltos de tu pedido.</p>'+
+    target.innerHTML='<h3>Adicionales</h3>'+
       modifierOptionBlocks(groups,generalCounts,1,'data-general-choice').join('');
     target.querySelectorAll('[data-general-choice]').forEach(button=>{
       button.onclick=()=>{
@@ -646,7 +646,7 @@
       const r=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(data.error||'No pudimos registrar el pedido.');
       const order=data.order||{},serverItems=Array.isArray(order.items)?order.items:items,lines=serverItems.map(i=>`• ${i.qty}x ${i.name} — ${MXN.format((Number(i.unitPrice)||0)*(Number(i.qty)||1))}${i.details?`\n${i.details}`:''}`),serverSubtotal=Number(order.subtotal||0),serverFee=Number(order.deliveryFee||0),serverDiscount=Number(order.discount||0),serverTotal=Number(order.total||0),mapLink=deliveryLocation?`https://www.google.com/maps?q=${deliveryLocation.latitude},${deliveryLocation.longitude}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,routeDetails=deliveryQuote?`\nRuta: ${deliveryQuote.distanceKm.toFixed(1)} km${quoteExtrasText(deliveryQuote)} · Total envío ${MXN.format(fee)}`:'',residentialText=isResidential?`\nResidencial: Sí${needsQr?' · Requiere QR':''}${residentialInstructions?`\nInstrucciones de acceso: ${residentialInstructions}`:''}`:'',deliveryText=fulfillment==='delivery'?`ENVÍO\nDirección: ${address}\nGoogle Maps: ${mapLink}${routeDetails}${residentialText}\nReferencias: ${baseReferences||'Sin referencias'}`:'RECOGER EN UAI SÔ',when=scheduled?formatScheduled(scheduledAt):'Lo antes posible';
-      if(order.generalModifiers?.details)lines.push(`• Complementos generales — ${MXN.format(order.generalModifiers.total)}\n${order.generalModifiers.details}`);
+      if(order.generalModifiers?.details)lines.push(`• Adicionales — ${MXN.format(order.generalModifiers.total)}\n${order.generalModifiers.details}`);
       const text=`Hola! Pedido ${order.code||''}\n\n${lines.join('\n\n')}\n\nSubtotal: ${MXN.format(serverSubtotal)}\n${serverDiscount?`Descuento VIP: -${MXN.format(serverDiscount)}\n`:''}${fulfillment==='delivery'?`Envío: ${MXN.format(serverFee)}\n`:''}TOTAL: ${MXN.format(serverTotal)}\n\n${deliveryText}\nHorario: ${when}\nPago: ${labelPayment(payment,change)}\n\nCliente: ${name}\nTeléfono: ${phone}`;
       localStorage.setItem('restaurant_checkout_profile',JSON.stringify({name,phone}));
       if(typeof showToast==='function')showToast(`Pedido ${order.code||''} creado`);
