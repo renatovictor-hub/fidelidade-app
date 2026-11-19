@@ -541,37 +541,59 @@
     const note=String($('detailNote').value||'').trim(),totalPrice=detailTotal(),unitPrice=totalPrice/qty;
     const signature=JSON.stringify({productId:p.id,qty,choices:choices.map(x=>[x.id,x.qty]),extras:extras.map(x=>[x.id,x.qty]),note});
     const batchChoices=choices.map(x=>({...x})),batchExtras=extras.map(x=>({...x}));
-    let line=cart.find(x=>x.signature===signature);
+    const line=cart.find(x=>x.signature===signature);
     if(line){
-      if(line.qty+qty>99){showToast('El máximo por artículo es de 99 unidades.');return;}
-      line.qty+=qty;
-      line.choices=(line.choices||[]).map(x=>{const b=batchChoices.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
-      batchChoices.filter(b=>!line.choices.some(x=>x.id===b.id)).forEach(b=>line.choices.push({...b}));
-      line.extras=(line.extras||[]).map(x=>{const b=batchExtras.find(y=>y.id===x.id);return {...x,qty:(Number(x.qty)||0)+(Number(b?.qty)||0)}});
-      batchExtras.filter(b=>!line.extras.some(x=>x.id===b.id)).forEach(b=>line.extras.push({...b}));
+      const next=Number(line.qty)+qty;
+      if(next>99){showToast('El máximo por artículo es de 99 unidades.');return;}
+      resizeCartLine(line,p,next);
     }else{
       cart.push({lineId:`${Date.now()}_${Math.random().toString(36).slice(2,7)}`,signature,productId:p.id,qty,unitPrice,choices,extras,note,batchQty:qty,batchChoices,batchExtras});
     }
     saveCart();closeDetails();showToast(`${qty} ${qty===1?'pieza agregada':'piezas agregadas'}`);
   };
 
+  function scaleCartOptions(options,qty,batchQty,groupFor){
+    const positions=new Map();
+    const batches=Math.floor(qty/batchQty);
+    const remainder=qty%batchQty;
+    return (options||[]).flatMap(option=>{
+      const group=groupFor(option);
+      const start=positions.get(group)||0;
+      const count=Number(option.qty);
+      // Distribute each group's selections across units without losing uneven quantities.
+      let selected=count*batches+Math.floor(count/batchQty)*remainder;
+      const rest=count%batchQty;
+      for(let i=0;i<rest;i++){
+        if((start+i)%batchQty<remainder)selected++;
+      }
+      positions.set(group,(start+rest)%batchQty);
+      return selected?[{...option,qty:selected}]:[];
+    });
+  }
+
+  function resizeCartLine(line,item,qty){
+    const batchQty=Number(line.batchQty);
+    const groupByOption=new Map((item.modifierGroups||[]).flatMap(group=>group.options.map(option=>[option.id,group])));
+    line.choices=scaleCartOptions(line.batchChoices,qty,batchQty,option=>option.groupId||'flavors');
+    line.extras=scaleCartOptions(line.batchExtras,qty,batchQty,option=>groupByOption.get(option.id)||option.id);
+    const extrasCost=[...line.choices,...line.extras].reduce((sum,option)=>sum+(Number(option.price)||0)*option.qty,0);
+    line.qty=qty;
+    line.unitPrice=item.price+extrasCost/qty;
+  }
+
   const nativeChangeQty=window.changeQty;
   window.changeQty=function(lineId,delta){
-    const line=cart.find(x=>x.lineId===lineId);
-    if(!line||!line.batchQty)return nativeChangeQty(lineId,delta);
-    const direction=delta>0?1:-1,batch=Math.max(1,Number(line.batchQty)||1),next=Math.max(0,(Number(line.qty)||0)+direction*batch);
-    if(next>99){showToast('El máximo por artículo es de 99 unidades.');return;}
-    if(direction>0){
-      line.qty=next;
-      (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.choices||(line.choices=[])).push({...b});});
-      (line.batchExtras||[]).forEach(b=>{let x=(line.extras||[]).find(y=>y.id===b.id);if(x)x.qty=(Number(x.qty)||0)+(Number(b.qty)||0);else(line.extras||(line.extras=[])).push({...b});});
-    }else{
-      line.qty=next;
-      (line.batchChoices||[]).forEach(b=>{let x=(line.choices||[]).find(y=>y.id===b.id);if(x)x.qty=Math.max(0,(Number(x.qty)||0)-(Number(b.qty)||0));});
-      (line.batchExtras||[]).forEach(b=>{let x=(line.extras||[]).find(y=>y.id===b.id);if(x)x.qty=Math.max(0,(Number(x.qty)||0)-(Number(b.qty)||0));});
-      line.choices=(line.choices||[]).filter(x=>Number(x.qty)>0);line.extras=(line.extras||[]).filter(x=>Number(x.qty)>0);
+    const line=cart.find(item=>item.lineId===lineId);
+    if(!line)return;
+    const qty=Number(line.qty)+Math.sign(delta);
+    if(qty>99){showToast('El máximo por artículo es de 99 unidades.');return;}
+    const item=product(line.productId);
+    if(!line.batchQty||!item||qty<=0){
+      nativeChangeQty(lineId,Math.sign(delta));
+      return;
     }
-    cart=cart.filter(x=>Number(x.qty)>0);saveCart();renderCart();
+    resizeCartLine(line,item,qty);
+    saveCart();renderCart();
   };
 
   window.lineDetails=function(line){
