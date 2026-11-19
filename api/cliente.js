@@ -7,6 +7,8 @@ import { getRestaurantConfig } from "../lib/server/restaurant-config.js";
 import { getPublicCompanyConfig } from "../lib/server/tenant-config.js";
 import { tenantDatabase, tenantFromRequest, requireTenant } from "../lib/server/tenant-data.js";
 
+import { initialDeliverySettings, normalizeDeliverySettings, deliveryPrice } from "../lib/server/delivery-settings.js";
+
 import { availableComboGroups, normalizeComboGroups, priceCombo } from "../lib/server/menu-combos.js";
 
 import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings, normalizeModifierRules, generalModifierGroups, MAX_PAID_ADDONS } from "../lib/server/menu-settings.js";
@@ -14,7 +16,7 @@ import { checkModifierGroups, listedModifierGroups, normalizeMenuSettings, norma
 const admin=getFirebaseAdmin();
 
 const RESTAURANT_CONFIG=getRestaurantConfig();
-const RESTAURANT = RESTAURANT_CONFIG.location;
+
 function requestDb(req){return tenantDatabase(admin.database(),tenantFromRequest(req));}
 const ORDER_STATUS = {
     received: { label:"Pedido enviado", push:"Recibimos tu pedido. En breve lo confirmaremos." },
@@ -307,6 +309,7 @@ function publicOrder(id, order) {
         payment: order.payment || "",
         items: Array.isArray(order.items) ? order.items : [],
         generalModifiers: order.generalModifiers || null,
+        route: order.route || null,
         history: order.history || {},
         name: order.name || "",
         phone: order.phone || ""
@@ -375,36 +378,74 @@ async function confirmVipRequestForOrder(db, requestId, orderId) {
     return { ok:true, used, remaining:Math.max(0, limit-used) };
 }
 
-async function secureDeliveryQuote(body){
-    const raw=body?.deliveryDestination||{};
-    const safeDestination={placeId:String(raw.placeId||"").trim(),address:String(raw.address||"").trim()};
-    const destination=destinationWaypoint(safeDestination);
-    if(!destination)throw Object.assign(new Error("Dirección de entrega inválida."),{status:400});
-    const apiKey=String(process.env.GOOGLE_ROUTES_API_KEY||"").trim();
-    if(!apiKey)throw Object.assign(new Error("No podemos validar la tarifa de envío en este momento."),{status:503});
-    const response=await fetch("https://routes.googleapis.com/directions/v2:computeRoutes",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","X-Goog-Api-Key":apiKey,"X-Goog-FieldMask":"routes.distanceMeters,routes.duration"},
-        body:JSON.stringify({origin:{location:{latLng:RESTAURANT}},destination,travelMode:"DRIVE",routingPreference:"TRAFFIC_UNAWARE",languageCode:"es-MX",units:"METRIC"})
+async function deliveryCompany(req) {
+    const id = tenantFromRequest(req);
+    return id === "uai-so" ? { id, timezone: RESTAURANT_CONFIG.timezone, currency: RESTAURANT_CONFIG.currency, modules: RESTAURANT_CONFIG.modules }
+        : getPublicCompanyConfig(admin, { query: { company: id } }, RESTAURANT_CONFIG);
+}
+
+async function loadDeliverySettings(db, company) {
+    const snapshot = (await db.ref("config/delivery_settings").once("value")).val();
+    const defaults = initialDeliverySettings(company.id === "uai-so", RESTAURANT_CONFIG);
+    return { settings: normalizeDeliverySettings(snapshot?.settings) || defaults, revision: snapshot?.revision || "" };
+}
+
+async function handleDeliverySettings(req, res, company) {
+    if (!requireAdmin(req, res)) return;
+    const db = requestDb(req);
+    if (req.method === "GET") return res.status(200).json({...(await loadDeliverySettings(db, company)), currency:company.currency});
+    const settings = normalizeDeliverySettings(req.body?.settings);
+    if (!settings) return res.status(400).json({ error: "Revisa las coordenadas, los montos y el orden de las distancias." });
+    const ref = db.ref("config/delivery_settings");
+    const next = { settings, revision: crypto.randomUUID() };
+    let listener;
+    try {
+        await new Promise((resolve, reject) => {
+            listener = () => resolve();
+            ref.on("value", listener, reject);
+        });
+        const saved = await ref.transaction(current => {
+            if ((current?.revision || "") === req.body?.revision) return next;
+        }, undefined, false);
+        if (!saved.committed) return res.status(409).json({error:"La configuración cambió. Recarga antes de guardar."});
+        return res.status(200).json(next);
+    } finally {
+        if (listener) ref.off("value", listener);
+    }
+}
+
+async function secureDeliveryQuote(body, db, company){
+    const { settings } = await loadDeliverySettings(db, company);
+    if (!normalizeDeliverySettings(settings)) {
+        throw Object.assign(new Error("Este restaurante todavía no configuró sus tarifas de envío."), { status: 503 });
+    }
+    const raw = body.deliveryDestination || {};
+    const destination = destinationWaypoint(raw, settings.addressSuffix);
+    if (!destination) throw Object.assign(new Error("Indica una ubicación o dirección válida."), { status: 400 });
+    if (settings.zones.some(zone => zone.fee > 0) && String(raw.address || "").trim().length < 8) {
+        throw Object.assign(new Error("Agrega tu dirección completa, incluida la colonia, para calcular el recargo de zona."), { status: 400 });
+    }
+    const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
+    if (!apiKey) throw Object.assign(new Error("El cálculo automático de envío no está disponible en este momento."), { status: 503 });
+    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "routes.distanceMeters,routes.duration" },
+        body: JSON.stringify({ origin: { location: { latLng: settings.origin } }, destination, travelMode: "DRIVE",
+            routingPreference: "TRAFFIC_UNAWARE", languageCode: "es-MX", units: "METRIC" })
     });
-    const data=await response.json();
-    if(!response.ok)throw Object.assign(new Error("No pudimos validar la ruta de entrega."),{status:502});
-    const route=data?.routes?.[0],distanceMeters=Number(route?.distanceMeters);
-    if(!Number.isFinite(distanceMeters)||distanceMeters<=0)throw Object.assign(new Error("No encontramos una ruta válida para esta dirección."),{status:422});
-    const distanceKm=Math.round(distanceMeters/100)/10,tariff=calculateDeliveryFee(distanceMeters/1000);
-    const address=String(body?.deliveryDestination?.address||"").trim();
-    const bonfil=/(^|\b)(alfredo v\.? bonfil|bonfil)(\b|$)/i.test(address)?20:0;
-    const plaza=body?.insidePlaza===true?20:0;
-    const outsideHours=isOutsideServiceHours(body?.deliveryAt)?20:0;
-    const rain=String(process.env.DELIVERY_RAIN_ACTIVE||"").toLowerCase()==="true"?10:0;
-    const fee=tariff.distanceFee+bonfil+plaza+outsideHours+rain;
-    const durationSeconds=Math.max(0,Number.parseInt(String(route.duration||"0s"),10)||0);
-    return {
-        distanceKm,
-        durationMinutes:Math.max(1,Math.ceil(durationSeconds/60)),
-        fee,
-        breakdown:{distance:tariff.distanceFee,base:tariff.baseFee,extraKm:tariff.extraKm,bonfil,plaza,outsideHours,rain}
-    };
+    const data = await response.json();
+    if (!response.ok) throw Object.assign(new Error("No pudimos calcular la ruta. Revisa la dirección."), { status: 502 });
+    const route = data?.routes?.[0], distanceMeters = Number(route?.distanceMeters);
+    if (!Number.isInteger(distanceMeters) || distanceMeters < 0) {
+        throw Object.assign(new Error("No encontramos una ruta para esta dirección."), { status: 422 });
+    }
+    const price = deliveryPrice(settings, distanceMeters, {
+        address: String(raw.address || "").trim(), insidePlaza: body.insidePlaza === true,
+        residential: body.residential === true, deliveryAt: body.deliveryAt, timezone: company.timezone
+    });
+    if (!price) throw Object.assign(new Error("La dirección está fuera de la zona de entrega."), { status: 422 });
+    const durationSeconds = Math.max(0, Number.parseInt(String(route.duration || "0s"),10) || 0);
+    return { distanceKm: distanceMeters / 1000, durationMinutes: Math.max(1,Math.ceil(durationSeconds/60)), ...price };
 }
 
 async function loadMenuSettings(db){
@@ -570,7 +611,7 @@ async function awardLoyaltyForDeliveredOrder(db,id,order){
     return {awarded:true,points,referral};
 }
 
-async function handleOrderCreate(req, res) {
+async function handleOrderCreate(req, res, company) {
     const body = req.body || {};
     const uid = cleanOrderText(body.uid, 80);
     if (uid && !/^user_\d+$/.test(uid)) return res.status(400).json({ error:"Cliente inválido" });
@@ -594,16 +635,20 @@ async function handleOrderCreate(req, res) {
         if (snap.exists()) profile = snap.val() || {};
     }
     const status = "received";
-    const requestedVipId = cleanOrderText(body.benefit_request_id, 120);
-    const vipRequest = requestedVipId ? await claimVipRequestForOrder(db, requestedVipId, uid, orderRef.key) : null;
-    if (requestedVipId && !vipRequest) return res.status(409).json({ error:"El beneficio VIP ya no está disponible para este pedido. Vuelve a solicitarlo." });
     const subtotal = Math.round(items.reduce((sum,item)=>sum+(item.unitPrice*item.qty),general.modifierTotal)*100)/100;
     const fulfillment = body.fulfillment === "pickup" ? "pickup" : "delivery";
     let secureRoute=null, originalDeliveryFee=0;
     if(fulfillment==="delivery"){
-        try{secureRoute=await secureDeliveryQuote(body);originalDeliveryFee=secureRoute.fee}
+        try{secureRoute=await secureDeliveryQuote({...body,deliveryAt:body.scheduledAt},db,company);originalDeliveryFee=secureRoute.fee}
         catch(error){return res.status(error.status||500).json({error:error.message||"No pudimos validar el envío."})}
+        if (Number(body.deliveryFee) !== originalDeliveryFee) {
+            return res.status(409).json({ error:"La tarifa de envío cambió. Revisa el nuevo total antes de confirmar.",
+                code:"DELIVERY_FEE_CHANGED", quote:secureRoute });
+        }
     }
+    const requestedVipId = cleanOrderText(body.benefit_request_id, 120);
+    const vipRequest = requestedVipId ? await claimVipRequestForOrder(db, requestedVipId, uid, orderRef.key) : null;
+    if (requestedVipId && !vipRequest) return res.status(409).json({ error:"El beneficio VIP ya no está disponible para este pedido. Vuelve a solicitarlo." });
     const vipPricing = vipRequest ? applyVipBenefitToOrder(vipRequest, subtotal, originalDeliveryFee) : { discount:0, deliveryFee:originalDeliveryFee, total:Math.max(0,Math.round((subtotal+originalDeliveryFee)*100)/100) };
     const order = {
         code,
@@ -804,37 +849,17 @@ async function handleOrderStatus(req, res) {
     return res.status(200).json({ success:true, order:publicOrder(id, order), loyalty });
 }
 
-export function calculateDeliveryFee(distanceKm) {
-    const km = Math.max(0, Number(distanceKm) || 0);
-    if (km <= 2.5) return { baseFee: 40, extraKm: 0, distanceFee: 40 };
-    if (km <= 4) return { baseFee: 50, extraKm: 0, distanceFee: 50 };
-    if (km <= 5.5) return { baseFee: 60, extraKm: 0, distanceFee: 60 };
-    if (km <= 7) return { baseFee: 70, extraKm: 0, distanceFee: 70 };
-    if (km <= 10) return { baseFee: 80, extraKm: 0, distanceFee: 80 };
-    const extraKm = Math.ceil(km - 10);
-    return { baseFee: 80, extraKm, distanceFee: 80 + extraKm * 10 };
-}
-
-function isOutsideServiceHours(deliveryAt) {
-    if (typeof deliveryAt === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(deliveryAt)) {
-        const hour = Number(deliveryAt.slice(11, 13));
-        return hour < 8 || hour >= 23;
-    }
-    const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: RESTAURANT_CONFIG.timezone, hour: "2-digit", hour12: false }).format(new Date()));
-    return hour < 8 || hour >= 23;
-}
-
-function destinationWaypoint(destination) {
+function destinationWaypoint(destination, addressSuffix) {
     const placeId = String(destination?.placeId || "").trim();
     if (/^[A-Za-z0-9_-]{10,200}$/.test(placeId)) return { placeId };
-    const latitude = Number(destination?.latitude);
-    const longitude = Number(destination?.longitude);
+    const latitude = destination?.latitude;
+    const longitude = destination?.longitude;
     if (Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180) {
         return { location: { latLng: { latitude, longitude } } };
     }
     const address = String(destination?.address || "").trim().slice(0, 240);
     if (address.length < 8) return null;
-    const suffix=String(RESTAURANT_CONFIG.addressSuffix||"").trim();
+    const suffix=String(addressSuffix||"").trim();
     if(!suffix)return {address};
     const norm=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
     const city=norm(suffix.split(",")[0]);
@@ -842,7 +867,7 @@ function destinationWaypoint(destination) {
     return { address: city&&full.includes(city) ? address : `${address}, ${suffix}` };
 }
 
-async function handlePlaceAutocomplete(req, res) {
+async function handlePlaceAutocomplete(req, res, company) {
     const input = String(req.body?.input || "").trim().slice(0, 120);
     if (input.length < 3) return res.status(200).json({ suggestions: [] });
     const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
@@ -850,6 +875,8 @@ async function handlePlaceAutocomplete(req, res) {
     const sessionToken = String(req.body?.sessionToken || "").trim().slice(0, 80);
 
     try {
+        const {settings} = await loadDeliverySettings(requestDb(req), company);
+        const hasOrigin = Number.isFinite(settings.origin.latitude) && Number.isFinite(settings.origin.longitude);
         const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
             method: "POST",
             headers: {
@@ -863,7 +890,7 @@ async function handlePlaceAutocomplete(req, res) {
                 includedRegionCodes: ["mx"],
                 languageCode: "es",
                 regionCode: "mx",
-                locationBias: { circle: { center: RESTAURANT, radius: 50000 } }
+                ...(hasOrigin ? { locationBias: { circle: { center: settings.origin, radius: 50000 } } } : {})
             })
         });
         const data = await response.json();
@@ -884,40 +911,13 @@ async function handlePlaceAutocomplete(req, res) {
     }
 }
 
-async function handleDeliveryQuote(req, res) {
-    const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
-    if (!apiKey) return res.status(503).json({ error: "El cálculo automático todavía no está habilitado.", code: "GOOGLE_MAPS_NOT_CONFIGURED" });
-    const destination = destinationWaypoint(req.body?.destination);
-    if (!destination) return res.status(400).json({ error: "Indica una ubicación o dirección válida." });
-
+async function handleDeliveryQuote(req, res, company) {
     try {
-        const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "routes.distanceMeters,routes.duration" },
-            body: JSON.stringify({ origin: { location: { latLng: RESTAURANT } }, destination, travelMode: "DRIVE", routingPreference: "TRAFFIC_UNAWARE", languageCode: "es-MX", units: "METRIC" })
-        });
-        const data = await response.json();
-        if (!response.ok) {
-            console.error("Google Routes error:", response.status, data?.error?.status || "unknown", data?.error?.message || "");
-            return res.status(502).json({ error: "No pudimos calcular la ruta. Revisa la dirección e inténtalo de nuevo." });
-        }
-        const route = data?.routes?.[0];
-        const distanceMeters = Number(route?.distanceMeters);
-        if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) return res.status(422).json({ error: "No encontramos una ruta para esta dirección." });
-
-        const distanceKm = Math.round(distanceMeters / 100) / 10;
-        const tariff = calculateDeliveryFee(distanceMeters / 1000);
-        const address = String(req.body?.destination?.address || "").trim();
-        const bonfilSurcharge = /(^|\b)(alfredo v\.? bonfil|bonfil)(\b|$)/i.test(address) ? 20 : 0;
-        const plazaSurcharge = req.body?.insidePlaza === true ? 20 : 0;
-        const outsideHoursSurcharge = isOutsideServiceHours(req.body?.deliveryAt) ? 20 : 0;
-        const rainSurcharge = String(process.env.DELIVERY_RAIN_ACTIVE || "").toLowerCase() === "true" ? 10 : 0;
-        const fee = tariff.distanceFee + bonfilSurcharge + plazaSurcharge + outsideHoursSurcharge + rainSurcharge;
-        const durationSeconds = Math.max(0, Number.parseInt(String(route.duration || "0s"), 10) || 0);
-        return res.status(200).json({ distanceKm, durationMinutes: Math.max(1, Math.ceil(durationSeconds / 60)), fee, breakdown: { distance: tariff.distanceFee, base: tariff.baseFee, extraKm: tariff.extraKm, bonfil: bonfilSurcharge, plaza: plazaSurcharge, outsideHours: outsideHoursSurcharge, rain: rainSurcharge } });
+        const quote = await secureDeliveryQuote({ ...req.body, deliveryDestination: req.body.destination }, requestDb(req), company);
+        return res.status(200).json(quote);
     } catch (error) {
-        console.error("Delivery quote error:", error?.message || error);
-        return res.status(500).json({ error: "No pudimos calcular el envío en este momento." });
+        if (!error.status) console.error("Delivery quote error:", error?.message || error);
+        return res.status(error.status || 500).json({ error: error.status ? error.message : "No pudimos calcular el envío en este momento." });
     }
 }
 
@@ -992,21 +992,18 @@ export default async function handler(req, res) {
         }catch(error){return res.status(500).json({error:"No se pudo restaurar la sesión",details:error.message})}
     }
 
-    if (req.method === "POST" && req.body?.action === "delivery_quote") {
-        if(!RESTAURANT_CONFIG.modules.delivery)return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
-        return handleDeliveryQuote(req, res);
-    }
-
-    if (req.method === "POST" && req.body?.action === "place_autocomplete") {
-        if(!RESTAURANT_CONFIG.modules.delivery)return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
-        return handlePlaceAutocomplete(req, res);
-    }
-
-    if (req.method === "POST" && req.body?.action === "order_create") {
-        if(!RESTAURANT_CONFIG.modules.delivery)return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
-        const uid=cleanOrderText(req.body?.uid,80);
-        if(!requireClient(req,res,uid))return;
-        return handleOrderCreate(req, res);
+    const deliveryAction = req.method === "GET" ? req.query?.action : req.method === "POST" ? req.body?.action : "";
+    if (["delivery_settings", "delivery_quote", "place_autocomplete", "order_create"].includes(deliveryAction)) {
+        const company = await deliveryCompany(req);
+        if (!company?.modules?.delivery) return res.status(403).json({error:"El módulo Delivery no está habilitado para este restaurante."});
+        if (deliveryAction === "delivery_settings") return handleDeliverySettings(req, res, company);
+        if (req.method === "POST") {
+            if (deliveryAction === "delivery_quote") return handleDeliveryQuote(req, res, company);
+            if (deliveryAction === "place_autocomplete") return handlePlaceAutocomplete(req, res, company);
+            const uid = cleanOrderText(req.body?.uid, 80);
+            if (!requireClient(req, res, uid)) return;
+            return handleOrderCreate(req, res, company);
+        }
     }
 
     if (req.method === "PATCH" && req.body?.action === "order_status") {
