@@ -312,9 +312,20 @@
             <span><strong>${escape(group.name)}</strong><small>${group.options.length} opciones</small></span>
           </label>
           ${rule&&general?`<div class="menu-fields">
-            ${input('1 gratis por cada X productos','freeEvery',rule.freeEvery??0,'type="number" min="0" max="99"')}
-            ${input('Gratis por pedido (si X es 0)','max',rule.max,'type="number" min="1" max="20"')}
+            <label>¿Cómo ofreces los adicionales gratis?
+              <select data-edit-field="freeMode">
+                <option value="order" ${rule.freeEvery===undefined?'selected':''}>Por pedido</option>
+                <option value="quantity" ${rule.freeEvery!==undefined?'selected':''}>Según la cantidad de productos</option>
+              </select>
+            </label>
+            <div data-free-order ${rule.freeEvery!==undefined?'hidden':''}>
+              ${input('Cantidad gratis por pedido','max',rule.max,'type="number" min="1" max="20"')}
+            </div>
+            <div data-free-quantity ${rule.freeEvery===undefined?'hidden':''}>
+              ${input('1 gratis por cada cuántos productos','freeEvery',rule.freeEvery??5,'type="number" min="1" max="99"')}
+            </div>
           </div>
+          <p data-free-quantity-help ${rule.freeEvery===undefined?'hidden':''}>El primer adicional gratis está disponible desde el primer producto elegible. A partir de ahí, se calcula uno por cada grupo completo.</p>
           <details>
             <summary>Categorías que cuentan para los gratis</summary>
             <p>Si no marcas ninguna, cuentan todos los productos sueltos.</p>
@@ -513,13 +524,21 @@
       });
       return;
     }
-    const linkedGroup=element.closest('[data-modifier-link]')?.dataset.modifierLink;
-    if (linkedGroup && (field || element.dataset.freeCategory!==undefined)) {
-      const rule=item.modifierGroupRules.find(entry=>entry.id===linkedGroup);
+    const ruleCard=element.closest('[data-modifier-link]');
+    if (ruleCard && (field || element.dataset.freeCategory!==undefined)) {
+      const rule=item.modifierGroupRules.find(entry=>entry.id===ruleCard.dataset.modifierLink);
       const category=element.dataset.freeCategory;
       if (category!==undefined) {
         const selected=rule.freeCategories||[];
         rule.freeCategories=element.checked?[...selected,category]:selected.filter(key=>key!==category);
+      } else if (field==='freeMode') {
+        const byQuantity=element.value==='quantity';
+        const quantityField=ruleCard.querySelector('[data-free-quantity]');
+        if (byQuantity) rule.freeEvery=quantityField.querySelector('input').value;
+        else delete rule.freeEvery;
+        ruleCard.querySelector('[data-free-order]').hidden=byQuantity;
+        quantityField.hidden=!byQuantity;
+        ruleCard.querySelector('[data-free-quantity-help]').hidden=!byQuantity;
       } else {
         rule[field]=element.value;
       }
@@ -632,8 +651,8 @@
         showError('Revisa el mínimo y máximo de cada grupo de complementos.');
         return;
       }
-      if (item.modifierGroupRules.some(rule=>!Number.isInteger(Number(rule.freeEvery??0))||Number(rule.freeEvery)<0||Number(rule.freeEvery)>99||rule.freeEvery==='')) {
-        showError('Para los adicionales gratis, indica un número entre 0 y 99.');
+      if (item.modifierGroupRules.some(rule=>rule.freeEvery!==undefined&&!/^[1-9][0-9]?$/.test(String(rule.freeEvery)))) {
+        showError('En la regla por cantidad, indica entre 1 y 99 productos.');
         return;
       }
       next={...settings,generalRules:item.modifierGroupRules};

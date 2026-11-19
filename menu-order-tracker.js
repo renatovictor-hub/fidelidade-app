@@ -439,8 +439,8 @@
       const max=group.max*units;
       const isGeneral=group.freeLimit!==undefined;
       const hasFree=group.options.some(option=>option.price===0);
-      const freeLabel=group.freeLimit===0&&group.freeEvery
-        ? `1 gratis por cada ${group.freeEvery} productos elegibles`
+      const freeLabel=group.freeLimit===0
+        ? 'Gratis con productos elegibles'
         : `Gratis · ${freeAddonsSelected(group,counts)}/${group.freeLimit}`;
       const label=isGeneral?(hasFree?freeLabel:''):`${group.min?`Elige al menos ${group.min*units}`:'Opcional'} · ${count}/${max}`;
       blocks.push(`<div class="option-block"><div class="option-title"><strong>${esc(group.name)}</strong>
@@ -461,7 +461,7 @@
     const groups=looseItems.length?generalGroups.map(group=>{
       const count=looseItems.reduce((sum,{p,qty})=>
         sum+(!group.freeCategories?.length||group.freeCategories.includes(p.categoryKey)?qty:0),0);
-      const freeLimit=group.freeEvery?Math.floor(count/group.freeEvery):count?group.max:0;
+      const freeLimit=!count?0:group.freeEvery?Math.max(1,Math.floor(count/group.freeEvery)):group.max;
       return {...group,freeLimit};
     }):[];
     const options=[];
