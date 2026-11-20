@@ -421,19 +421,36 @@ async function addressFromDeliveryLocation({latitude, longitude}, apiKey) {
         const response = await fetch("https://maps.googleapis.com/maps/api/geocode/json?" + params, {
             signal: AbortSignal.timeout(4500)
         });
-        if (!response.ok) return "";
+        if (!response.ok) {
+            console.warn("Delivery geocoding HTTP status:", response.status);
+            return "";
+        }
         const data = await response.json();
-        if (data.status !== "OK" || !Array.isArray(data.results)) return "";
+        if (data.status !== "OK" || !Array.isArray(data.results)) {
+            const status = ["ZERO_RESULTS", "OVER_QUERY_LIMIT", "OVER_DAILY_LIMIT", "REQUEST_DENIED", "INVALID_REQUEST", "UNKNOWN_ERROR"]
+                .find(value => value === data.status) || "UNEXPECTED_RESPONSE";
+            const detail = String(data.error_message || "");
+            const reason = /not (?:been )?activated|not (?:been )?enabled|has not been used/i.test(detail) ? "API_DISABLED"
+                : /not authori[sz]ed|restriction|referer|referrer/i.test(detail) ? "KEY_RESTRICTED"
+                : /billing/i.test(detail) ? "BILLING"
+                : /api key is invalid/i.test(detail) ? "INVALID_KEY" : "";
+            console.warn("Delivery geocoding status:", status, reason);
+            return "";
+        }
         const result = data.results.find(row => row.types?.some(type =>
             ["street_address", "premise", "subpremise", "establishment", "route"].includes(type)));
-        if (!result?.formatted_address) return "";
+        if (!result?.formatted_address) {
+            console.info("Delivery geocoding returned no street address");
+            return "";
+        }
         const address = cleanOrderText(result.formatted_address, 180);
         const compare = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const district = result.address_components?.find(component =>
             component.types?.some(type=>["neighborhood","sublocality_level_1"].includes(type)) &&
             typeof component.long_name === "string" && !compare(address).includes(compare(component.long_name)));
         return cleanOrderText(district ? `${address}, ${district.long_name}` : address, 220);
-    } catch {
+    } catch (error) {
+        console.warn("Delivery geocoding failed:", error?.name === "TimeoutError" ? "TIMEOUT" : "REQUEST_FAILED");
         return "";
     }
 }
