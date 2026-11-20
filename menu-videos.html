@@ -83,7 +83,7 @@
 
         <div class="checkout-step"><h3>¿Cómo quieres recibirlo?</h3><div class="choice-grid"><label class="choice-card"><input type="radio" name="fulfillment" value="delivery" checked onchange="updateCheckout()"><span>🛵 Envío</span></label><label class="choice-card"><input type="radio" name="fulfillment" value="pickup" onchange="updateCheckout()"><span>🏪 Recoger</span></label></div></div>
 
-        <div id="deliveryFields" class="conditional checkout-step"><h3>Datos de entrega</h3><div class="field address-field"><label for="deliveryAddress"><span>Dirección completa</span></label><textarea id="deliveryAddress" required maxlength="220" autocomplete="off" placeholder="Ej.: Calle Mediterráneo 120" oninput="handleAddressInput()" onfocus="renderAddressSuggestions()" onblur="setTimeout(hideAddressSuggestions,180)" aria-autocomplete="list" aria-controls="addressSuggestions"></textarea><div id="addressSuggestions" class="address-suggestions" role="listbox"></div></div><div class="location-actions"><button id="useLocation" class="location-action" type="button" onclick="useCurrentLocation()">⌖ Usar mi ubicación</button><button id="calculateDeliveryButton" class="location-action primary-location" type="button">CALCULAR ENVÍO</button></div><div id="deliveryStatus" class="delivery-status" role="status"></div><label class="check-row"><input id="insidePlaza" type="checkbox" onchange="invalidateDeliveryQuote()"><span>La entrega es dentro de una plaza comercial</span></label><label class="field"><span>Referencias</span><input id="deliveryReference" maxlength="140" placeholder="Color de la casa, edificio, acceso..."></label><p class="delivery-note">El envío se calcula por la ruta desde el restaurante y los recargos que correspondan.</p></div>
+        <div id="deliveryFields" class="conditional checkout-step"><h3>Datos de entrega</h3><div class="field address-field"><label for="deliveryAddress"><span>Dirección completa</span></label><textarea id="deliveryAddress" required maxlength="220" autocomplete="off" placeholder="Ej.: Calle Mediterráneo 120" oninput="handleAddressInput()" onfocus="renderAddressSuggestions()" onblur="setTimeout(hideAddressSuggestions,180)" aria-autocomplete="list" aria-controls="addressSuggestions"></textarea><div id="addressSuggestions" class="address-suggestions" role="listbox"></div></div><div class="location-actions"><button id="useLocation" aria-pressed="false" class="location-action" type="button" onclick="useCurrentLocation()">⌖ Usar mi ubicación</button><button id="calculateDeliveryButton" class="location-action primary-location" type="button">CALCULAR ENVÍO</button></div><div id="deliveryStatus" class="delivery-status" role="status"></div><label class="check-row"><input id="insidePlaza" type="checkbox" onchange="invalidateDeliveryQuote()"><span>La entrega es dentro de una plaza comercial</span></label><label class="field"><span>Referencias</span><input id="deliveryReference" maxlength="140" placeholder="Color de la casa, edificio, acceso..."></label><p class="delivery-note">El envío se calcula por la ruta desde el restaurante y los recargos que correspondan.</p></div>
         <div id="pickupInfo" class="conditional checkout-step hidden"><h3>Recoger en el restaurante</h3><p class="sheet-copy">Te confirmaremos por WhatsApp la hora y el punto exacto de entrega.</p></div>
 
         <div class="checkout-step"><h3>¿Cuándo?</h3><div class="choice-grid"><label class="choice-card"><input type="radio" name="orderTime" value="now" checked onchange="invalidateDeliveryQuote();updateCheckout()"><span>Ahora</span></label><label class="choice-card"><input type="radio" name="orderTime" value="scheduled" onchange="invalidateDeliveryQuote();updateCheckout()"><span>Programar</span></label></div><div id="scheduleField" class="conditional hidden" style="margin-top:10px"><label class="field"><span>Fecha y hora</span><input id="scheduledAt" type="datetime-local" onchange="invalidateDeliveryQuote();updateCheckout()"></label></div></div>
@@ -251,19 +251,61 @@ function cartSubtotal(){return cartItems().reduce((n,x)=>n+(Number(x.line.unitPr
 function createPlacesSessionToken(){return globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`}
 function hideAddressSuggestions(){const box=$('addressSuggestions');if(box)box.classList.remove('show')}
 function renderAddressSuggestions(){const box=$('addressSuggestions');if(!box||!addressSuggestions.length)return hideAddressSuggestions();box.innerHTML=addressSuggestions.map((item,index)=>`<button class="address-suggestion" type="button" role="option" onclick="selectAddressSuggestion(${index})"><b>${esc(item.main||item.text)}</b>${item.secondary?`<small>${esc(item.secondary)}</small>`:''}</button>`).join('')+`<div class="google-attribution"><img src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-white3.png" alt="Powered by Google"></div>`;box.classList.add('show')}
-function handleAddressInput(){clearTimeout(addressTimer);addressAbort?.abort();deliveryPlaceId=null;invalidateDeliveryQuote(true);const input=$('deliveryAddress').value.trim();if(input.length<3){addressSuggestions=[];return hideAddressSuggestions()}addressTimer=setTimeout(()=>loadAddressSuggestions(input),400)}
+function handleAddressInput(){
+  clearTimeout(addressTimer);
+  addressAbort?.abort();
+  deliveryPlaceId=null;
+  invalidateDeliveryQuote();
+  const input=$('deliveryAddress').value.trim();
+  if(deliveryLocation||input.length<3){addressSuggestions=[];return hideAddressSuggestions();}
+  addressTimer=setTimeout(()=>loadAddressSuggestions(input),400);
+}
 async function loadAddressSuggestions(input){addressAbort=new AbortController();try{const response=await fetch('/api/cliente',{method:'POST',headers:{'Content-Type':'application/json'},signal:addressAbort.signal,body:JSON.stringify({action:'place_autocomplete',input,sessionToken:placesSessionToken})});const data=await response.json().catch(()=>({}));if($('deliveryAddress').value.trim()!==input)return;addressSuggestions=Array.isArray(data.suggestions)?data.suggestions:[];renderAddressSuggestions()}catch(error){if(error.name!=='AbortError'){addressSuggestions=[];hideAddressSuggestions()}}}
-function selectAddressSuggestion(index){const item=addressSuggestions[index];if(!item)return;$('deliveryAddress').value=item.text;deliveryPlaceId=item.placeId;deliveryLocation=null;deliveryQuote=null;addressSuggestions=[];hideAddressSuggestions();placesSessionToken=createPlacesSessionToken();setDeliveryStatus('Dirección seleccionada. Calculando la ruta...');calculateDelivery()}
+function selectAddressSuggestion(index){const item=addressSuggestions[index];if(!item)return;$('deliveryAddress').value=item.text;deliveryPlaceId=item.placeId;clearDeliveryLocation();deliveryQuote=null;addressSuggestions=[];hideAddressSuggestions();placesSessionToken=createPlacesSessionToken();setDeliveryStatus('Dirección seleccionada. Calculando la ruta...');calculateDelivery()}
 function deliveryFee(){return selectedValue('fulfillment')==='delivery'?(deliveryQuote?.fee ?? 0):0}
 function setDeliveryStatus(text,type=''){$('deliveryStatus').textContent=text;$('deliveryStatus').className=`delivery-status ${text?'show':''} ${type}`.trim()}
 function invalidateDeliveryQuote(clearLocation=false){
   deliveryQuoteRequest?.abort();
   deliveryQuote=null;
-  if(clearLocation)deliveryLocation=null;
+  if(clearLocation)clearDeliveryLocation();
   setDeliveryStatus('');
   updateCheckout();
 }
-function useCurrentLocation(){if(!navigator.geolocation)return setDeliveryStatus('Este dispositivo no permite compartir la ubicación. Escribe tu dirección completa.','error');hideAddressSuggestions();deliveryPlaceId=null;invalidateDeliveryQuote(true);const button=$('useLocation');button.disabled=true;button.textContent='UBICANDO...';setDeliveryStatus('Buscando tu ubicación...');navigator.geolocation.getCurrentPosition(position=>{deliveryLocation={latitude:position.coords.latitude,longitude:position.coords.longitude};button.disabled=false;button.textContent='✓ Ubicación lista';setDeliveryStatus('Ubicación recibida. Calculando la ruta...');calculateDelivery()},error=>{button.disabled=false;button.textContent='⌖ Usar mi ubicación';const denied=error.code===1;setDeliveryStatus(denied?'No diste permiso para usar la ubicación. Puedes escribir tu dirección.':'No pudimos obtener tu ubicación. Escribe la dirección e inténtalo de nuevo.','error')},{enableHighAccuracy:true,timeout:12000,maximumAge:60000})}
+function clearDeliveryLocation(){
+  deliveryLocation=null;
+  const button=$('useLocation');
+  button.textContent='⌖ Usar mi ubicación';
+  button.setAttribute('aria-pressed','false');
+}
+function useCurrentLocation(){
+  if(deliveryLocation){
+    invalidateDeliveryQuote(true);
+    return;
+  }
+  if(!navigator.geolocation)return setDeliveryStatus('Este dispositivo no permite compartir la ubicación. Escribe tu dirección completa.','error');
+  hideAddressSuggestions();
+  clearTimeout(addressTimer);
+  addressAbort?.abort();
+  addressSuggestions=[];
+  deliveryPlaceId=null;
+  invalidateDeliveryQuote(true);
+  const button=$('useLocation');
+  button.disabled=true;
+  button.textContent='UBICANDO...';
+  setDeliveryStatus('Buscando tu ubicación...');
+  navigator.geolocation.getCurrentPosition(position=>{
+    deliveryLocation={latitude:position.coords.latitude,longitude:position.coords.longitude};
+    button.disabled=false;
+    button.textContent='✓ GPS activo · Quitar';
+    button.setAttribute('aria-pressed','true');
+    calculateDelivery();
+  },error=>{
+    button.disabled=false;
+    clearDeliveryLocation();
+    setDeliveryStatus(error.code===1?'No diste permiso para usar la ubicación. Puedes escribir tu dirección.':
+      'No pudimos obtener tu ubicación. Escribe la dirección e inténtalo de nuevo.','error');
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+}
 function quoteExtrasText(quote){
   const breakdown=quote?.breakdown||{};
   const extras=breakdown.extraKm?[String(breakdown.extraKm)+' km extra']:[];
@@ -298,7 +340,13 @@ async function calculateDelivery(){
     const data=await response.json().catch(()=>({}));
     if(request.signal.aborted)return;
     if(!response.ok)throw new Error(data.error||'No pudimos calcular el envío.');
+    if(deliveryLocation&&address.length<8&&data.address){
+      $('deliveryAddress').value=data.address;
+    }
     showDeliveryQuote(data);
+    if(deliveryLocation&&address.length<8&&!data.address){
+      setDeliveryStatus($('deliveryStatus').textContent+' · Escribe la calle, el número y la colonia para continuar.','success');
+    }
   }catch(error){
     if(!request.signal.aborted)setDeliveryStatus(error.message||'No pudimos calcular el envío.','error');
   }finally{

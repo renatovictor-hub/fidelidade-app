@@ -414,6 +414,30 @@ async function handleDeliverySettings(req, res, company) {
     }
 }
 
+async function addressFromDeliveryLocation({latitude, longitude}, apiKey) {
+    const key = String(process.env.GOOGLE_GEOCODING_API_KEY || apiKey).trim();
+    const params = new URLSearchParams({latlng:`${latitude},${longitude}`,language:"es",key});
+    try {
+        const response = await fetch("https://maps.googleapis.com/maps/api/geocode/json?" + params, {
+            signal: AbortSignal.timeout(4500)
+        });
+        if (!response.ok) return "";
+        const data = await response.json();
+        if (data.status !== "OK" || !Array.isArray(data.results)) return "";
+        const result = data.results.find(row => row.types?.some(type =>
+            ["street_address", "premise", "subpremise", "establishment", "route"].includes(type)));
+        if (!result?.formatted_address) return "";
+        const address = cleanOrderText(result.formatted_address, 180);
+        const compare = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const district = result.address_components?.find(component =>
+            component.types?.some(type=>["neighborhood","sublocality_level_1"].includes(type)) &&
+            typeof component.long_name === "string" && !compare(address).includes(compare(component.long_name)));
+        return cleanOrderText(district ? `${address}, ${district.long_name}` : address, 220);
+    } catch {
+        return "";
+    }
+}
+
 async function secureDeliveryQuote(body, db, company){
     const { settings } = await loadDeliverySettings(db, company);
     if (!normalizeDeliverySettings(settings)) {
@@ -422,11 +446,19 @@ async function secureDeliveryQuote(body, db, company){
     const raw = body.deliveryDestination || {};
     const destination = destinationWaypoint(raw, settings.addressSuffix);
     if (!destination) throw Object.assign(new Error("Indica una ubicación o dirección válida."), { status: 400 });
-    if (settings.zones.some(zone => zone.fee > 0) && String(raw.address || "").trim().length < 8) {
-        throw Object.assign(new Error("Agrega tu dirección completa, incluida la colonia, para calcular el recargo de zona."), { status: 400 });
-    }
     const apiKey = String(process.env.GOOGLE_ROUTES_API_KEY || "").trim();
     if (!apiKey) throw Object.assign(new Error("El cálculo automático de envío no está disponible en este momento."), { status: 503 });
+    const hasZoneSurcharges = settings.zones.some(zone => zone.fee > 0);
+    let address = cleanOrderText(raw.address, 220);
+    if (address.length < 8 && destination.location) {
+        address = await addressFromDeliveryLocation(destination.location.latLng, apiKey);
+        if (address.length < 8 && hasZoneSurcharges) {
+            throw Object.assign(new Error("Guardamos tu ubicación. Escribe la calle, el número y la colonia para calcular el envío desde ese punto."), { status: 422 });
+        }
+    }
+    if (address.length < 8 && hasZoneSurcharges) {
+        throw Object.assign(new Error("Agrega la dirección completa, incluida la colonia, para calcular el recargo de zona."), { status: 400 });
+    }
     const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "routes.distanceMeters,routes.duration" },
@@ -440,12 +472,12 @@ async function secureDeliveryQuote(body, db, company){
         throw Object.assign(new Error("No encontramos una ruta para esta dirección."), { status: 422 });
     }
     const price = deliveryPrice(settings, distanceMeters, {
-        address: String(raw.address || "").trim(), insidePlaza: body.insidePlaza === true,
+        address, insidePlaza: body.insidePlaza === true,
         residential: body.residential === true, deliveryAt: body.deliveryAt, timezone: company.timezone
     });
     if (!price) throw Object.assign(new Error("La dirección está fuera de la zona de entrega."), { status: 422 });
     const durationSeconds = Math.max(0, Number.parseInt(String(route.duration || "0s"),10) || 0);
-    return { distanceKm: distanceMeters / 1000, durationMinutes: Math.max(1,Math.ceil(durationSeconds/60)), ...price };
+    return { distanceKm: distanceMeters / 1000, durationMinutes: Math.max(1,Math.ceil(durationSeconds/60)), address, ...price };
 }
 
 async function loadMenuSettings(db){
@@ -671,7 +703,7 @@ async function handleOrderCreate(req, res, company) {
             value: Number(vipRequest.benefit_value || 0),
             code: vipRequest.code || ""
         } : null,
-        address: cleanOrderText(body.address, 260),
+        address: secureRoute?.address || cleanOrderText(body.address, 260),
         references: cleanOrderText(body.references, 180),
         payment: cleanOrderText(body.payment, 80),
         route: secureRoute ? {
